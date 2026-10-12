@@ -29,6 +29,21 @@ class Row implements Ui {
   let children: List&lt;Ui&gt;;
 }
 
+class OutlinedButton implements Ui {
+  let label: String;
+  let onTap: Action;
+}
+
+class TonalButton implements Ui {
+  let label: String;
+  let onTap: Action;
+}
+
+class TextButton implements Ui {
+  let label: String;
+  let onTap: Action;
+}
+
 class Text implements Ui {
   let text: String;
 }
@@ -416,6 +431,31 @@ interface Items {
 class LazyList implements Ui {
   let items: Items;
 }</code></pre>
+
+<h2 id="material">見た目の方針</h2>
+<p>部品の見た目は、Material Design 3 の明るい配色に沿う。書く側が色や形を指定しなくても、次のようになる。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>見た目</th></tr>
+  <tr><td>画面</td><td>背景は surface（<code>#FEF7FF</code>）。ステータスバーとナビゲーションバーも同じ色で、アイコンは暗い色。</td></tr>
+  <tr><td><code>Button</code></td><td>塗りのボタン。高さ 40dp、両端が丸い形、強調色の背景、14sp の中太の文字。</td></tr>
+  <tr><td><code>TonalButton</code>、<code>OutlinedButton</code>、<code>TextButton</code></td><td>同じ形で、順に、強調色を薄めた背景、1dp の枠線だけ、文字だけ。重要度の低い操作ほど後ろのものを使う。</td></tr>
+  <tr><td>入力欄</td><td>枠線つき。高さ 56dp、角の丸み 4dp。フォーカス中は強調色の 2dp の枠線。</td></tr>
+  <tr><td><code>Chip</code></td><td>高さ 32dp、角の丸み 8dp。選ばれていないときは枠線、選ばれているときは強調色を薄めた塗り。</td></tr>
+  <tr><td><code>Card</code></td><td>角の丸み 12dp、surface より少し濃い面、弱い影。</td></tr>
+  <tr><td><code>TopBar</code>、<code>BackBar</code></td><td>高さ 64dp、22sp の題名、影なし。</td></tr>
+  <tr><td><code>Tabs</code></td><td>選ばれたタブは強調色の文字と、下に 3dp の線。全体の下に区切り線。</td></tr>
+  <tr><td><code>BottomNav</code></td><td>高さ 80dp。選ばれた行き先は、強調色を薄めた丸い背景の上に置く。</td></tr>
+  <tr><td><code>Fab</code></td><td>56dp の角丸の四角（丸み 16dp）、強調色を薄めた背景。</td></tr>
+  <tr><td><code>Modal</code>、<code>BottomSheet</code></td><td>角の丸み 28dp。</td></tr>
+</table>
+</div>
+<ul>
+  <li>強調色の既定は Material Design 3 の基準色（<code>#6750A4</code>）。<a href="#effects"><code>Theme</code></a> で変えると、上の「強調色」と「強調色を薄めた色」がすべて追従する。</li>
+  <li>余白や間隔は自動では入らない。Material Design の標準（画面の左右 16dp、部品の間 8dp など）は、<code>Padding</code> と <code>Space</code> で書く。<code>examples/converter</code> が手本になる。</li>
+  <li>暗い配色（ダークモード）には対応していない。</li>
+  <li>ボタンやチップの文字は、書いたとおりに表示する（大文字に変えたり、記号を足したりしない）。</li>
+</ul>
 
 <h2 id="components">UI 部品</h2>
 <div class="table-wrap">

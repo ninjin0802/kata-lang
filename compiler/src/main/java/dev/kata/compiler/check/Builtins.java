@@ -36,6 +36,9 @@ public final class Builtins {
         ui("Row", field("children", new Type.ListType(UI_TYPE)));
         ui("Text", field("text", Type.STRING));
         ui("Button", field("label", Type.STRING), field("onTap", Type.ACTION));
+        ui("OutlinedButton", field("label", Type.STRING), field("onTap", Type.ACTION));
+        ui("TonalButton", field("label", Type.STRING), field("onTap", Type.ACTION));
+        ui("TextButton", field("label", Type.STRING), field("onTap", Type.ACTION));
         ui("TextField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
         ui("Scroll", field("child", UI_TYPE));
         ui("HorizontalScroll", field("child", UI_TYPE));
@@ -253,6 +256,8 @@ public final class Builtins {
             methods.add(new MethodInfo("toFloat", List.of(), Type.FLOAT));
             methods.add(new MethodInfo("toInt", List.of(), Type.INT));
             methods.add(new MethodInfo("parseJson", List.of(), JSON_TYPE));
+            methods.add(new MethodInfo("isFloat", List.of(), Type.BOOL));
+            methods.add(new MethodInfo("isInt", List.of(), Type.BOOL));
             methods.add(new MethodInfo("contains", List.of(new ParamInfo("part", Type.STRING)), Type.BOOL));
             methods.add(new MethodInfo("startsWith", List.of(new ParamInfo("prefix", Type.STRING)), Type.BOOL));
             methods.add(new MethodInfo("endsWith", List.of(new ParamInfo("suffix", Type.STRING)), Type.BOOL));

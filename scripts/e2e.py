@@ -258,7 +258,8 @@ def check_styled():
     # StyledText and StyledButton.
     assert find(root, text="big").height > fill.height, "StyledText 32sp is taller than default text"
     button = find(root, text="styled 0")
-    assert pixel(button.left + 4, button.top + 4) == ink, "StyledButton background"
+    # The button is a pill, so its color is sampled above the label rather than in a corner.
+    assert pixel(button.center[0], button.top + 8) == ink, "StyledButton background"
 
     # Expand + Center: 'center' sits in the middle of the space left in the Column.
     center, bottom, vcenter = find(root, text="center"), find(root, text="bottom"), find(root, text="vcenter")
@@ -642,9 +643,10 @@ def check_effects():
     assert top[0] > 230 and top[1] < 25, f"Gradient starts red, got {top}"
     assert bottom[1] > 230 and bottom[0] < 25, f"Gradient ends green, got {bottom}"
 
-    # Theme: the accent reaches the Fab.
+    # Theme: the Fab takes the accent's container color (the accent made much lighter).
     fab = find(root, text="+")
-    assert pixel(fab.left + fab.width // 2, fab.top + 8) == purple, "Fab uses the Theme accent"
+    container = tuple(round(c + (255 - c) * 0.8) for c in purple)
+    assert close_to(pixel(fab.left + fab.width // 2, fab.top + 8), container, tolerance=2), "Fab uses the Theme accent"
 
     # Disabled swallows the tap; the same button outside it works.
     tap_text("Touch")
@@ -652,7 +654,9 @@ def check_effects():
     tap(find(root, text="Blocked"))
     time.sleep(1)
     assert exists(dump(), text="taps=0"), "a Disabled button does nothing"
-    tap_text("Open")
+    opener = find(dump(), text="Open")
+    assert pixel(opener.center[0], opener.top + 8) == purple, "a filled Button is drawn in the Theme accent"
+    tap(opener)
     wait_for(lambda r: exists(r, text="taps=1"), "the enabled button")
 
     # Swipeable and LongPress.
@@ -774,7 +778,56 @@ def check_todo():
     adb("uninstall", app_id, check=False)
 
 
+def check_converter():
+    app_id = "dev.kata.converter"
+    install_and_launch(build("converter"), app_id)
+    wait_for(lambda r: exists(r, text="Length") and exists(r, text="Swap"), "the converter to appear")
+
+    def result(root):
+        texts = [n.text for n in find_all(root) if n.text and n.text.startswith("=")]
+        return texts[0] if texts else None
+
+    def pick(row, unit):
+        tap(sorted(find_all(dump(), text=unit), key=lambda n: n.top)[row])
+
+    def enter(text):
+        tap(find(dump(), cls="android.widget.EditText"))
+        type_text(text)
+
+    def clear():
+        tap_text("Clear")
+
+    steps = [
+        ("starts empty", lambda: None, "= ?"),
+        ("1500 m -> km", lambda: enter("1500"), "= 1.5 km"),
+        ("Clear", clear, "= ?"),
+        ("1 mi -> km", lambda: (enter("1"), pick(0, "mi")), "= 1.609344 km"),
+        ("Swap", lambda: tap_text("Swap"), "= 0.621371 mi"),
+        ("Weight keeps the input", lambda: tap_text("Weight"), "= 1000 g"),
+        ("1 lb -> kg", lambda: (pick(0, "lb"), pick(1, "kg")), "= 0.453592 kg"),
+        ("100 C -> F", lambda: (tap_text("Temperature"), clear(), enter("100")), "= 212 F"),
+        ("100 C -> K", lambda: pick(1, "K"), "= 373.15 K"),
+        ("32 F -> C", lambda: (clear(), enter("32"), pick(0, "F"), pick(1, "C")), "= 0 C"),
+        ("-40 C -> F", lambda: (clear(), enter("-40"), pick(0, "C"), pick(1, "F")), "= -40 F"),
+        ("a lone minus", lambda: (clear(), enter("-")), "= ?"),
+        ("a lone point", lambda: (clear(), enter(".")), "= ?"),
+        ("0.5 C -> F", lambda: (clear(), enter("0.5")), "= 32.9 F"),
+    ]
+    for name, action, expected in steps:
+        action()
+        wait_for(lambda r: result(r) == expected, f"{name}: {expected}")
+
+    # Material layout: the content keeps a 16dp margin and the top bar is 64dp high.
+    root = dump()
+    width, _ = screen_size()
+    near(find(root, cls="android.widget.EditText").left, px(16), "16dp margin on the left")
+    near(find(root, cls="android.widget.EditText").right, width - px(16), "16dp margin on the right")
+    near(find(root, text="Converter").height, px(64), "top bar height")
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
+    "converter": check_converter,
     "calculator": check_calculator,
     "todo": check_todo,
     "data": check_data,

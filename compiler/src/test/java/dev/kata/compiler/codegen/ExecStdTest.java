@@ -49,6 +49,12 @@ class ExecStdTest {
               fn toInt(self, text: String) -> Int {
                 return text.toInt();
               }
+              fn isFloat(self, text: String) -> Bool {
+                return text.isFloat();
+              }
+              fn isInt(self, text: String) -> Bool {
+                return text.isInt();
+              }
               fn removeAt(self, xs: List<Int>, index: Int) -> List<Int> {
                 return xs.removeAt(index: index);
               }
@@ -153,6 +159,19 @@ class ExecStdTest {
         for (String bad : new String[] {"", "1.5", "abc", " 1", "+1", "１２", "99999999999999999999"}) {
             assertThrows(IllegalArgumentException.class, () -> call(s, "toInt", bad), bad);
         }
+    }
+
+    @Test
+    void numbersCanBeTestedBeforeParsing() throws Throwable {
+        for (String text : new String[] {"1", "-0.5", "3.", "12"}) {
+            assertEquals(true, call(s, "isFloat", text), text);
+        }
+        for (String text : new String[] {"", "-", ".", ".5", "1.2.3", "abc", "1e5", " 1"}) {
+            assertEquals(false, call(s, "isFloat", text), text);
+        }
+        assertEquals(true, call(s, "isInt", "-42"));
+        assertEquals(false, call(s, "isInt", "4.2"));
+        assertEquals(false, call(s, "isInt", ""));
     }
 
     @Test

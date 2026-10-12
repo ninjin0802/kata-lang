@@ -33,6 +33,7 @@ final class Renderer implements Host<View> {
         this.container = container;
         this.density = activity.getResources().getDisplayMetrics().density;
         container.setClipChildren(false);
+        container.setBackgroundColor(Material.SURFACE);
     }
 
     /** The accent color of the current screen: the outermost Theme's, or the default. */
@@ -166,7 +167,8 @@ final class Renderer implements Host<View> {
         if (node instanceof Text || node instanceof StyledText) {
             return new TextView(activity);
         }
-        if (node instanceof Button || node instanceof StyledButton) {
+        if (node instanceof Button || node instanceof StyledButton || node instanceof OutlinedButton
+                || node instanceof TonalButton || node instanceof TextButton) {
             android.widget.Button button = new android.widget.Button(activity);
             button.setAllCaps(false);
             button.setOnClickListener(new View.OnClickListener() {
@@ -174,7 +176,10 @@ final class Renderer implements Host<View> {
                 public void onClick(View view) {
                     // The tag always holds the component of the latest render.
                     Object tag = view.getTag();
-                    Action action = tag instanceof Button ? ((Button) tag).onTap : ((StyledButton) tag).onTap;
+                    Action action = tag instanceof Button ? ((Button) tag).onTap
+                            : tag instanceof StyledButton ? ((StyledButton) tag).onTap
+                            : tag instanceof OutlinedButton ? ((OutlinedButton) tag).onTap
+                            : tag instanceof TonalButton ? ((TonalButton) tag).onTap : ((TextButton) tag).onTap;
                     action.run();
                     activity.rerender();
                 }
@@ -238,7 +243,7 @@ final class Renderer implements Host<View> {
         }
         if (node instanceof Divider) {
             View line = new View(activity);
-            line.setBackgroundColor(0x1F000000);
+            line.setBackgroundColor(Material.OUTLINE_VARIANT);
             return line;
         }
         if (node instanceof Grid) {
@@ -297,15 +302,19 @@ final class Renderer implements Host<View> {
         if (node instanceof Card) {
             FrameLayout card = new FrameLayout(activity);
             android.graphics.drawable.GradientDrawable surface = new android.graphics.drawable.GradientDrawable();
-            surface.setColor(0xFFFFFFFF);
+            surface.setColor(Material.SURFACE_CONTAINER_LOW);
             surface.setCornerRadius(px(12));
             card.setBackground(surface);
-            card.setElevation(px(2));
+            card.setElevation(px(1));
             card.setClipToOutline(true);
             return card;
         }
         if (node instanceof Tappable) {
             FrameLayout frame = new FrameLayout(activity);
+            // The platform's bounded ripple, so that a tap is visible.
+            TypedValue ripple = new TypedValue();
+            activity.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
+            frame.setForeground(activity.getDrawable(ripple.resourceId));
             frame.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -387,6 +396,7 @@ final class Renderer implements Host<View> {
         }
         if (node instanceof Text) {
             setText((TextView) view, ((Text) node).text);
+            ((TextView) view).setTextColor(Material.ON_SURFACE);
         } else if (node instanceof StyledText) {
             StyledText styled = (StyledText) node;
             TextView text = (TextView) view;
@@ -395,21 +405,34 @@ final class Renderer implements Host<View> {
             text.setTextColor(argb(styled.color));
         } else if (node instanceof Button) {
             setText((TextView) view, ((Button) node).label);
+            Material.filledButton(this, (TextView) view, accent, Material.on(accent));
+        } else if (node instanceof TonalButton) {
+            setText((TextView) view, ((TonalButton) node).label);
+            Material.filledButton(this, (TextView) view, Material.container(accent), Material.onContainer(accent));
+        } else if (node instanceof OutlinedButton) {
+            setText((TextView) view, ((OutlinedButton) node).label);
+            Material.outlinedButton(this, (TextView) view, accent, true);
+        } else if (node instanceof TextButton) {
+            setText((TextView) view, ((TextButton) node).label);
+            Material.outlinedButton(this, (TextView) view, accent, false);
         } else if (node instanceof StyledButton) {
             StyledButton styled = (StyledButton) node;
             android.widget.Button button = (android.widget.Button) view;
             setText(button, styled.label);
-            button.setTextColor(argb(styled.textColor));
-            button.setBackgroundColor(argb(styled.background));
+            Material.filledButton(this, button, argb(styled.background), argb(styled.textColor));
         } else if (node instanceof TextField) {
+            Material.outlinedField(this, (EditText) view, accent);
             bindText((EditText) view, ((TextField) node).value, ((TextField) node).hint);
         } else if (node instanceof SecretField) {
+            Material.outlinedField(this, (EditText) view, accent);
             bindText((EditText) view, ((SecretField) node).value, ((SecretField) node).hint);
         } else if (node instanceof NumberField) {
+            Material.outlinedField(this, (EditText) view, accent);
             bindText((EditText) view, ((NumberField) node).value, ((NumberField) node).hint);
         } else if (node instanceof TextArea) {
             TextArea area = (TextArea) node;
             EditText edit = (EditText) view;
+            Material.outlinedField(this, edit, accent);
             if (edit.getMinLines() != (int) area.lines) {
                 edit.setLines((int) area.lines);
             }

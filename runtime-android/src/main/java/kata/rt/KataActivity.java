@@ -131,6 +131,18 @@ public abstract class KataActivity extends Activity {
         });
         setContentView(container, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        // (After setContentView: the window has no insets controller before that.)
+        // Dark icons in the status and navigation bars, since the app's surface is light.
+        if (Build.VERSION.SDK_INT >= 30) {
+            int light = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            getWindow().getInsetsController().setSystemBarsAppearance(light, light);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                    | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+        getWindow().setStatusBarColor(Material.SURFACE);
+        getWindow().setNavigationBarColor(Material.SURFACE);
         renderer = new Renderer(this, container);
         rerender();
     }

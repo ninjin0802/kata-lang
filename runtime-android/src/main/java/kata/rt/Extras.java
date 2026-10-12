@@ -20,10 +20,9 @@ import android.widget.TextView;
 final class Extras {
     private Extras() {}
 
-    static final int DEFAULT_ACCENT = 0xFF009688;
-    private static final int SURFACE = 0xFFF5F5F5;
-    private static final int TEXT = 0xDE000000;
-    private static final int MUTED = 0x99000000;
+    static final int DEFAULT_ACCENT = Material.PRIMARY;
+    private static final int TEXT = Material.ON_SURFACE;
+    private static final int MUTED = Material.ON_SURFACE_VARIANT;
 
     /** Accent when checked, gray otherwise: for check boxes, radio buttons and switches. */
     static android.content.res.ColorStateList checkedTint(int accent) {
@@ -40,7 +39,7 @@ final class Extras {
         if (node instanceof TopBar) {
             TextView bar = new TextView(activity);
             styleBar(r, bar);
-            bar.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+            bar.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
             bar.setTextColor(TEXT);
             bar.setGravity(Gravity.CENTER_VERTICAL);
             bar.setPadding(r.px(16), 0, r.px(16), 0);
@@ -61,7 +60,7 @@ final class Extras {
                 activity.rerender();
             });
             TextView title = new TextView(activity);
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
             title.setTextColor(TEXT);
             bar.addView(back);
             bar.addView(title);
@@ -71,8 +70,18 @@ final class Extras {
             LinearLayout bar = new LinearLayout(activity);
             bar.setOrientation(LinearLayout.HORIZONTAL);
             if (node instanceof BottomNav) {
-                styleBar(r, bar);
-                bar.setElevation(r.px(8));
+                bar.setBackgroundColor(Material.SURFACE_CONTAINER);
+                bar.setMinimumHeight(r.px(80));
+                bar.setGravity(Gravity.CENTER_VERTICAL);
+            } else {
+                // The line under a row of tabs.
+                GradientDrawable divider = new GradientDrawable();
+                divider.setColor(Material.OUTLINE_VARIANT);
+                android.graphics.drawable.LayerDrawable under = new android.graphics.drawable.LayerDrawable(
+                        new android.graphics.drawable.Drawable[] {divider});
+                under.setLayerGravity(0, Gravity.BOTTOM);
+                under.setLayerHeight(0, r.px(1));
+                bar.setBackground(under);
             }
             return bar;
         }
@@ -82,10 +91,6 @@ final class Extras {
             fab.setMinWidth(r.px(56));
             fab.setMinHeight(r.px(56));
             fab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
-            fab.setTextColor(0xFFFFFFFF);
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            fab.setBackground(circle);
             fab.setElevation(r.px(6));
             fab.setOnClickListener(view -> {
                 ((Fab) view.getTag()).onTap.run();
@@ -95,8 +100,11 @@ final class Extras {
         }
         if (node instanceof Chip) {
             TextView chip = new TextView(activity);
-            chip.setTextColor(TEXT);
-            chip.setPadding(r.px(12), r.px(6), r.px(12), r.px(6));
+            chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            chip.setTypeface(Material.medium());
+            chip.setGravity(Gravity.CENTER);
+            chip.setMinHeight(r.px(32));
+            chip.setPadding(r.px(16), 0, r.px(16), 0);
             chip.setOnClickListener(view -> {
                 ((Chip) view.getTag()).onTap.run();
                 activity.rerender();
@@ -106,14 +114,15 @@ final class Extras {
         if (node instanceof Badge) {
             TextView badge = new TextView(activity);
             badge.setGravity(Gravity.CENTER);
-            badge.setMinWidth(r.px(20));
-            badge.setMinHeight(r.px(20));
-            badge.setPadding(r.px(6), 0, r.px(6), 0);
-            badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            badge.setMinWidth(r.px(16));
+            badge.setMinHeight(r.px(16));
+            badge.setPadding(r.px(4), 0, r.px(4), 0);
+            badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            badge.setTypeface(Material.medium());
             badge.setTextColor(0xFFFFFFFF);
             GradientDrawable pill = new GradientDrawable();
-            pill.setColor(0xFFD32F2F);
-            pill.setCornerRadius(r.px(10));
+            pill.setColor(Material.ERROR);
+            pill.setCornerRadius(r.px(8));
             badge.setBackground(pill);
             return badge;
         }
@@ -251,20 +260,25 @@ final class Extras {
             bindSegments(r, (LinearLayout) view, ((BottomNav) node).labels, ((BottomNav) node).selected, 18);
         } else if (node instanceof Fab) {
             setText((TextView) view, ((Fab) node).label);
-            ((GradientDrawable) view.getBackground()).setColor(r.accent);
+            // A rounded square in the accent's container color.
+            view.setBackground(Material.ripple(Material.shape(Material.container(r.accent), r.px(16)),
+                    Material.onContainer(r.accent)));
+            ((TextView) view).setTextColor(Material.onContainer(r.accent));
         } else if (node instanceof Chip) {
             Chip chip = (Chip) node;
             setText((TextView) view, chip.label);
+            // A filter chip: outlined, and filled with the accent's container color when selected.
             GradientDrawable pill = new GradientDrawable();
-            pill.setCornerRadius(r.px(16));
+            pill.setCornerRadius(r.px(8));
             if (chip.selected) {
-                // The accent at about a third of its strength.
-                pill.setColor((r.accent & 0x00FFFFFF) | 0x55000000);
+                pill.setColor(Material.container(r.accent));
+                ((TextView) view).setTextColor(Material.onContainer(r.accent));
             } else {
                 pill.setColor(0x00000000);
-                pill.setStroke(r.px(1), MUTED);
+                pill.setStroke(r.px(1), Material.OUTLINE);
+                ((TextView) view).setTextColor(MUTED);
             }
-            view.setBackground(pill);
+            view.setBackground(Material.ripple(pill, Material.ON_SURFACE));
         } else if (node instanceof Badge) {
             long count = ((Badge) node).count;
             setText((TextView) view, count > 99 ? "99+" : Long.toString(count));
@@ -346,10 +360,10 @@ final class Extras {
         return parent instanceof SheetAnchor ? ((SheetAnchor) parent).content : (ViewGroup) parent;
     }
 
+    /** A small top app bar: 64dp high, the surface color, no shadow. */
     private static void styleBar(Renderer r, View bar) {
-        bar.setBackgroundColor(SURFACE);
-        bar.setMinimumHeight(r.px(56));
-        bar.setElevation(r.px(4));
+        bar.setBackgroundColor(Material.SURFACE);
+        bar.setMinimumHeight(r.px(64));
     }
 
     private static void setText(TextView view, String text) {
@@ -389,9 +403,34 @@ final class Extras {
         for (int i = 0; i < count; i++) {
             TextView segment = (TextView) bar.getChildAt(i);
             boolean active = i == selected;
-            segment.setTextColor(active ? r.accent : MUTED);
-            segment.setTypeface(Typeface.defaultFromStyle(active ? Typeface.BOLD : Typeface.NORMAL));
+            segment.setTextSize(TypedValue.COMPLEX_UNIT_SP, bar.getTag() instanceof Tabs ? 14 : 12);
+            segment.setTypeface(Material.medium());
             segment.setSelected(active);
+            if (bar.getTag() instanceof Tabs) {
+                // Primary tabs: the active one takes the accent and a 3dp indicator under it.
+                segment.setTextColor(active ? r.accent : MUTED);
+                if (active) {
+                    GradientDrawable line = new GradientDrawable();
+                    line.setColor(r.accent);
+                    android.graphics.drawable.LayerDrawable indicator = new android.graphics.drawable.LayerDrawable(
+                            new android.graphics.drawable.Drawable[] {line});
+                    indicator.setLayerGravity(0, Gravity.BOTTOM);
+                    indicator.setLayerHeight(0, r.px(3));
+                    segment.setBackground(indicator);
+                } else {
+                    segment.setBackground(null);
+                }
+            } else {
+                // Navigation bar: the active destination sits on a pill in the accent's container color.
+                segment.setTextColor(active ? Material.onContainer(r.accent) : MUTED);
+                if (active) {
+                    android.graphics.drawable.InsetDrawable pill = new android.graphics.drawable.InsetDrawable(
+                            Material.shape(Material.container(r.accent), r.px(16)), r.px(12), r.px(8), r.px(12), r.px(8));
+                    segment.setBackground(pill);
+                } else {
+                    segment.setBackground(null);
+                }
+            }
         }
     }
 
@@ -668,8 +707,8 @@ final class Extras {
                 dialog.setContentView(content);
                 Window window = dialog.getWindow();
                 GradientDrawable surface = new GradientDrawable();
-                surface.setColor(0xFFFFFFFF);
-                float radius = r.px(16);
+                surface.setColor(Material.SURFACE_CONTAINER_HIGH);
+                float radius = r.px(28);
                 surface.setCornerRadii(bottom
                         ? new float[] {radius, radius, radius, radius, 0, 0, 0, 0}
                         : new float[] {radius, radius, radius, radius, radius, radius, radius, radius});
@@ -741,15 +780,16 @@ final class Extras {
             bar.setGravity(Gravity.CENTER_VERTICAL);
             bar.setPadding(r.px(16), r.px(12), r.px(8), r.px(12));
             GradientDrawable surface = new GradientDrawable();
-            surface.setColor(0xFF323232);
+            surface.setColor(Material.INVERSE_SURFACE);
             surface.setCornerRadius(r.px(4));
             bar.setBackground(surface);
             bar.setElevation(r.px(6));
             TextView message = new TextView(r.activity);
-            message.setTextColor(0xFFFFFFFF);
+            message.setTextColor(Material.INVERSE_ON_SURFACE);
             TextView action = new TextView(r.activity);
-            action.setTextColor(0xFF80CBC4);
-            action.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
+            // The accent, lightened to stay readable on the dark bar.
+            action.setTextColor(Material.mix(r.accent, 0xFFFFFFFF, 0.6f));
+            action.setTypeface(Material.medium());
             action.setPadding(r.px(12), r.px(4), r.px(12), r.px(4));
             action.setOnClickListener(view -> {
                 ((Snackbar) getTag()).onAction.run();

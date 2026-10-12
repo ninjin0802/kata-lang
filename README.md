@@ -41,7 +41,7 @@ The syntax looks like Rust and Swift (`fn`, `let`/`var`, `Point { x: 1 }`, named
 
 ## Status
 
-Experimental. It can build small single-screen apps (see `examples/`): a multi-file todo list, a counter, a styling demo, a form with text input and a scrolling list, input controls, choice and container widgets, an app shell with tabs and navigation, dialogs and long lists, images and pickers, effects and gestures, and a four-function calculator. Apps can save values, read the clock, run timers, make HTTP requests and read and write JSON. It cannot yet play video, use the camera or maps, or call Android APIs directly. The language and its output formats may change without notice.
+Experimental. It can build small single-screen apps (see `examples/`): a multi-file todo list, a Material-styled unit converter, a counter, a styling demo, a form with text input and a scrolling list, input controls, choice and container widgets, an app shell with tabs and navigation, dialogs and long lists, images and pickers, effects and gestures, and a four-function calculator. Apps can save values, read the clock, run timers, make HTTP requests and read and write JSON. It cannot yet play video, use the camera or maps, or call Android APIs directly. The language and its output formats may change without notice.
 
 ## What it is
 

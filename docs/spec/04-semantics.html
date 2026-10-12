@@ -244,6 +244,7 @@ let big: List&lt;Int&gt; = xs.filter(keep: fn(x: Int) -&gt; Bool {
   <tr><td><code>String</code></td><td><code>trim() -&gt; String</code><br><code>toUpper() -&gt; String</code><br><code>toLower() -&gt; String</code></td><td>前後の空白を除く、大文字にする、小文字にする。</td></tr>
   <tr><td><code>String</code></td><td><code>replace(part: String, with: String) -&gt; String</code></td><td><code>part</code> をすべて <code>with</code> に置き換える。</td></tr>
   <tr><td><code>String</code></td><td><code>parseJson() -&gt; Json</code></td><td>JSON として読む（<a href="05-ui.html#json">05 の JSON</a>）。<code>kata.sys.Json</code> の import が要る。</td></tr>
+  <tr><td><code>String</code></td><td><code>isFloat() -&gt; Bool</code><br><code>isInt() -&gt; Bool</code></td><td><code>toFloat()</code>、<code>toInt()</code> が受け付ける形かどうか。利用者が入力した文字列は、これで確かめてから変換する。</td></tr>
   <tr><td><code>String</code></td><td><code>toInt() -&gt; Int</code></td><td>10進の整数の文字列を数にする（先頭に任意の <code>-</code>、1桁以上の数字）。それ以外と範囲外はパニック。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>get(index: Int) -&gt; T</code></td><td><code>index</code> 番目（0始まり）の要素。範囲外ならパニックになる。</td></tr>

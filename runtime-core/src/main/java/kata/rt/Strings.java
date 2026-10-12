@@ -74,6 +74,26 @@ public final class Strings {
         return Json.parse(text);
     }
 
+    /** Whether toFloat would accept the text. */
+    public static boolean isFloat(String text) {
+        try {
+            Floats.parse(text);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /** Whether toInt would accept the text. */
+    public static boolean isInt(String text) {
+        try {
+            toInt(text);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     /** Parses `-`? digits and nothing else. */
     public static long toInt(String text) {
         int start = text.startsWith("-") ? 1 : 0;

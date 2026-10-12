@@ -1,0 +1,267 @@
+module app.converter;
+
+import kata.ui.Card;
+import kata.ui.Chip;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.FillWidth;
+import kata.ui.Label;
+import kata.ui.NumberField;
+import kata.ui.OutlinedButton;
+import kata.ui.Padding;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Space;
+import kata.ui.StyledText;
+import kata.ui.TonalButton;
+import kata.ui.TopBar;
+import kata.ui.Ui;
+
+enum Category {
+  Length,
+  Weight,
+  Temperature,
+}
+
+// A unit converter laid out the Material way: a top bar, 16dp margins, sections with small labels,
+// chips for choices, an outlined field for the number and a card for the result.
+class Converter implements Screen {
+  var category: Category = Category.Length;
+  var source: Int = 0;
+  var target: Int = 1;
+  var input: String = "";
+
+  fn view(self) -> Ui {
+    return Column {
+      children: [
+        TopBar { title: "Converter" },
+        Padding {
+          all: 16,
+          child: Column {
+            children: [
+              self.heading(text: "Category"),
+              Row {
+                children: [
+                  self.categoryChip(label: "Length", value: Category.Length),
+                  Space { dp: 8 },
+                  self.categoryChip(label: "Weight", value: Category.Weight),
+                  Space { dp: 8 },
+                  self.categoryChip(label: "Temperature", value: Category.Temperature),
+                ],
+              },
+              Space { dp: 20 },
+              self.heading(text: "From"),
+              self.unitChips(selected: self.source, pick: self.setSource),
+              Space { dp: 20 },
+              self.heading(text: "To"),
+              self.unitChips(selected: self.target, pick: self.setTarget),
+              Space { dp: 24 },
+              FillWidth { child: NumberField { value: self.input, hint: "Value", onChange: self.setInput } },
+              Space { dp: 16 },
+              FillWidth {
+                child: Card {
+                  child: Padding {
+                    all: 20,
+                    child: StyledText {
+                      text: self.result(),
+                      size: 32,
+                      color: Color { red: 29, green: 27, blue: 32, alpha: 255 },
+                    },
+                  },
+                },
+              },
+              Space { dp: 16 },
+              Row {
+                children: [
+                  TonalButton { label: "Swap", onTap: self.swap },
+                  Space { dp: 8 },
+                  OutlinedButton { label: "Clear", onTap: self.clear },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  fn heading(self, text: String) -> Ui {
+    return Padding {
+      all: 4,
+      child: Label {
+        text: text,
+        size: 12,
+        color: Color { red: 73, green: 69, blue: 79, alpha: 255 },
+        bold: true,
+        italic: false,
+        maxLines: 1,
+      },
+    };
+  }
+
+  fn categoryChip(self, label: String, value: Category) -> Ui {
+    return Chip {
+      label: label,
+      selected: self.name(category: self.category) == label,
+      onTap: fn() -> Unit {
+        self.category = value;
+        self.source = 0;
+        self.target = 1;
+      },
+    };
+  }
+
+  fn unitChips(self, selected: Int, pick: Handler<Int>) -> Ui {
+    let units: List<String> = self.units();
+    var chips: List<Ui> = [];
+    var i: Int = 0;
+    while (i < units.size()) {
+      let index: Int = i;
+      if (index > 0) {
+        chips = chips.append(item: Space { dp: 8 });
+      }
+      chips = chips.append(item: Chip {
+        label: units.get(index: index),
+        selected: index == selected,
+        onTap: fn() -> Unit {
+          pick.run(arg: index);
+        },
+      });
+      i = i + 1;
+    }
+    return Row { children: chips };
+  }
+
+  fn name(self, category: Category) -> String {
+    match (category) {
+      Category.Length => {
+        return "Length";
+      }
+      Category.Weight => {
+        return "Weight";
+      }
+      Category.Temperature => {
+        return "Temperature";
+      }
+    }
+  }
+
+  fn units(self) -> List<String> {
+    match (self.category) {
+      Category.Length => {
+        return ["m", "km", "cm", "mi"];
+      }
+      Category.Weight => {
+        return ["kg", "g", "lb"];
+      }
+      Category.Temperature => {
+        return ["C", "F", "K"];
+      }
+    }
+  }
+
+  // How many base units (metres or kilograms) one of the given unit is.
+  fn factor(self, unit: String) -> Float {
+    if (unit == "km") {
+      return 1000.0;
+    }
+    if (unit == "cm") {
+      return 0.01;
+    }
+    if (unit == "mi") {
+      return 1609.344;
+    }
+    if (unit == "g") {
+      return 0.001;
+    }
+    if (unit == "lb") {
+      return 0.45359237;
+    }
+    return 1.0;
+  }
+
+  fn toCelsius(self, value: Float, unit: String) -> Float {
+    if (unit == "F") {
+      return ((value - 32.0) * 5.0) / 9.0;
+    }
+    if (unit == "K") {
+      return value - 273.15;
+    }
+    return value;
+  }
+
+  fn fromCelsius(self, value: Float, unit: String) -> Float {
+    if (unit == "F") {
+      return ((value * 9.0) / 5.0) + 32.0;
+    }
+    if (unit == "K") {
+      return value + 273.15;
+    }
+    return value;
+  }
+
+  fn convert(self, value: Float, from: String, to: String) -> Float {
+    match (self.category) {
+      Category.Length => {
+        return (value * self.factor(unit: from)) / self.factor(unit: to);
+      }
+      Category.Weight => {
+        return (value * self.factor(unit: from)) / self.factor(unit: to);
+      }
+      Category.Temperature => {
+        return self.fromCelsius(value: self.toCelsius(value: value, unit: from), unit: to);
+      }
+    }
+  }
+
+  fn result(self) -> String {
+    if (!self.input.isFloat()) {
+      return "= ?";
+    }
+    let units: List<String> = self.units();
+    let to: String = units.get(index: self.target);
+    let value: Float = self.convert(value: self.input.toFloat(), from: units.get(index: self.source), to: to);
+    return "= ".concat(other: self.format(value: value)).concat(other: " ").concat(other: to);
+  }
+
+  // At most six decimals, no trailing zeros, no ".0", never "-0".
+  fn format(self, value: Float) -> String {
+    let rounded: Float = value.round(decimals: 6);
+    if (rounded == 0.0) {
+      return "0";
+    }
+    let whole: Int = rounded.toInt();
+    if (whole.toFloat() == rounded) {
+      return whole.toString();
+    }
+    return rounded.toString();
+  }
+
+  fn setSource(self, index: Int) -> Unit {
+    self.source = index;
+  }
+
+  fn setTarget(self, index: Int) -> Unit {
+    self.target = index;
+  }
+
+  fn setInput(self, value: String) -> Unit {
+    self.input = value;
+  }
+
+  fn swap(self) -> Unit {
+    let previous: Int = self.source;
+    self.source = self.target;
+    self.target = previous;
+  }
+
+  fn clear(self) -> Unit {
+    self.input = "";
+  }
+}
+
+app {
+  id: "dev.kata.converter",
+  name: "Converter",
+  root: Converter {},
+}

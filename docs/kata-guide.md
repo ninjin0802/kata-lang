@@ -112,7 +112,7 @@ Built-in methods (these are all of them):
 |---|---|
 | `Int` | `toString() -> String`, `toFloat() -> Float` |
 | `Float` | `toString() -> String` — a decimal that reads back as exactly the same number, never an exponent, always with a point (`3.0`, `0.1`; `0.1 + 0.2` prints `0.30000000000000004`, so `round` first when showing results); `toInt() -> Int` (truncates); `round(decimals: Int) -> Float` |
-| `String` | `concat(other: String) -> String`, `length() -> Int`, `contains(part: String) -> Bool`, `startsWith(prefix: String) -> Bool`, `endsWith(suffix: String) -> Bool`, `indexOf(part: String) -> Int` (-1 if absent), `substring(start: Int, end: Int) -> String` (end exclusive; out of range crashes), `split(separator: String) -> List<String>`, `trim() -> String`, `toUpper() -> String`, `toLower() -> String`, `replace(part: String, with: String) -> String`, `toInt() -> Int` and `toFloat() -> Float` (text that is not a number crashes the app) |
+| `String` | `concat(other: String) -> String`, `length() -> Int`, `contains(part: String) -> Bool`, `startsWith(prefix: String) -> Bool`, `endsWith(suffix: String) -> Bool`, `indexOf(part: String) -> Int` (-1 if absent), `substring(start: Int, end: Int) -> String` (end exclusive; out of range crashes), `split(separator: String) -> List<String>`, `trim() -> String`, `toUpper() -> String`, `toLower() -> String`, `replace(part: String, with: String) -> String`, `isFloat() -> Bool` / `isInt() -> Bool`, `toInt() -> Int` and `toFloat() -> Float` (text that is not a number crashes the app, so check typed text with `isFloat()` first; `12`, `-0.5`, `3.` are numbers, `.5`, `-`, `1e5` are not) |
 | `List<T>` | `size() -> Int`, `get(index: Int) -> T` (out of range crashes), `append(item: T) -> List<T>`, `removeAt(index: Int) -> List<T>`, `set(index: Int, item: T) -> List<T>`, `filter(keep: Fn<T, Bool>) -> List<T>`, `map(transform: Fn<T, R>) -> List<R>`, `any(test: Fn<T, Bool>) -> Bool`, `all(test: ...) -> Bool`, `count(test: ...) -> Int`, `indexWhere(test: ...) -> Int` (-1 if none), `sortedBy(key: Fn<T, Int>) -> List<T>` (ascending, stable) — lists never change; each returns a new list |
 
 Positions and lengths in strings count Unicode characters (code points).
@@ -204,7 +204,7 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Grid` | `columns: Int, children: List<Ui>` — equal-width columns, filled row by row, full width |
 | `Stack` | `children: List<Ui>` — on top of each other, later ones in front |
 | `Text` | `text: String` |
-| `Button` | `label: String, onTap: Action` |
+| `Button`, `TonalButton`, `OutlinedButton`, `TextButton` | `label: String, onTap: Action` — filled (main action), soft fill, outline only, text only; labels are shown exactly as written |
 | `TextField` | `value: String, hint: String, onChange: Handler<String>` — single line; store the new text in `onChange` or the field reverts |
 | `TextArea` | `value: String, hint: String, lines: Int, onChange: Handler<String>` — multi-line, `lines` ≥ 1 |
 | `Checkbox` | `label: String, checked: Bool, onChange: Handler<Bool>` |
@@ -262,6 +262,8 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 
 Input controls (`TextField`, `TextArea`, `Checkbox`, `Switch`, `Slider`, `RadioGroup`, `Dropdown`, `Rating`) do not keep their own value: pass the current value from a field and store the new one in `onChange`, or the control snaps back.
+
+Looks: components follow Material Design 3 (light) without any styling from you — filled pill buttons, outlined fields and chips, a 64dp top bar; `Theme` changes the accent everywhere. Spacing is not automatic: wrap screen content in `Padding { all: 16, ... }` and separate components with `Space { dp: 8 }`.
 
 Layout: a component is as big as its content unless told otherwise. A request to fill travels outward: a `Row` containing an `Expand`, or a `Column` containing a `FillWidth`/`AlignEnd`/`CenterHorizontal`, itself becomes full width (same for height). So equal-width buttons across the screen are simply `Row { children: [Expand {...}, Expand {...}] }`. Sizes cannot be negative and colors must be in range, or the app crashes.
 
