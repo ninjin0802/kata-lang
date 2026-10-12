@@ -72,6 +72,22 @@ class ExecStdTest {
                 store.remove(key: key);
                 return store.getInt(key: key, fallback: -1);
               }
+              fn firstTag(self, text: String) -> String {
+                let doc: Json = text.parseJson();
+                if (!doc.isValid()) {
+                  return "invalid";
+                }
+                var total: Int = 0;
+                for (item: Json in doc.get(key: "tags").items()) {
+                  total = total + item.asString(fallback: "").length();
+                }
+                return doc.get(key: "tags").at(index: 0).asString(fallback: "none").concat(other: total.toString());
+              }
+              fn build(self, name: String, count: Int) -> String {
+                let tags: Json = "[]".parseJson().appendString(value: "a").appendInt(value: count);
+                return Json {}.withString(key: "name", value: name).withJson(key: "tags", value: tags)
+                  .withBool(key: "ok", value: true).withFloat(key: "r", value: 0.5).withNull(key: "none").toText();
+              }
               fn year(self) -> Int {
                 return Clock {}.today().year;
               }
@@ -89,7 +105,7 @@ class ExecStdTest {
     @BeforeAll
     static void compile() throws Exception {
         String source = CheckSupport.wrap(SOURCE).replace("import kata.ui.Ui;",
-                "import kata.ui.Ui;\nimport kata.sys.Clock;\nimport kata.sys.Store;");
+                "import kata.ui.Ui;\nimport kata.sys.Clock;\nimport kata.sys.Json;\nimport kata.sys.Store;");
         ClassLoader loader = ExecSupport.compileProgram(Map.of(CheckSupport.PATH, source));
         s = create(loader, "app.main.S");
     }
@@ -151,6 +167,15 @@ class ExecStdTest {
         assertEquals(1L, xs.get(0));
         assertThrows(IndexOutOfBoundsException.class, () -> call(s, "removeAt", xs, 3L));
         assertThrows(IndexOutOfBoundsException.class, () -> call(s, "set", xs, -1L, 0L));
+    }
+
+    @Test
+    void jsonIsReadAndBuiltFromKata() throws Throwable {
+        assertEquals("ab3", call(s, "firstTag", "{\"tags\": [\"ab\", \"c\"]}"));
+        assertEquals("none0", call(s, "firstTag", "{}"));
+        assertEquals("invalid", call(s, "firstTag", "{oops"));
+        assertEquals("{\"name\":\"k\",\"tags\":[\"a\",2],\"ok\":true,\"r\":0.5,\"none\":null}",
+                call(s, "build", "k", 2L));
     }
 
     @Test

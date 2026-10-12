@@ -131,6 +131,33 @@ public final class Builtins {
                 new MethodInfo("time", List.of(), new Type.ClassType(UI_MODULE + ".Time"))));
     }
 
+    private static final Type JSON_TYPE = new Type.ClassType(SYS_MODULE + ".Json");
+
+    static {
+        List<MethodInfo> json = new ArrayList<>();
+        for (String name : List.of("isValid", "isNull", "isObject", "isList", "isString", "isNumber", "isBool")) {
+            json.add(new MethodInfo(name, List.of(), Type.BOOL));
+        }
+        json.add(new MethodInfo("get", List.of(new ParamInfo("key", Type.STRING)), JSON_TYPE));
+        json.add(new MethodInfo("at", List.of(new ParamInfo("index", Type.INT)), JSON_TYPE));
+        json.add(new MethodInfo("size", List.of(), Type.INT));
+        json.add(new MethodInfo("keys", List.of(), new Type.ListType(Type.STRING)));
+        json.add(new MethodInfo("items", List.of(), new Type.ListType(JSON_TYPE)));
+        Type[] scalars = {Type.STRING, Type.INT, Type.FLOAT, Type.BOOL};
+        for (Type scalar : scalars) {
+            json.add(new MethodInfo("as" + scalar.display(), List.of(new ParamInfo("fallback", scalar)), scalar));
+            json.add(new MethodInfo("with" + scalar.display(),
+                    List.of(new ParamInfo("key", Type.STRING), new ParamInfo("value", scalar)), JSON_TYPE));
+            json.add(new MethodInfo("append" + scalar.display(), List.of(new ParamInfo("value", scalar)), JSON_TYPE));
+        }
+        json.add(new MethodInfo("withNull", List.of(new ParamInfo("key", Type.STRING)), JSON_TYPE));
+        json.add(new MethodInfo("withJson",
+                List.of(new ParamInfo("key", Type.STRING), new ParamInfo("value", JSON_TYPE)), JSON_TYPE));
+        json.add(new MethodInfo("append", List.of(new ParamInfo("value", JSON_TYPE)), JSON_TYPE));
+        json.add(new MethodInfo("toText", List.of(), Type.STRING));
+        SYS_CLASSES.put("Json", json);
+    }
+
     /** Simple names exported by kata.sys. */
     public static Set<String> sysNames() {
         return SYS_CLASSES.keySet();
@@ -214,6 +241,7 @@ public final class Builtins {
         } else if (receiver.equals(Type.STRING)) {
             methods.add(new MethodInfo("toFloat", List.of(), Type.FLOAT));
             methods.add(new MethodInfo("toInt", List.of(), Type.INT));
+            methods.add(new MethodInfo("parseJson", List.of(), JSON_TYPE));
             methods.add(new MethodInfo("contains", List.of(new ParamInfo("part", Type.STRING)), Type.BOOL));
             methods.add(new MethodInfo("startsWith", List.of(new ParamInfo("prefix", Type.STRING)), Type.BOOL));
             methods.add(new MethodInfo("endsWith", List.of(new ParamInfo("suffix", Type.STRING)), Type.BOOL));

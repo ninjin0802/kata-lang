@@ -182,6 +182,7 @@ Counter {}</code></pre>
   <tr><td><code>String</code></td><td><code>split(separator: String) -&gt; List&lt;String&gt;</code></td><td><code>separator</code> で区切る。空の部分も残す。<code>separator</code> が空ならパニック。</td></tr>
   <tr><td><code>String</code></td><td><code>trim() -&gt; String</code><br><code>toUpper() -&gt; String</code><br><code>toLower() -&gt; String</code></td><td>前後の空白を除く、大文字にする、小文字にする。</td></tr>
   <tr><td><code>String</code></td><td><code>replace(part: String, with: String) -&gt; String</code></td><td><code>part</code> をすべて <code>with</code> に置き換える。</td></tr>
+  <tr><td><code>String</code></td><td><code>parseJson() -&gt; Json</code></td><td>JSON として読む（<a href="05-ui.html#json">05 の JSON</a>）。<code>kata.sys.Json</code> の import が要る。</td></tr>
   <tr><td><code>String</code></td><td><code>toInt() -&gt; Int</code></td><td>10進の整数の文字列を数にする（先頭に任意の <code>-</code>、1桁以上の数字）。それ以外と範囲外はパニック。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>get(index: Int) -&gt; T</code></td><td><code>index</code> 番目（0始まり）の要素。範囲外ならパニックになる。</td></tr>
@@ -232,7 +233,7 @@ while (i &lt; 3) {
   <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。</li>
   <li><code>kata</code> で始まるモジュール名は、組み込みとランタイムのために予約されていて使えない（<code>E0601</code>）。</li>
   <li>import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
-  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code>（UI の部品）と <code>kata.sys</code>（<code>Store</code>、<code>Clock</code>）の名前だけ。それ以外は <code>E0307</code>。</li>
+  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code>（UI の部品）と <code>kata.sys</code>（<code>Store</code>、<code>Clock</code>、<code>Json</code>）の名前だけ。それ以外は <code>E0307</code>。</li>
   <li>import していない組み込みモジュールの名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>
   <li>使っていない import は <code>E0306</code>（削除を修正案として返す）。</li>
   <li><span class="tag m1">M1</span> のプロジェクトは1モジュールで構成する。</li>

@@ -70,12 +70,37 @@ class BuiltinsParityTest {
         }
     }
 
+    @Test
+    void everySysMethodExistsOnItsRuntimeClass() throws Exception {
+        ClassTable table = new ClassTable();
+        Builtins.register(table);
+        assertEquals(Set.of("Store", "Clock", "Json"), Set.copyOf(Builtins.sysNames()));
+        for (String name : Builtins.sysNames()) {
+            ClassInfo info = table.lookup("kata.sys." + name);
+            Class<?> runtime = Class.forName("kata.rt." + name);
+            assertTrue(info.methods().size() > 0, name);
+            runtime.getConstructor();
+            for (ClassTable.MethodInfo method : info.methods()) {
+                List<Class<?>> parameters = new ArrayList<>();
+                for (ClassTable.ParamInfo parameter : method.params()) {
+                    parameters.add(runtimeType(parameter.type()));
+                }
+                java.lang.reflect.Method actual = runtime.getMethod(method.name(), parameters.toArray(new Class<?>[0]));
+                Class<?> expected = method.returnType().equals(Type.UNIT) ? void.class : runtimeType(method.returnType());
+                assertEquals(expected, actual.getReturnType(), name + "." + method.name());
+            }
+        }
+    }
+
     private static Class<?> runtimeType(Type type) throws Exception {
         if (type.equals(Type.INT)) {
             return long.class;
         }
         if (type.equals(Type.BOOL)) {
             return boolean.class;
+        }
+        if (type.equals(Type.FLOAT)) {
+            return double.class;
         }
         if (type.equals(Type.STRING)) {
             return String.class;

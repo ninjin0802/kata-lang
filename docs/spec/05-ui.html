@@ -753,7 +753,45 @@ class Counter implements Screen {
   <li>応答の本文が 8MB を超える場合は、読むのをやめて <code>onError</code> になる。本文は1つの文字列としてメモリに載るので、相手のサーバーが送り続けてもアプリのメモリを使い切らないようにするため。接続と読み取りは、それぞれ15秒で打ち切る。</li>
   <li>使えるのは <code>https://</code> のアドレス。<code>http://</code> は Android が既定で拒否するため <code>onError</code> になる。</li>
   <li><code>Request</code> を使うプログラムには、通信の権限が自動で付く。</li>
-  <li>応答の本文は文字列で渡される。JSON を読み取る機能は M1 にないので、<code>String</code> のメソッドで取り出す。</li>
+  <li>応答の本文は文字列で渡される。JSON なら <a href="#json"><code>parseJson()</code></a> で読み取る。</li>
+</ul>
+
+<h3 id="json">JSON（kata.sys.Json）</h3>
+<pre><code>import kata.sys.Json;
+
+fn loaded(self, body: String) -&gt; Unit {
+  let doc: Json = body.parseJson();
+  var names: List&lt;String&gt; = [];
+  for (item: Json in doc.get(key: "items").items()) {
+    names = names.append(item: item.get(key: "name").asString(fallback: "?"));
+  }
+  self.names = names;
+}
+
+fn payload(self) -&gt; String {
+  return Json {}.withString(key: "name", value: self.name).withInt(key: "count", value: 3).toText();
+}</code></pre>
+<p><code>Json</code> は JSON の値1つを表す、書き換えられない値。<code>String</code> の <code>parseJson()</code> で文字列から作るか、<code>Json {}</code>（空のオブジェクト）と <code>"[]".parseJson()</code>（空のリスト）から組み立てる。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>メソッド</th><th>内容</th></tr>
+  <tr><td><code>isValid() -&gt; Bool</code></td><td>元の文字列が JSON として読めたか。読めなかった場合、値は null になる。</td></tr>
+  <tr><td><code>isNull()</code>、<code>isObject()</code>、<code>isList()</code>、<code>isString()</code>、<code>isNumber()</code>、<code>isBool()</code></td><td>値の種類。</td></tr>
+  <tr><td><code>get(key: String) -&gt; Json</code></td><td>オブジェクトの項目。なければ null の値。</td></tr>
+  <tr><td><code>at(index: Int) -&gt; Json</code></td><td>リストの要素。範囲外なら null の値。</td></tr>
+  <tr><td><code>size() -&gt; Int</code></td><td>リストの要素数、またはオブジェクトの項目数。それ以外は 0。</td></tr>
+  <tr><td><code>keys() -&gt; List&lt;String&gt;</code>、<code>items() -&gt; List&lt;Json&gt;</code></td><td>オブジェクトの項目名、リストの要素。当てはまらなければ空のリスト。</td></tr>
+  <tr><td><code>asString(fallback: String) -&gt; String</code><br><code>asInt(fallback: Int) -&gt; Int</code><br><code>asFloat(fallback: Float) -&gt; Float</code><br><code>asBool(fallback: Bool) -&gt; Bool</code></td><td>その型の値を取り出す。型が違えば <code>fallback</code>。<code>asInt</code> は、小数部のある数にも <code>fallback</code> を返す。</td></tr>
+  <tr><td><code>withString(key: String, value: String) -&gt; Json</code><br><code>withInt</code>、<code>withFloat</code>、<code>withBool</code>、<code>withJson</code> も同じ形、<code>withNull(key: String)</code></td><td>項目を足した（または置き換えた）新しいオブジェクトを返す。オブジェクト以外に使うと、そのままの値を返す。</td></tr>
+  <tr><td><code>appendString(value: String) -&gt; Json</code><br><code>appendInt</code>、<code>appendFloat</code>、<code>appendBool</code>、<code>append(value: Json)</code></td><td>末尾に要素を足した新しいリストを返す。リスト以外に使うと、そのままの値を返す。</td></tr>
+  <tr><td><code>toText() -&gt; String</code></td><td>空白を含まない JSON の文字列にする。</td></tr>
+</table>
+</div>
+<ul>
+  <li>読み取りは失敗しない。項目がない、型が違う、JSON として読めない、のどの場合もパニックにならず、null の値か <code>fallback</code> が返る。外から届いたデータでアプリが落ちないようにするため。</li>
+  <li><code>get</code> と <code>at</code> は続けて書ける（<code>doc.get(key: "a").at(index: 0).get(key: "b")</code>）。途中がなくても null の値が返るだけである。</li>
+  <li>100段を超えて入れ子になった JSON は読めない（<code>isValid()</code> が <code>false</code>）。</li>
+  <li>リストやオブジェクトを <code>Store</code> に保存するときは、<code>toText()</code> で文字列にして <code>setString</code> で保存し、<code>getString</code> と <code>parseJson()</code> で戻す。</li>
 </ul>
 
 <h2 id="controls">入力部品</h2>

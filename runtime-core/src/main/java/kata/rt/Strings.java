@@ -69,6 +69,11 @@ public final class Strings {
         return text.replace(part, with);
     }
 
+    /** Reads the text as JSON; text that is not JSON gives a null value whose isValid() is false. */
+    public static Json parseJson(String text) {
+        return Json.parse(text);
+    }
+
     /** Parses `-`? digits and nothing else. */
     public static long toInt(String text) {
         int start = text.startsWith("-") ? 1 : 0;
