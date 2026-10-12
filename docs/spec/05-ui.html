@@ -38,10 +38,25 @@ class Button implements Ui {
   let onTap: Action;
 }
 
+class TextField implements Ui {
+  let value: String;
+  let hint: String;
+  let onChange: Handler&lt;String&gt;;
+}
+
+class Scroll implements Ui {
+  let child: Ui;
+}
+
+class HorizontalScroll implements Ui {
+  let child: Ui;
+}
+
 class Color {
   let red: Int;
   let green: Int;
   let blue: Int;
+  let alpha: Int;
 }
 
 class StyledText implements Ui {
@@ -59,6 +74,14 @@ class StyledButton implements Ui {
 
 class Padding implements Ui {
   let all: Int;
+  let child: Ui;
+}
+
+class PaddingEdges implements Ui {
+  let left: Int;
+  let top: Int;
+  let right: Int;
+  let bottom: Int;
   let child: Ui;
 }
 
@@ -83,6 +106,34 @@ class FillWidth implements Ui {
 
 class FillHeight implements Ui {
   let child: Ui;
+}
+
+class Expand implements Ui {
+  let child: Ui;
+}
+
+class Space implements Ui {
+  let dp: Int;
+}
+
+class Center implements Ui {
+  let child: Ui;
+}
+
+class CenterHorizontal implements Ui {
+  let child: Ui;
+}
+
+class CenterVertical implements Ui {
+  let child: Ui;
+}
+
+class AlignEnd implements Ui {
+  let child: Ui;
+}
+
+class AlignBottom implements Ui {
+  let child: Ui;
 }</code></pre>
 
 <h2 id="components">UI 部品</h2>
@@ -93,11 +144,14 @@ class FillHeight implements Ui {
   <tr><td><code>Row</code></td><td><code>children</code> を左から右に並べる。</td><td>横方向の <code>LinearLayout</code></td></tr>
   <tr><td><code>Text</code></td><td><code>text</code> を表示する。</td><td><code>TextView</code></td></tr>
   <tr><td><code>Button</code></td><td><code>label</code> を表示し、押されたら <code>onTap</code> を実行する。</td><td><code>android.widget.Button</code></td></tr>
+  <tr><td><code>TextField</code></td><td>1行の入力欄。<a href="#text-field">入力欄</a>を参照。</td><td><code>EditText</code></td></tr>
+  <tr><td><code>Scroll</code></td><td><code>child</code> が高さに収まらないとき、縦にスクロールできるようにする。</td><td><code>ScrollView</code></td></tr>
+  <tr><td><code>HorizontalScroll</code></td><td><code>child</code> が幅に収まらないとき、横にスクロールできるようにする。</td><td><code>HorizontalScrollView</code></td></tr>
 </table>
 </div>
 <ul>
   <li>UI 部品は値であり、作っただけでは画面に出ない。<code>Screen</code> の <code>view</code> が返したものが表示される。</li>
-  <li><code>Text</code> と <code>Button</code> の見た目は Android の既定に従う。色や大きさを指定するときは<a href="#styling">見た目の指定</a>の部品を使う。</li>
+  <li><code>Text</code> と <code>Button</code> の見た目は Android の既定に従う。色や大きさを指定するときは<a href="#styling">見た目の指定</a>の部品を、位置を指定するときは<a href="#layout">配置</a>の部品を使う。</li>
   <li>利用者は <code>Ui</code> を実装するクラスを作れない（<code>E0506</code>）。画面の部品化は、<code>Ui</code> を返すメソッドで行う。</li>
 </ul>
 
@@ -106,21 +160,22 @@ class FillHeight implements Ui {
 <pre><code>Padding {
   all: 16,
   child: Background {
-    color: Color { red: 255, green: 243, blue: 224 },
+    color: Color { red: 255, green: 243, blue: 224, alpha: 255 },
     child: StyledText {
       text: self.count.toString(),
       size: 48,
-      color: Color { red: 138, green: 59, blue: 18 },
+      color: Color { red: 138, green: 59, blue: 18, alpha: 255 },
     },
   },
 }</code></pre>
 <div class="table-wrap">
 <table>
   <tr><th>部品</th><th>指定すること</th></tr>
-  <tr><td><code>Color</code></td><td>色。<code>red</code>、<code>green</code>、<code>blue</code> はそれぞれ 0 から 255。不透明。<code>Ui</code> ではなく、他の部品の項目に渡す値。</td></tr>
+  <tr><td><code>Color</code></td><td>色。<code>red</code>、<code>green</code>、<code>blue</code>、<code>alpha</code> はそれぞれ 0 から 255。<code>alpha</code> は 255 で不透明、0 で透明。<code>Ui</code> ではなく、他の部品の項目に渡す値。</td></tr>
   <tr><td><code>StyledText</code></td><td>文字の大きさ（<code>size</code>、単位は sp）と文字の色を指定した文字列。</td></tr>
   <tr><td><code>StyledButton</code></td><td>文字の色と背景の色を指定したボタン。</td></tr>
   <tr><td><code>Padding</code></td><td><code>child</code> の四方に <code>all</code>（単位は dp）の余白を取る。</td></tr>
+  <tr><td><code>PaddingEdges</code></td><td><code>child</code> の左、上、右、下に、それぞれ指定した余白（単位は dp）を取る。</td></tr>
   <tr><td><code>Background</code></td><td><code>child</code> の後ろを <code>color</code> で塗る。塗る範囲は <code>child</code> の大きさと同じ。</td></tr>
   <tr><td><code>Width</code> / <code>Height</code></td><td><code>child</code> の幅または高さを <code>dp</code>（単位は dp）に固定する。</td></tr>
   <tr><td><code>FillWidth</code> / <code>FillHeight</code></td><td><code>child</code> の幅または高さを、親が与える範囲いっぱいに広げる。</td></tr>
@@ -128,9 +183,54 @@ class FillHeight implements Ui {
 </div>
 <ul>
   <li>大きさを指定しない部品は、中身に合った大きさになる。</li>
-  <li>色の値が 0 から 255 の範囲にない場合と、<code>size</code>、<code>all</code>、<code>dp</code> が負の場合は、描画するときにパニックになる。</li>
+  <li>色の値が 0 から 255 の範囲にない場合と、文字の大きさ、余白、<code>dp</code> が負の場合は、描画するときにパニックになる。</li>
   <li>余白の内側を塗るときは <code>Background</code> の中に <code>Padding</code> を、外側だけ空けるときは <code>Padding</code> の中に <code>Background</code> を置く。</li>
   <li>ルートの UI は、ステータスバーなどのシステムの表示と重ならない範囲の左上に置かれる。</li>
+</ul>
+
+<h2 id="layout">配置</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>働き</th></tr>
+  <tr><td><code>Expand</code></td><td><code>Column</code> または <code>Row</code> の直接の子として置く。他の子を並べた残りの長さを、並べる方向に占める。<code>Expand</code> が複数あれば等分する。</td></tr>
+  <tr><td><code>Space</code></td><td>縦横とも <code>dp</code> の大きさの空白。<code>Column</code> や <code>Row</code> の子の間に置いて間隔を空ける。</td></tr>
+  <tr><td><code>Center</code></td><td>親が与える範囲いっぱいに広がり、<code>child</code> を縦横の中央に置く。</td></tr>
+  <tr><td><code>CenterHorizontal</code></td><td>幅いっぱいに広がり、<code>child</code> を横の中央に置く。高さは <code>child</code> に合わせる。</td></tr>
+  <tr><td><code>CenterVertical</code></td><td>高さいっぱいに広がり、<code>child</code> を縦の中央に置く。幅は <code>child</code> に合わせる。</td></tr>
+  <tr><td><code>AlignEnd</code></td><td>幅いっぱいに広がり、<code>child</code> を右端に置く。高さは <code>child</code> に合わせる。</td></tr>
+  <tr><td><code>AlignBottom</code></td><td>高さいっぱいに広がり、<code>child</code> を下端に置く。幅は <code>child</code> に合わせる。</td></tr>
+</table>
+</div>
+<ul>
+  <li>何も指定しない部品は、親の左上に置かれる。</li>
+  <li><code>Expand</code> を <code>Column</code> と <code>Row</code> の直接の子以外に置いた場合は、<code>child</code> をそのまま表示する。</li>
+  <li><code>Scroll</code> の中では高さに、<code>HorizontalScroll</code> の中では幅に上限がない。その方向に「いっぱいに広がる」部品は、<code>child</code> の大きさに合わせる。</li>
+</ul>
+
+<h2 id="text-field">入力欄</h2>
+<pre><code>class Greeter implements Screen {
+  var name: String = "";
+
+  fn view(self) -&gt; Ui {
+    return Column {
+      children: [
+        TextField { value: self.name, hint: "Name", onChange: self.setName },
+        Text { text: "Hello, ".concat(other: self.name) },
+      ],
+    };
+  }
+
+  fn setName(self, value: String) -&gt; Unit {
+    self.name = value;
+  }
+}</code></pre>
+<ul>
+  <li>入力欄の内容は <code>Screen</code> のフィールドに持ち、<code>value</code> に渡す。入力欄そのものは内容を保持する場所ではない。</li>
+  <li>利用者が内容を変えるたびに、変更後の文字列を引数にして <code>onChange</code> を実行する。その後は<a href="#render-loop">描画の流れ</a>に従って <code>view</code> を呼び直す。</li>
+  <li>呼び直した <code>view</code> が返した <code>value</code> が、表示中の内容と同じなら何もしない。違う場合は表示を <code>value</code> に置き換え、カーソルを末尾に置く。この置き換えでは <code>onChange</code> を実行しない。</li>
+  <li><code>onChange</code> の中で <code>value</code> に渡すフィールドを更新しないと、入力は次の再描画で元に戻る。</li>
+  <li><code>hint</code> は、内容が空のときに薄く表示する文字列。不要なら <code>""</code> を渡す。</li>
+  <li>入力欄の幅は、既定では中身に合わせる。広げるときは <code>FillWidth</code> で包む。</li>
 </ul>
 
 <h2 id="screen">Screen</h2>
@@ -144,15 +244,23 @@ class FillHeight implements Ui {
 <ol>
   <li>起動時に、<code>app</code> 宣言の <code>root</code> の式を1回評価して、ルートの <code>Screen</code> を作る。</li>
   <li>ルートの <code>view</code> を呼び、返った UI を画面に表示する。</li>
-  <li>ボタンが押されると、その <code>onTap</code> の <code>Action</code> を実行する。</li>
-  <li>実行が終わったら、ルートの <code>view</code> を呼び直し、画面全体を作り直す。</li>
+  <li>ボタンが押されると <code>onTap</code> を、入力欄の内容が変わると <code>onChange</code> を実行する。</li>
+  <li>実行が終わったら、ルートの <code>view</code> を呼び直し、返った UI を前回の UI と比べて、<a href="#reconcile">変わった部分だけを画面に反映する</a>。</li>
 </ol>
 <ul>
   <li>すべてメインスレッドで順番に実行する。</li>
-  <li>M1 は毎回全体を作り直す。差分だけを更新する仕組みは持たない。</li>
   <li>画面の回転では Activity を作り直さないので、状態は保たれる（<a href="02-architecture.html#manifest">マニフェストの設定</a>による）。OS がアプリのプロセスを終了させた場合は、次の起動で初期値に戻る。</li>
   <li>処理が終わるまで画面は更新されない。終わらないループを書くとアプリは応答しなくなる。</li>
 </ul>
+
+<h3 id="reconcile">変わった部分だけの反映</h3>
+<p>新しい UI と前回の UI を、ルートから同じ位置同士で比べる。</p>
+<ul>
+  <li>同じ位置にある部品の種類が同じなら、画面上の実体をそのまま使い、値が変わった項目だけを更新する。子も同じ規則で比べる。</li>
+  <li>種類が違うなら、その位置から下を捨てて作り直す。</li>
+  <li><code>Column</code> と <code>Row</code> の子は、先頭から順番に同じ位置として比べる。新しいほうが多ければ末尾に足し、少なければ末尾を取り除く。</li>
+</ul>
+<p>この規則により、種類が変わらない位置にある入力欄のフォーカスとカーソル、スクロールの位置は、再描画をまたいで保たれる。</p>
 
 <h2 id="app-decl">app 宣言</h2>
 <pre><code>app {

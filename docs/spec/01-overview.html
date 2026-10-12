@@ -50,11 +50,12 @@
 <p>M1 は、言語からエミュレータ上の画面までを最小限で貫く縦切りとする。ゴールは <a href="09-roadmap.html#m1-done">09 ロードマップ</a>の完了条件を満たすこと。</p>
 <h3>M1 に含めるもの</h3>
 <ul>
-  <li>型：<code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>List&lt;T&gt;</code>、利用者定義のクラス</li>
+  <li>型：<code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler&lt;T&gt;</code>、<code>List&lt;T&gt;</code>、利用者定義のクラス</li>
   <li>クラス、<code>let</code> / <code>var</code> フィールド、メソッド、組み込みインターフェース <code>Screen</code> の実装</li>
   <li><code>if</code> / <code>else</code>、<code>while</code>、<code>for</code>、算術、比較、論理演算、リスト記法、メソッド参照</li>
   <li>リストと文字列の基本的な組み込みメソッド</li>
-  <li>UI 部品 <code>Column</code>、<code>Row</code>、<code>Text</code>、<code>Button</code> と、色、余白、大きさを指定する部品</li>
+  <li>UI 部品：<code>Column</code>、<code>Row</code>、<code>Text</code>、<code>Button</code>、入力欄、スクロール、色・余白・大きさ・配置を指定する部品（<a href="05-ui.html">05</a>）</li>
+  <li>変わった部分だけを更新する再描画</li>
   <li>画面を回転しても状態が保たれること</li>
   <li><code>kata check</code> と <code>kata build</code>、JSON 形式の診断</li>
 </ul>

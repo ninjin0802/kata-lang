@@ -22,13 +22,14 @@
   <tr><td><code>String</code></td><td>不変の文字列。</td></tr>
   <tr><td><code>Unit</code></td><td>値を返さないメソッドの戻り値の型。戻り値の型以外には書けない（<code>E0407</code>）。</td></tr>
   <tr><td><code>Action</code></td><td>引数なしで <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。</td></tr>
+  <tr><td><code>Handler&lt;T&gt;</code></td><td><code>T</code> の値を1つ受け取って <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td>クラス</td><td>利用者定義のクラスと、<a href="05-ui.html#components">組み込みの UI 部品</a>。</td></tr>
   <tr><td>インターフェース</td><td>M1 では組み込みの <code>Ui</code> と <code>Screen</code> だけ。</td></tr>
 </table>
 </div>
 <ul>
-  <li><code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
+  <li><code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
   <li>null は存在しない。すべての変数とフィールドは常に値を持つ。</li>
   <li>型引数の数が合わない場合は <code>E0408</code>。</li>
 </ul>
@@ -115,9 +116,18 @@ Counter {}</code></pre>
 </ul>
 
 <h3 id="method-ref">メソッド参照</h3>
+<p><code>obj.method</code> は、その時点の <code>obj</code> に結び付いた処理の値を作る。型はメソッドの形で決まる。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>メソッドの形</th><th>メソッド参照の型</th></tr>
+  <tr><td><code>fn m(self) -&gt; Unit</code></td><td><code>Action</code></td></tr>
+  <tr><td><code>fn m(self, x: T) -&gt; Unit</code></td><td><code>Handler&lt;T&gt;</code></td></tr>
+  <tr><td>それ以外</td><td>参照できない（<code>E0507</code>）</td></tr>
+</table>
+</div>
 <ul>
-  <li><code>obj.method</code> は、その時点の <code>obj</code> に結び付いた <code>Action</code> を作る。</li>
-  <li>参照できるのは、<code>self</code> 以外の引数を持たず、<code>Unit</code> を返すメソッドだけ（<code>E0507</code>）。</li>
+  <li><code>Action</code> と <code>Handler&lt;T&gt;</code> の値は、UI 部品に渡すためのもの。kata のコードから呼び出す手段は M1 にない。</li>
+  <li><code>Handler&lt;T&gt;</code> 同士は、<code>T</code> がちょうど同じ型のときだけ代入できる。</li>
 </ul>
 
 <h2 id="list-literal">リスト記法</h2>

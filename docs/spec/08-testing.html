@@ -19,7 +19,7 @@
   <tr><th>種類</th><th>確かめること</th><th>実行環境</th></tr>
   <tr><td>診断の照合テスト</td><td>kata のソースに対して、期待どおりの診断 JSON が返ること。</td><td>デスクトップの JVM</td></tr>
   <tr><td>実行テスト</td><td>生成したクラスを読み込んで実行し、期待どおりの結果になること。</td><td>デスクトップの JVM（<code>runtime-core</code> を使う）</td></tr>
-  <tr><td>ランタイムの単体テスト</td><td><code>runtime-core</code> のクラスの振る舞い。</td><td>デスクトップの JVM</td></tr>
+  <tr><td>ランタイムの単体テスト</td><td><code>runtime-core</code> のクラスの振る舞い。前回と新しい UI を比べて更新内容を決める処理を含む。</td><td>デスクトップの JVM</td></tr>
   <tr><td>端末での確認</td><td>APK を入れて起動し、画面が操作に応じて変わること。</td><td>エミュレータ</td></tr>
 </table>
 </div>
@@ -65,7 +65,16 @@
   <li><code>FillWidth</code> を付けた部品の幅が、画面の利用できる幅と一致すること。</li>
   <li>画面を回転させた後も、操作で変えた表示が保たれていること（カウンターのサンプルで確かめる）。</li>
 </ul>
-<p>色は、スクリーンショットの決めた位置の画素の値で確かめる。</p>
+<p>色は、スクリーンショットの決めた位置の画素の値で確かめる。配置の部品（<code>Center</code>、<code>AlignEnd</code>、<code>Expand</code> など）も、同じサンプルの座標で確かめる。</p>
+
+<h3 id="device-form">入力欄とスクロールの確認</h3>
+<p><code>examples/form/</code> に、入力欄と、画面に収まらない長さの一覧を持つサンプルを置く。<code>scripts/e2e.sh</code> は次を確かめる。</p>
+<ul>
+  <li>入力欄を押して <code>adb shell input text</code> で文字を送ると、その内容を使った別の <code>Text</code> の表示が変わること。</li>
+  <li>続けてもう一度文字を送ると、入力欄を押し直さなくても続きに入力されること（再描画でフォーカスが保たれている）。</li>
+  <li>一覧をスワイプすると、最初は画面外だった項目が表示されること。</li>
+  <li>スクロールした後にボタンを押して再描画しても、スクロールの位置が保たれていること。</li>
+</ul>
 
 <h2 id="commands">実行方法</h2>
 <div class="table-wrap">

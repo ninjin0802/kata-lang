@@ -16,7 +16,7 @@
 <ol>
   <li><a href="03-syntax.html#example">03 の例</a>と同じ内容の <code>examples/counter/src/app/counter.kata</code> が、<code>kata check</code> で診断0件になる。</li>
   <li><code>kata build examples/counter</code> が <code>build/app.apk</code> を出力する。</li>
-  <li><code>scripts/e2e.sh</code> がエミュレータ上で成功する（表示が <code>0</code> → <code>1</code> → <code>0</code> と変わる。回転しても表示が保たれる。<code>examples/styled</code> の大きさ、余白、色が指定どおりになる）。</li>
+  <li><code>scripts/e2e.sh</code> がエミュレータ上で成功する（表示が <code>0</code> → <code>1</code> → <code>0</code> と変わる。回転しても表示が保たれる。<code>examples/styled</code> の大きさ、余白、色、配置が指定どおりになる。<code>examples/form</code> で入力とスクロールができ、再描画でフォーカスとスクロールの位置が保たれる）。</li>
   <li><code>./gradlew test</code> が成功し、E01xx から E06xx の全診断コードに照合テストがある。</li>
   <li>実装が 03 から 07 の M1 の規則と一致している。</li>
 </ol>
@@ -34,7 +34,7 @@
   <tr><td><code>break</code> と <code>continue</code></td><td>ループを途中で抜ける文。</td></tr>
   <tr><td><code>kata sig</code></td><td>モジュールの公開シグネチャだけを出力する。ファイル全体を読まずに使い方が分かるようにする。</td></tr>
   <tr><td><code>kata fmt</code></td><td>ソースを正規の形に整える。</td></tr>
-  <tr><td>UI の拡充</td><td>入力欄、スクロール、中央寄せなどの配置、辺ごとの余白、半透明の色、差分だけの再描画、プロセス終了をまたいだ状態の保存。</td></tr>
+  <tr><td>UI の拡充</td><td>画像、チェックボックスやスイッチなどの入力部品、複数行の入力欄、ダイアログ、大量の項目を効率よく表示する一覧、プロセス終了をまたいだ状態の保存。</td></tr>
   <tr><td>副作用</td><td>通信、保存、時刻など。</td></tr>
   <tr><td>Java 連携</td><td>明示的な宣言ファイルを通じて Android の API を呼ぶ。</td></tr>
   <tr><td>複数画面</td><td>画面の遷移。</td></tr>

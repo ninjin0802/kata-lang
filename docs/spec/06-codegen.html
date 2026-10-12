@@ -22,6 +22,7 @@
   <tr><td><code>String</code></td><td><code>java.lang.String</code></td></tr>
   <tr><td><code>Unit</code></td><td><code>void</code></td></tr>
   <tr><td><code>Action</code></td><td><code>kata.rt.Action</code></td></tr>
+  <tr><td><code>Handler&lt;T&gt;</code></td><td><code>kata.rt.Handler</code>（型引数は消去する）</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>kata.rt.KList</code>（型引数は消去する）。要素の <code>Int</code> は <code>java.lang.Long</code>、<code>Bool</code> は <code>java.lang.Boolean</code> に包んで持つ。</td></tr>
   <tr><td><code>kata.ui</code> の名前（<code>Ui</code>、<code>Screen</code>、<code>Column</code> など）</td><td><code>kata.rt</code> の同名のクラスまたはインターフェース</td></tr>
   <tr><td>モジュール <code>a.b</code> のクラス <code>C</code></td><td><code>a.b.C</code></td></tr>
@@ -45,7 +46,7 @@
   <tr><td>構築式</td><td><code>new</code> とコンストラクタ呼び出し。項目の式は書かれた順に評価する。</td></tr>
   <tr><td>メソッド呼び出し</td><td>クラスに対しては <code>invokevirtual</code>、インターフェースに対しては <code>invokeinterface</code>。</td></tr>
   <tr><td>フィールドの読み書き</td><td><code>getfield</code> / <code>putfield</code>。</td></tr>
-  <tr><td>メソッド参照</td><td><code>invokedynamic</code>（<code>LambdaMetafactory</code>）で、対象のインスタンスを捕まえた <code>kata.rt.Action</code> を作る。</td></tr>
+  <tr><td>メソッド参照</td><td><code>invokedynamic</code>（<code>LambdaMetafactory</code>）で、対象のインスタンスを捕まえた <code>kata.rt.Action</code> または <code>kata.rt.Handler</code> を作る。<code>Handler&lt;Int&gt;</code> と <code>Handler&lt;Bool&gt;</code> では、包まれた値から中身を取り出してメソッドに渡す。</td></tr>
   <tr><td>リスト記法</td><td>要素を <code>Object[]</code> に詰めて <code>KList.of</code> を呼ぶ。</td></tr>
   <tr><td><code>List</code> の <code>size</code> / <code>get</code> / <code>append</code></td><td><code>KList</code> の同名のメソッド。<code>get</code> の結果は要素の型に <code>checkcast</code> し、<code>Int</code> と <code>Bool</code> は中身を取り出す。</td></tr>
   <tr><td><code>while</code></td><td>条件分岐と後ろ向きのジャンプ。</td></tr>
@@ -80,17 +81,19 @@ public final class MainActivity extends kata.rt.KataActivity {
   <tr><td><code>kata.rt.Ui</code></td><td>core</td><td>メソッドを持たないインターフェース</td></tr>
   <tr><td><code>kata.rt.Screen</code></td><td>core</td><td><code>Ui view()</code></td></tr>
   <tr><td><code>kata.rt.Action</code></td><td>core</td><td><code>void run()</code></td></tr>
+  <tr><td><code>kata.rt.Handler</code></td><td>core</td><td><code>void run(Object value)</code></td></tr>
   <tr><td><code>kata.rt.KList</code></td><td>core</td><td><code>static KList of(Object[] items)</code>、<code>long size()</code>、<code>Object get(long index)</code>、<code>KList append(Object item)</code>。不変。</td></tr>
   <tr><td><code>kata.rt.Column</code></td><td>core</td><td><code>Column(KList children)</code>、フィールド <code>children</code></td></tr>
   <tr><td><code>kata.rt.Row</code></td><td>core</td><td><code>Row(KList children)</code>、フィールド <code>children</code></td></tr>
   <tr><td><code>kata.rt.Text</code></td><td>core</td><td><code>Text(String text)</code>、フィールド <code>text</code></td></tr>
   <tr><td><code>kata.rt.Button</code></td><td>core</td><td><code>Button(String label, Action onTap)</code>、フィールド <code>label</code>、<code>onTap</code></td></tr>
-  <tr><td><code>kata.rt.Color</code>、<code>StyledText</code>、<code>StyledButton</code>、<code>Padding</code>、<code>Background</code>、<code>Width</code>、<code>Height</code>、<code>FillWidth</code>、<code>FillHeight</code></td><td>core</td><td><a href="05-ui.html#kata-ui">kata.ui の宣言</a>と同じ名前、同じ順番のフィールドと、それを順に受け取るコンストラクタ。<code>Int</code> は <code>long</code>。</td></tr>
+  <tr><td><a href="05-ui.html#kata-ui">kata.ui の宣言</a>にある、上記以外のすべてのクラス（<code>kata.rt.TextField</code>、<code>Scroll</code>、<code>Color</code>、<code>Padding</code>、<code>Center</code> など）</td><td>core</td><td>宣言と同じ名前、同じ順番のフィールドと、それを順に受け取るコンストラクタ。型は<a href="#type-mapping">型の対応</a>に従う。</td></tr>
   <tr><td><code>kata.rt.KataActivity</code></td><td>android</td><td><code>android.app.Activity</code> を継承した抽象クラス。<code>protected abstract Screen createRoot()</code></td></tr>
 </table>
 </div>
 <ul>
-  <li><code>kata.rt.Renderer</code>（android）は UI の値を View に変換する。<code>KataActivity</code> の内部で使い、生成コードからは参照しない。見た目の値の範囲の検査もここで行う。</li>
+  <li><code>kata.rt.Renderer</code>（android）は UI の値を View に変換する。<code>KataActivity</code> の内部で使い、生成コードからは参照しない。見た目の値の範囲の検査と、<a href="05-ui.html#reconcile">変わった部分だけの反映</a>もここで行う。</li>
+  <li>前回の UI と新しい UI を比べて「何を更新するか」を決める処理は、Android に依存しない形で <code>runtime-core</code> に置き、デスクトップの JVM でテストする。<code>Renderer</code> はその結果を View に適用する。</li>
   <li><code>KataActivity</code> は <a href="05-ui.html#render-loop">描画の流れ</a>を実装する。</li>
 </ul>
 
