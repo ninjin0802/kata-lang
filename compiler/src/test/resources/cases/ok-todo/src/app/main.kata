@@ -1,0 +1,165 @@
+module app.main;
+
+import app.model.Filter;
+import app.model.Todo;
+import app.storage.Storage;
+import kata.ui.Button;
+import kata.ui.Checkbox;
+import kata.ui.Chip;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.Padding;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Scroll;
+import kata.ui.Space;
+import kata.ui.Text;
+import kata.ui.TextField;
+import kata.ui.TopBar;
+import kata.ui.Ui;
+
+// A todo list: add, tick off, delete, filter. The list is saved after every change.
+class Todos implements Screen {
+  var todos: List<Todo> = Storage {}.load();
+  var draft: String = "";
+  var filter: Filter = Filter.All;
+
+  fn view(self) -> Ui {
+    let done: Int = self.todos.count(test: fn(todo: Todo) -> Bool {
+      return todo.done;
+    });
+    return Column {
+      children: [
+        TopBar { title: "Todo" },
+        Padding {
+          all: 12,
+          child: Column {
+            children: [
+              Row {
+                children: [
+                  Expand { child: TextField { value: self.draft, hint: "What needs doing?", onChange: self.setDraft } },
+                  Button { label: "Add", onTap: self.add },
+                ],
+              },
+              Row {
+                children: [
+                  self.filterChip(label: "All", value: Filter.All),
+                  Space { dp: 8 },
+                  self.filterChip(label: "Open", value: Filter.Open),
+                  Space { dp: 8 },
+                  self.filterChip(label: "Done", value: Filter.Done),
+                ],
+              },
+              Text {
+                text: "items=".concat(other: self.todos.size().toString()).concat(other: " done=")
+                  .concat(other: done.toString()),
+              },
+            ],
+          },
+        },
+        Expand { child: Scroll { child: Column { children: self.rows() } } },
+      ],
+    };
+  }
+
+  fn filterChip(self, label: String, value: Filter) -> Ui {
+    return Chip {
+      label: label,
+      selected: self.name(filter: self.filter) == self.name(filter: value),
+      onTap: fn() -> Unit {
+        self.filter = value;
+      },
+    };
+  }
+
+  fn name(self, filter: Filter) -> String {
+    match (filter) {
+      Filter.All => {
+        return "all";
+      }
+      Filter.Open => {
+        return "open";
+      }
+      Filter.Done => {
+        return "done";
+      }
+    }
+  }
+
+  fn shows(self, todo: Todo) -> Bool {
+    match (self.filter) {
+      Filter.All => {
+        return true;
+      }
+      Filter.Open => {
+        return !todo.done;
+      }
+      Filter.Done => {
+        return todo.done;
+      }
+    }
+  }
+
+  fn rows(self) -> List<Ui> {
+    var rows: List<Ui> = [];
+    var i: Int = 0;
+    while (i < self.todos.size()) {
+      // The row's callbacks run later, so they need a name that cannot change.
+      let index: Int = i;
+      let todo: Todo = self.todos.get(index: index);
+      if (self.shows(todo: todo)) {
+        rows = rows.append(item: Row {
+          children: [
+            Expand {
+              child: Checkbox {
+                label: todo.title,
+                checked: todo.done,
+                onChange: fn(checked: Bool) -> Unit {
+                  self.toggle(index: index);
+                },
+              },
+            },
+            Button {
+              label: "×",
+              onTap: fn() -> Unit {
+                self.remove(index: index);
+              },
+            },
+          ],
+        });
+      }
+      i = i + 1;
+    }
+    return rows;
+  }
+
+  fn setDraft(self, value: String) -> Unit {
+    self.draft = value;
+  }
+
+  fn add(self) -> Unit {
+    let title: String = self.draft.trim();
+    if (title == "") {
+      return;
+    }
+    self.todos = self.todos.append(item: Todo { title: title, done: false });
+    self.draft = "";
+    Storage {}.save(todos: self.todos);
+  }
+
+  fn toggle(self, index: Int) -> Unit {
+    self.todos = self.todos.set(index: index, item: self.todos.get(index: index).toggled());
+    Storage {}.save(todos: self.todos);
+  }
+
+  fn remove(self, index: Int) -> Unit {
+    self.todos = self.todos.removeAt(index: index);
+    Storage {}.save(todos: self.todos);
+  }
+}
+
+app {
+  id: "dev.kata.todo",
+  name: "Todo",
+  root: Todos {},
+}

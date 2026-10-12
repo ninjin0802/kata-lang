@@ -298,14 +298,28 @@ while (i &lt; 3) {
 </ul>
 
 <h2 id="modules">モジュールと import</h2>
+<pre><code>// src/app/model.kata
+module app.model;
+
+class Todo {
+  let title: String;
+}
+
+// src/app/main.kata
+module app.main;
+
+import app.model.Todo;</code></pre>
 <ul>
-  <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。</li>
+  <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。プロジェクトは、<code>src/</code> 以下の好きな数のファイルで構成できる。</li>
   <li><code>kata</code> で始まるモジュール名は、組み込みとランタイムのために予約されていて使えない（<code>E0601</code>）。</li>
-  <li>import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
-  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code>（UI の部品）と <code>kata.sys</code>（<code>Store</code>、<code>Clock</code>、<code>Json</code>）の名前だけ。それ以外は <code>E0307</code>。</li>
-  <li>import していない組み込みモジュールの名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>
+  <li>他のモジュールのクラスと <code>enum</code> は、import すれば使える。import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
+  <li>import できるのは、組み込みモジュール <code>kata.ui</code>（UI の部品）と <code>kata.sys</code>（<code>Store</code>、<code>Clock</code>、<code>Json</code>、<code>Device</code>）、および同じプロジェクトの他のモジュール。存在しないモジュールや名前、自分自身のモジュールからの import は <code>E0307</code>。</li>
+  <li>import せずに使うと <code>E0305</code>。追加すべき import 文を修正案として返す（その名前を宣言しているモジュールが1つに決まる場合）。</li>
   <li>使っていない import は <code>E0306</code>（削除を修正案として返す）。</li>
-  <li><span class="tag m1">M1</span> のプロジェクトは1モジュールで構成する。</li>
+  <li>import した名前と同じ名前のクラスや <code>enum</code> を、そのファイルで宣言することはできない（<code>E0303</code>）。別々のモジュールが同じ名前を持つことはできる。</li>
+  <li>モジュール同士が互いに import し合ってもよい。</li>
+  <li>クラス、<code>enum</code>、そのフィールドとメソッドは、すべて他のモジュールから見える。隠す手段はない（フィールドを書き換えられるのは、これまでどおりそのクラスのメソッドだけ）。</li>
+  <li><code>app</code> 宣言は、プロジェクト全体でちょうど1つ。</li>
 </ul>
 
 <h2 id="panic">パニック</h2>

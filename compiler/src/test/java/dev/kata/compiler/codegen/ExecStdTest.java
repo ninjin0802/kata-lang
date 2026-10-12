@@ -179,6 +179,18 @@ class ExecStdTest {
     }
 
     @Test
+    void classesInDifferentModulesWorkTogether() throws Throwable {
+        String model = dev.kata.compiler.check.ModulesTest.MODEL;
+        String main = dev.kata.compiler.check.ModulesTest.main("import app.model.Kind;\nimport app.model.Note;\n",
+                "  fn total(self) -> Int {\n    let notes: List<Note> = [Note { title: \"a\", kind: Kind.Plain }, "
+                        + "Note { title: \"b\", kind: Kind.Urgent { level: 5 } }];\n    var sum: Int = 0;\n"
+                        + "    for (note: Note in notes) {\n      sum = sum + note.score();\n    }\n    return sum;\n  }\n");
+        ClassLoader loader = ExecSupport.compileProgram(Map.of("src/app/main.kata", main, "src/app/model.kata", model));
+        assertEquals(5L, call(create(loader, "app.main.Main"), "total"));
+        assertEquals("app.model.Note", loader.loadClass("app.model.Note").getName());
+    }
+
+    @Test
     void storeKeepsValuesByKey() throws Throwable {
         assertEquals(5L, call(s, "remember", "count", 5L));
         assertEquals(-1L, call(s, "forget", "count"));

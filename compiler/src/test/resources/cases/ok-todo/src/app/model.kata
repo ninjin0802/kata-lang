@@ -1,0 +1,23 @@
+module app.model;
+
+import kata.sys.Json;
+
+// Which todos the list shows.
+enum Filter {
+  All,
+  Open,
+  Done,
+}
+
+class Todo {
+  let title: String;
+  let done: Bool;
+
+  fn toggled(self) -> Todo {
+    return Todo { title: self.title, done: !self.done };
+  }
+
+  fn toJson(self) -> Json {
+    return Json {}.withString(key: "title", value: self.title).withBool(key: "done", value: self.done);
+  }
+}

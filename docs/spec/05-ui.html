@@ -723,6 +723,22 @@ class Counter implements Screen {
 </table>
 </div>
 
+<h3 id="device">端末（kata.sys.Device）</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>メソッド</th><th>内容</th></tr>
+  <tr><td><code>openUrl(url: String) -&gt; Unit</code></td><td>アドレスを、端末の他のアプリ（ブラウザ、メール、電話）で開く。</td></tr>
+  <tr><td><code>share(text: String) -&gt; Unit</code></td><td>文字列を他のアプリに渡す、端末の共有の画面を開く。</td></tr>
+  <tr><td><code>copy(text: String) -&gt; Unit</code><br><code>clipboard() -&gt; String</code></td><td>クリップボードに書く、クリップボードの文字列を読む（なければ空の文字列）。</td></tr>
+  <tr><td><code>screenWidth() -&gt; Int</code><br><code>screenHeight() -&gt; Int</code></td><td>アプリの表示範囲の幅と高さ（dp）。画面の広さに応じて UI を変えるときに使う。</td></tr>
+  <tr><td><code>isDark() -&gt; Bool</code></td><td>端末がダークモードか。</td></tr>
+</table>
+</div>
+<ul>
+  <li><code>openUrl</code> が開くのは、<code>http://</code>、<code>https://</code>、<code>mailto:</code>、<code>tel:</code> で始まるアドレスだけ。それ以外は何もしない。外から受け取ったアドレスで、任意のアプリを起動したりファイルに届いたりしないようにするため。</li>
+  <li>開けるアプリが端末にない場合も、何もしない。</li>
+</ul>
+
 <h3 id="timer">タイマー（Timer）</h3>
 <ul>
   <li><code>Timer { millis, onTick, child }</code> は、表示されている間、<code>millis</code> ミリ秒ごとに <code>onTick</code> を実行して再描画する。止めるには UI から外す。</li>

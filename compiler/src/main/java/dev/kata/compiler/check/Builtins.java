@@ -131,6 +131,17 @@ public final class Builtins {
                 new MethodInfo("time", List.of(), new Type.ClassType(UI_MODULE + ".Time"))));
     }
 
+    static {
+        SYS_CLASSES.put("Device", List.of(
+                new MethodInfo("openUrl", List.of(new ParamInfo("url", Type.STRING)), Type.UNIT),
+                new MethodInfo("share", List.of(new ParamInfo("text", Type.STRING)), Type.UNIT),
+                new MethodInfo("copy", List.of(new ParamInfo("text", Type.STRING)), Type.UNIT),
+                new MethodInfo("clipboard", List.of(), Type.STRING),
+                new MethodInfo("screenWidth", List.of(), Type.INT),
+                new MethodInfo("screenHeight", List.of(), Type.INT),
+                new MethodInfo("isDark", List.of(), Type.BOOL)));
+    }
+
     private static final Type JSON_TYPE = new Type.ClassType(SYS_MODULE + ".Json");
 
     static {

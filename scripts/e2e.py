@@ -717,6 +717,12 @@ def check_data():
     # and the UI dump used by these checks waits for idle.
     wait_for(lambda r: ticks(r) >= before + 2, "the timer to tick two more times", timeout=25)
 
+    # Device: the screen width in dp, and a clipboard round trip.
+    width, _ = screen_size()
+    assert exists(dump(), text=f"width={int(width / density())}"), "Device.screenWidth is the width in dp"
+    tap_text("Copy")
+    wait_for(lambda r: exists(r, text="clip=kata-2"), "the copied text to come back from the clipboard")
+
     # Request: a failed exchange reports through onError and the component goes away.
     tap_text("Load")
     wait_for(lambda r: exists(r, text="status=error"), "the failed request to report an error", timeout=30)
@@ -724,8 +730,53 @@ def check_data():
     adb("uninstall", app_id, check=False)
 
 
+def check_todo():
+    app_id = "dev.kata.todo"
+    adb("uninstall", app_id, check=False)
+    install_and_launch(build("todo"), app_id)
+    wait_for(lambda r: exists(r, text="items=0 done=0"), "the empty todo list")
+
+    def add(text):
+        tap(find(dump(), cls="android.widget.EditText"))
+        type_text(text)
+        adb("shell", "input", "keyevent", "KEYCODE_ENTER")
+        time.sleep(0.5)
+        tap(find(dump(), text="Add"))
+
+    def boxes(r):
+        return find_all(r, cls="android.widget.CheckBox")
+
+    # Adding clears the field and grows the list; an empty title is not added.
+    add("111")
+    wait_for(lambda r: exists(r, text="items=1 done=0"), "the first todo")
+    add("222")
+    root = wait_for(lambda r: exists(r, text="items=2 done=0") and len(boxes(r)) == 2, "the second todo")
+    tap(find(root, text="Add"))
+    time.sleep(1)
+    assert exists(dump(), text="items=2 done=0"), "an empty title is not added"
+
+    # Ticking a todo, then the filters.
+    tap(boxes(root)[0])
+    wait_for(lambda r: exists(r, text="items=2 done=1"), "one todo done")
+    for chip, shown in (("Done", 1), ("Open", 1), ("All", 2)):
+        tap(find(dump(), text=chip))
+        wait_for(lambda r: len(boxes(r)) == shown, f"the {chip} filter to show {shown}")
+
+    # The list is still there after the app is stopped and started again.
+    adb("shell", "am", "force-stop", app_id)
+    adb("shell", "am", "start", "-W", "-n", f"{app_id}/{ACTIVITY}")
+    root = wait_for(lambda r: exists(r, text="items=2 done=1") and len(boxes(r)) == 2, "the saved list")
+    assert boxes(root)[0].element.get("checked") == "true", "the first todo is still ticked"
+
+    # Deleting the first row leaves the unticked one.
+    tap(find(root, text="\u00d7"))
+    wait_for(lambda r: exists(r, text="items=1 done=0"), "one todo deleted")
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "todo": check_todo,
     "data": check_data,
     "effects": check_effects,
     "media": check_media,

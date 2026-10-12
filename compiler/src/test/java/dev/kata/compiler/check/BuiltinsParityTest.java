@@ -74,7 +74,7 @@ class BuiltinsParityTest {
     void everySysMethodExistsOnItsRuntimeClass() throws Exception {
         ClassTable table = new ClassTable();
         Builtins.register(table);
-        assertEquals(Set.of("Store", "Clock", "Json"), Set.copyOf(Builtins.sysNames()));
+        assertEquals(Set.of("Store", "Clock", "Json", "Device"), Set.copyOf(Builtins.sysNames()));
         for (String name : Builtins.sysNames()) {
             ClassInfo info = table.lookup("kata.sys." + name);
             Class<?> runtime = Class.forName("kata.rt." + name);

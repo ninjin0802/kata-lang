@@ -38,6 +38,63 @@ public abstract class KataActivity extends Activity {
                 preferences.edit().remove(key).apply();
             }
         });
+        Device.install(new Device.Backend() {
+            @Override
+            public void openUrl(String url) {
+                try {
+                    startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(url)));
+                } catch (android.content.ActivityNotFoundException noAppForIt) {
+                    // Nothing on the device can open it; there is nothing to do.
+                }
+            }
+
+            @Override
+            public void share(String text) {
+                android.content.Intent send = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(android.content.Intent.EXTRA_TEXT, text);
+                startActivity(android.content.Intent.createChooser(send, null));
+            }
+
+            @Override
+            public void copy(String text) {
+                android.content.ClipboardManager clipboard =
+                        (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("", text));
+            }
+
+            @Override
+            public String clipboard() {
+                android.content.ClipboardManager clipboard =
+                        (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                android.content.ClipData clip = clipboard.getPrimaryClip();
+                if (clip == null || clip.getItemCount() == 0) {
+                    return "";
+                }
+                CharSequence text = clip.getItemAt(0).coerceToText(KataActivity.this);
+                return text == null ? "" : text.toString();
+            }
+
+            @Override
+            public long screenWidth() {
+                android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+                return (long) (metrics.widthPixels / metrics.density);
+            }
+
+            @Override
+            public long screenHeight() {
+                android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+                return (long) (metrics.heightPixels / metrics.density);
+            }
+
+            @Override
+            public boolean isDark() {
+                int night = getResources().getConfiguration().uiMode
+                        & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+                return night == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+            }
+        });
         root = createRoot();
         FrameLayout container = new FrameLayout(this);
         container.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {

@@ -13,7 +13,7 @@ Output is one JSON object: `{"ok", "artifact", "diagnostics": [{code, message, f
 
 ## Project
 
-One file: `<project>/src/app/<name>.kata`, starting with `module app.<name>;` (module = path under `src/`). No config files.
+Source files live under `<project>/src/`; each starts with `module <path>;` matching its location (`src/app/main.kata` is `module app.main;`). One file is enough; larger apps split into several and import each other's classes and enums by name (`import app.model.Todo;`). Exactly one file has the `app` block. No config files.
 
 ## Complete example
 
@@ -80,7 +80,7 @@ app {
 - **No operator precedence.** Only one kind of binary operator per unparenthesized expression. `+ * && ||` may repeat (`a + b + c`); every other operator appears once. Write `(a + b) * c`, `(a < b) && (c < d)`, `(a - b) - c`.
 - **No null, no exceptions, no inheritance, no overloading, no default arguments, no shadowing, no implicit conversions.**
 - **File order is fixed**: `module`, then `import`s, then `class`es and `enum`s (in any order), then one `app` block. Inside a class: all fields, then all methods.
-- **Imports**: one name per line, only from `kata.ui` (components) and `kata.sys` (`Store`, `Clock`, `Json`); every such name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
+- **Imports**: one name per line, from `kata.ui` (components), `kata.sys` (`Store`, `Clock`, `Json`, `Device`) or another module of the project; every such name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
 - **`return`**: non-`Unit` methods must end every path with `return expr;` (loops do not count as ending a path). In `Unit` methods use bare `return;` to exit early; nothing may follow a `return` in the same block.
 - A statement that is only an expression must be a call returning `Unit` (results cannot be discarded).
 - Identifiers: values/methods `lowerCamel`, types `UpperCamel`, letters and digits only (no `_`). Comments: `//` only.
@@ -284,6 +284,7 @@ return Stack { children: layers };
 
 - **Saving** (`import kata.sys.Store;`): `Store {}.getInt(key: "count", fallback: 0)` / `.setInt(key: "count", value: n)`; also `getString/setString`, `getFloat/setFloat`, `getBool/setBool`, `remove(key:)`. Values survive restarts. Read in a field initializer, write in the method that changes the state.
 - **Clock** (`import kata.sys.Clock;`): `Clock {}.now() -> Int` (ms since 1970), `.today() -> Date`, `.time() -> Time`.
+- **Device** (`import kata.sys.Device;`): `Device {}.openUrl(url:)` (http, https, mailto, tel only), `.share(text:)`, `.copy(text:)`, `.clipboard() -> String`, `.screenWidth() -> Int` / `.screenHeight() -> Int` (dp), `.isDark() -> Bool`.
 - **Timer**: `Timer { millis: Int, onTick: Action, child: Ui }` runs `onTick` every `millis` while it is part of the view.
 - **Network**: `Request { method: String, url: String, body: String, onResult: Handler<String>, onError: Handler<String>, child: Ui }` performs one HTTP exchange while it is part of the view (https only; method GET/POST/PUT/DELETE; each exchange is sent once). Show it while a `loading` field is true and clear that field in both callbacks. An error status arrives in `onError` as `"HTTP 404"`; a reply over 8 MB or slower than 15 s is also an error.
 - **JSON** (`import kata.sys.Json;`): `text.parseJson() -> Json`. Read with `get(key:)`, `at(index:)`, `items() -> List<Json>`, `keys() -> List<String>`, `size()`, and `asString(fallback:)` / `asInt` / `asFloat` / `asBool`; reading never crashes — anything missing or mistyped gives the fallback (check `isValid()` to tell bad text apart; documents nested over 100 deep or holding over 200,000 values count as bad). Build with `Json {}` (empty object) `.withString(key:, value:)` / `withInt` / `withFloat` / `withBool` / `withJson` / `withNull(key:)`, and `"[]".parseJson()` `.appendString(value:)` / `appendInt` / `appendFloat` / `appendBool` / `append(value:)`; each returns a new value. `toText() -> String` writes it. To save a list or object, store its `toText()` with `Store.setString`.

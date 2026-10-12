@@ -98,6 +98,9 @@
 <h3 id="device-data">保存、時刻、タイマー、通信の確認</h3>
 <p><code>examples/data/</code> で、<code>Store</code> の値がアプリを止めて起動し直しても残ること、<code>Clock</code> が妥当な年を返すこと、<code>Timer</code> が自分で数を増やし続けること、<code>Request</code> の失敗が <code>onError</code> に届くこと、通信の権限が付いていることを確かめる。通信の成功と各メソッドは、端末を使わないテスト（手元に立てたサーバーとの通信）で確かめる。</p>
 
+<h3 id="device-todo">ToDo リストの確認</h3>
+<p><code>examples/todo/</code> は、3つのモジュール（データ、保存、画面）からなる ToDo リスト。<code>scripts/e2e.sh</code> は、追加（空の題名は追加されない）、完了の切り替え、3つの絞り込み、アプリを止めて起動し直した後も一覧が残ること、削除を確かめる。<code>examples/data/</code> では、<code>Device</code> の画面の幅とクリップボードの往復も確かめる。</p>
+
 <h2 id="commands">実行方法</h2>
 <div class="table-wrap">
 <table>

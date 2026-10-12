@@ -1,0 +1,27 @@
+module app.storage;
+
+import app.model.Todo;
+import kata.sys.Json;
+import kata.sys.Store;
+
+// Keeps the list on the device as one JSON text.
+class Storage {
+  fn load(self) -> List<Todo> {
+    var todos: List<Todo> = [];
+    for (item: Json in Store {}.getString(key: "todos", fallback: "[]").parseJson().items()) {
+      todos = todos.append(item: Todo {
+        title: item.get(key: "title").asString(fallback: ""),
+        done: item.get(key: "done").asBool(fallback: false),
+      });
+    }
+    return todos;
+  }
+
+  fn save(self, todos: List<Todo>) -> Unit {
+    var list: Json = "[]".parseJson();
+    for (todo: Todo in todos) {
+      list = list.append(value: todo.toJson());
+    }
+    Store {}.setString(key: "todos", value: list.toText());
+  }
+}

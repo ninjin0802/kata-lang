@@ -392,6 +392,10 @@ final class BodyChecker {
         MethodInfo method = null;
         if (receiver instanceof Type.ClassType classType) {
             ClassInfo info = table.lookup(classType.qualifiedName());
+            if (info == null) {
+                // Its declaration was rejected (for example a duplicate name) and already reported.
+                return Type.UNKNOWN;
+            }
             FieldInfo field = info.field(member.name());
             if (field != null) {
                 program.members.put(member, new MemberRef.FieldRef(info.qualifiedName(), field));
@@ -436,6 +440,10 @@ final class BodyChecker {
         MethodInfo method = null;
         if (receiver instanceof Type.ClassType classType) {
             ClassInfo info = table.lookup(classType.qualifiedName());
+            if (info == null) {
+                inferAll(call.args());
+                return Type.UNKNOWN;
+            }
             method = info.method(call.name());
             if (method != null) {
                 program.members.put(call, new MemberRef.MethodRef(info.qualifiedName(), false, method));
@@ -509,6 +517,10 @@ final class BodyChecker {
             return Type.UNKNOWN;
         }
         ClassInfo info = table.lookup(classType.qualifiedName());
+        if (info == null) {
+            inferAll(construct.inits());
+            return Type.UNKNOWN;
+        }
         program.constructs.put(construct, info);
         List<FieldInfo> fields = info.constructorFields();
         List<String> names = fields.stream().map(FieldInfo::name).toList();
@@ -572,8 +584,8 @@ final class BodyChecker {
     }
 
     private Type enumConstruct(Ast.EnumConstruct construct) {
-        ClassTable.EnumInfo info = scope.isLocalEnum(construct.enumName())
-                ? table.lookupEnum(scope.qualify(construct.enumName())) : null;
+        String enumQualified = scope.enumName(construct.enumName());
+        ClassTable.EnumInfo info = enumQualified == null ? null : table.lookupEnum(enumQualified);
         if (info == null) {
             out.add(Diagnostic.of("E0302", "'" + construct.enumName() + "' is not an enum", path,
                     construct.enumSpan()));
@@ -623,7 +635,7 @@ final class BodyChecker {
         java.util.Set<String> handled = new HashSet<>();
         boolean armErrors = false;
         for (Ast.Arm arm : match.arms()) {
-            if (!scope.isLocalEnum(arm.enumName()) || !scope.qualify(arm.enumName()).equals(info.qualifiedName())) {
+            if (!info.qualifiedName().equals(scope.enumName(arm.enumName()))) {
                 out.add(Diagnostic.of("E0401", "this match is over '" + subject.display() + "'", path, arm.enumSpan())
                         .withExpected(subject.display(), arm.enumName()));
                 armErrors = true;

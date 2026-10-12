@@ -30,8 +30,12 @@ public final class Checker {
         List<FileScope> scopes = new ArrayList<>();
         List<List<Ast.ClassDecl>> accepted = new ArrayList<>();
         List<List<Ast.EnumDecl>> acceptedEnums = new ArrayList<>();
+        Map<String, FileScope.ModuleNames> modules = new java.util.LinkedHashMap<>();
         for (Ast.File file : files) {
-            FileScope scope = new FileScope(file, table, program, out);
+            modules.putIfAbsent(file.module().name(), FileScope.ModuleNames.of(file));
+        }
+        for (Ast.File file : files) {
+            FileScope scope = new FileScope(file, table, program, modules, out);
             checkModuleName(file, out);
             scope.addImports();
             scopes.add(scope);

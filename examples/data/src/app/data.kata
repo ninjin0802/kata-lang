@@ -1,6 +1,7 @@
 module app.data;
 
 import kata.sys.Clock;
+import kata.sys.Device;
 import kata.sys.Store;
 import kata.ui.Button;
 import kata.ui.Column;
@@ -11,12 +12,14 @@ import kata.ui.Text;
 import kata.ui.Timer;
 import kata.ui.Ui;
 
-// Things beyond the screen: a value that survives restarts, the clock, a timer and a network request.
+// Things beyond the screen: a value that survives restarts, the clock, a timer, a network request,
+// the clipboard and the screen size.
 class Data implements Screen {
   var count: Int = Store {}.getInt(key: "count", fallback: 0);
   var ticks: Int = 0;
   var loading: Bool = false;
   var status: String = "idle";
+  var pasted: String = "";
 
   fn view(self) -> Ui {
     return Timer { millis: 2000, onTick: self.tick, child: Padding { all: 16, child: self.page() } };
@@ -31,6 +34,9 @@ class Data implements Screen {
         Text { text: "ticks=".concat(other: self.ticks.toString()) },
         Button { label: "Load", onTap: self.load },
         Text { text: "status=".concat(other: self.status) },
+        Text { text: "width=".concat(other: Device {}.screenWidth().toString()) },
+        Button { label: "Copy", onTap: self.copy },
+        Text { text: "clip=".concat(other: self.pasted) },
       ],
     };
     if (self.loading) {
@@ -50,6 +56,11 @@ class Data implements Screen {
   fn add(self) -> Unit {
     self.count = self.count + 1;
     Store {}.setInt(key: "count", value: self.count);
+  }
+
+  fn copy(self) -> Unit {
+    Device {}.copy(text: "kata-".concat(other: self.count.toString()));
+    self.pasted = Device {}.clipboard();
   }
 
   fn tick(self) -> Unit {

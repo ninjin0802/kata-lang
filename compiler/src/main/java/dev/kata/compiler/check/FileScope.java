@@ -21,8 +21,25 @@ final class FileScope {
     private final Map<String, Ast.Import> imports = new LinkedHashMap<>();
     private final Set<String> usedImports = new HashSet<>();
     private final Set<String> reportedMissingImports = new HashSet<>();
+    /** Imported names that come from another module of this project, with their resolved type. */
+    private final Map<String, Type> userImports = new LinkedHashMap<>();
+    private final Map<String, ModuleNames> modules;
 
-    FileScope(Ast.File file, ClassTable table, CheckedProgram program, List<Diagnostic> out) {
+    /** The class and enum names one module of the project declares. */
+    record ModuleNames(Set<String> classes, Set<String> enums) {
+        static ModuleNames of(Ast.File file) {
+            Set<String> classes = new HashSet<>();
+            Set<String> enums = new HashSet<>();
+            file.classes().forEach(decl -> classes.add(decl.name()));
+            file.enums().forEach(decl -> enums.add(decl.name()));
+            return new ModuleNames(classes, enums);
+        }
+    }
+
+    /** @param modules what every module of the project declares, by module name */
+    FileScope(Ast.File file, ClassTable table, CheckedProgram program, Map<String, ModuleNames> modules,
+            List<Diagnostic> out) {
+        this.modules = modules;
         this.file = file;
         this.module = file.module().name();
         this.table = table;
@@ -32,10 +49,25 @@ final class FileScope {
 
     void addImports() {
         for (Ast.Import decl : file.imports()) {
-            Set<String> exported = Builtins.namesOf(decl.module().name());
-            if (exported == null) {
-                out.add(Diagnostic.of("E0307", "unknown module '" + decl.module().name()
-                        + "'; only kata.ui and kata.sys can be imported", file.path(), decl.span()));
+            String from = decl.module().name();
+            Set<String> exported = Builtins.namesOf(from);
+            ModuleNames userModule = exported == null ? modules.get(from) : null;
+            if (userModule != null && !from.equals(module)) {
+                boolean isClass = userModule.classes().contains(decl.name());
+                if (!isClass && !userModule.enums().contains(decl.name())) {
+                    out.add(Diagnostic.of("E0307", from + " has no '" + decl.name() + "'", file.path(), decl.span()));
+                } else if (imports.containsKey(decl.name())) {
+                    out.add(Diagnostic.of("E0303", "'" + decl.name() + "' is already imported", file.path(),
+                            decl.span()));
+                } else {
+                    imports.put(decl.name(), decl);
+                    String qualified = from + "." + decl.name();
+                    userImports.put(decl.name(), isClass ? new Type.ClassType(qualified) : new Type.EnumType(qualified));
+                }
+            } else if (exported == null) {
+                out.add(Diagnostic.of("E0307", from.equals(module)
+                        ? "a module cannot import from itself"
+                        : "unknown module '" + from + "'", file.path(), decl.span()));
             } else if (!exported.contains(decl.name())) {
                 out.add(Diagnostic.of("E0307", decl.module().name() + " has no '" + decl.name() + "'", file.path(),
                         decl.span()));
@@ -70,8 +102,16 @@ final class FileScope {
         return true;
     }
 
-    boolean isLocalEnum(String name) {
-        return localEnums.contains(name);
+    /** The qualified name of the enum this file calls `name` (its own or an imported one), or null. */
+    String enumName(String name) {
+        if (localEnums.contains(name)) {
+            return qualify(name);
+        }
+        if (userImports.get(name) instanceof Type.EnumType imported) {
+            usedImports.add(name);
+            return imported.qualifiedName();
+        }
+        return null;
     }
 
     String qualify(String className) {
@@ -98,7 +138,7 @@ final class FileScope {
         String name = ref.name();
         int arity = name.equals("List") || name.equals("Handler") ? 1 : name.equals("Fn") ? 2 : 0;
         boolean known = Builtins.CORE_TYPES.contains(name) || localClasses.contains(name)
-                || localEnums.contains(name)
+                || localEnums.contains(name) || userImports.containsKey(name)
                 || Builtins.moduleOf(name) != null;
         if (known && ref.args().size() != arity) {
             out.add(Diagnostic.of("E0408", "'" + name + "' takes " + arity + " type argument"
@@ -146,6 +186,10 @@ final class FileScope {
         if (localEnums.contains(name)) {
             return new Type.EnumType(qualify(name));
         }
+        if (userImports.containsKey(name)) {
+            usedImports.add(name);
+            return userImports.get(name);
+        }
         String builtinModule = Builtins.moduleOf(name);
         if (builtinModule != null) {
             if (imports.containsKey(name)) {
@@ -157,6 +201,23 @@ final class FileScope {
             }
             String qualified = builtinModule + "." + name;
             return Builtins.isUiInterface(name) ? new Type.InterfaceType(qualified) : new Type.ClassType(qualified);
+        }
+        // Declared by exactly one other module of the project: it only lacks the import.
+        List<String> owners = new java.util.ArrayList<>();
+        for (Map.Entry<String, ModuleNames> other : modules.entrySet()) {
+            if (!other.getKey().equals(module)
+                    && (other.getValue().classes().contains(name) || other.getValue().enums().contains(name))) {
+                owners.add(other.getKey());
+            }
+        }
+        if (owners.size() == 1) {
+            if (reportedMissingImports.add(name)) {
+                out.add(Diagnostic.of("E0305", "'" + name + "' must be imported from " + owners.get(0), file.path(),
+                        span).withFix(importInsertionPoint(), "\nimport " + owners.get(0) + "." + name + ";"));
+            }
+            ModuleNames owner = modules.get(owners.get(0));
+            String qualified = owners.get(0) + "." + name;
+            return owner.classes().contains(name) ? new Type.ClassType(qualified) : new Type.EnumType(qualified);
         }
         out.add(Diagnostic.of("E0302", "unknown type '" + name + "'", file.path(), span));
         return Type.UNKNOWN;
