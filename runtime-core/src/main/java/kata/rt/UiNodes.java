@@ -67,6 +67,12 @@ public final class UiNodes {
         if (node instanceof AlignBottom) {
             return ((AlignBottom) node).child;
         }
+        if (node instanceof Tappable) {
+            return ((Tappable) node).child;
+        }
+        if (node instanceof Rounded) {
+            return ((Rounded) node).child;
+        }
         return null;
     }
 

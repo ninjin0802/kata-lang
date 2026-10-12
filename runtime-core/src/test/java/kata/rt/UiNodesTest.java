@@ -23,7 +23,8 @@ class UiNodesTest {
         List<Ui> wrappers = List.of(new Scroll(A), new HorizontalScroll(A), new Padding(1, A),
                 new PaddingEdges(1, 2, 3, 4, A), new Background(BLACK, A), new Width(1, A), new Height(1, A),
                 new FillWidth(A), new FillHeight(A), new Expand(A), new Center(A), new CenterHorizontal(A),
-                new CenterVertical(A), new AlignEnd(A), new AlignBottom(A));
+                new CenterVertical(A), new AlignEnd(A), new AlignBottom(A), new Tappable(() -> { }, A),
+                new Rounded(4, BLACK, A));
         for (Ui wrapper : wrappers) {
             List<Ui> children = UiNodes.children(wrapper);
             assertEquals(1, children.size(), wrapper.getClass().getSimpleName());
@@ -34,7 +35,10 @@ class UiNodesTest {
     @Test
     void leavesHaveNoChildren() {
         List<Ui> leaves = List.of(A, new Button("b", () -> { }), new TextField("v", "h", value -> { }),
-                new StyledText("t", 12, BLACK), new StyledButton("b", () -> { }, BLACK, BLACK), new Space(4));
+                new StyledText("t", 12, BLACK), new StyledButton("b", () -> { }, BLACK, BLACK), new Space(4),
+                new Checkbox("c", true, value -> { }), new Switch("s", false, value -> { }),
+                new Slider(1, 10, value -> { }), new Progress(1, 10), new Loading(), new Divider(),
+                new TextArea("v", "h", 3, value -> { }));
         for (Ui leaf : leaves) {
             assertEquals(List.of(), UiNodes.children(leaf), leaf.getClass().getSimpleName());
         }

@@ -134,6 +134,51 @@ class AlignEnd implements Ui {
 
 class AlignBottom implements Ui {
   let child: Ui;
+}
+
+class Checkbox implements Ui {
+  let label: String;
+  let checked: Bool;
+  let onChange: Handler&lt;Bool&gt;;
+}
+
+class Switch implements Ui {
+  let label: String;
+  let on: Bool;
+  let onChange: Handler&lt;Bool&gt;;
+}
+
+class Slider implements Ui {
+  let value: Int;
+  let max: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class Progress implements Ui {
+  let value: Int;
+  let max: Int;
+}
+
+class Loading implements Ui {}
+
+class Divider implements Ui {}
+
+class TextArea implements Ui {
+  let value: String;
+  let hint: String;
+  let lines: Int;
+  let onChange: Handler&lt;String&gt;;
+}
+
+class Tappable implements Ui {
+  let onTap: Action;
+  let child: Ui;
+}
+
+class Rounded implements Ui {
+  let radius: Int;
+  let color: Color;
+  let child: Ui;
 }</code></pre>
 
 <h2 id="components">UI 部品</h2>
@@ -145,6 +190,14 @@ class AlignBottom implements Ui {
   <tr><td><code>Text</code></td><td><code>text</code> を表示する。</td><td><code>TextView</code></td></tr>
   <tr><td><code>Button</code></td><td><code>label</code> を表示し、押されたら <code>onTap</code> を実行する。</td><td><code>android.widget.Button</code></td></tr>
   <tr><td><code>TextField</code></td><td>1行の入力欄。<a href="#text-field">入力欄</a>を参照。</td><td><code>EditText</code></td></tr>
+  <tr><td><code>TextArea</code></td><td>複数行の入力欄。<code>lines</code> 行分の高さで表示する。内容の扱いは <code>TextField</code> と同じ。</td><td><code>EditText</code></td></tr>
+  <tr><td><code>Checkbox</code></td><td><code>label</code> つきのチェックボックス。<a href="#controls">入力部品</a>を参照。</td><td><code>CheckBox</code></td></tr>
+  <tr><td><code>Switch</code></td><td><code>label</code> つきのオン・オフのスイッチ。</td><td><code>android.widget.Switch</code></td></tr>
+  <tr><td><code>Slider</code></td><td>0 から <code>max</code> までの値を選ぶ横向きのつまみ。幅いっぱいに広がる。</td><td><code>SeekBar</code></td></tr>
+  <tr><td><code>Progress</code></td><td><code>max</code> に対する <code>value</code> の割合を示す横棒。幅いっぱいに広がる。</td><td>横向きの <code>ProgressBar</code></td></tr>
+  <tr><td><code>Loading</code></td><td>終わる時期の分からない処理中を示す、回転する表示。</td><td><code>ProgressBar</code></td></tr>
+  <tr><td><code>Divider</code></td><td>幅いっぱいの、高さ 1dp の区切り線。</td><td><code>View</code></td></tr>
+  <tr><td><code>Tappable</code></td><td><code>child</code> を押せるようにし、押されたら <code>onTap</code> を実行する。</td><td><code>FrameLayout</code></td></tr>
   <tr><td><code>Scroll</code></td><td><code>child</code> が高さに収まらないとき、縦にスクロールできるようにする。</td><td><code>ScrollView</code></td></tr>
   <tr><td><code>HorizontalScroll</code></td><td><code>child</code> が幅に収まらないとき、横にスクロールできるようにする。</td><td><code>HorizontalScrollView</code></td></tr>
 </table>
@@ -177,13 +230,14 @@ class AlignBottom implements Ui {
   <tr><td><code>Padding</code></td><td><code>child</code> の四方に <code>all</code>（単位は dp）の余白を取る。</td></tr>
   <tr><td><code>PaddingEdges</code></td><td><code>child</code> の左、上、右、下に、それぞれ指定した余白（単位は dp）を取る。</td></tr>
   <tr><td><code>Background</code></td><td><code>child</code> の後ろを <code>color</code> で塗る。塗る範囲は <code>child</code> の大きさと同じ。</td></tr>
+  <tr><td><code>Rounded</code></td><td><code>child</code> の後ろを、角を <code>radius</code>（単位は dp）で丸めた <code>color</code> で塗り、<code>child</code> もその形で切り抜く。</td></tr>
   <tr><td><code>Width</code> / <code>Height</code></td><td><code>child</code> の幅または高さを <code>dp</code>（単位は dp）に固定する。</td></tr>
   <tr><td><code>FillWidth</code> / <code>FillHeight</code></td><td><code>child</code> の幅または高さを、親が与える範囲いっぱいに広げる。</td></tr>
 </table>
 </div>
 <ul>
   <li>大きさを指定しない部品は、中身に合った大きさになる。</li>
-  <li>色の値が 0 から 255 の範囲にない場合と、文字の大きさ、余白、<code>dp</code> が負の場合は、描画するときにパニックになる。</li>
+  <li>色の値が 0 から 255 の範囲にない場合と、文字の大きさ、余白、<code>dp</code>、<code>radius</code> が負の場合は、描画するときにパニックになる。</li>
   <li>余白の内側を塗るときは <code>Background</code> の中に <code>Padding</code> を、外側だけ空けるときは <code>Padding</code> の中に <code>Background</code> を置く。</li>
   <li>ルートの UI は、ステータスバーなどのシステムの表示と重ならない範囲の左上に置かれる。</li>
 </ul>
@@ -219,17 +273,19 @@ class AlignBottom implements Ui {
   <tr><td><code>Center</code></td><td>いっぱい</td><td>いっぱい</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
   <tr><td><code>CenterHorizontal</code>、<code>AlignEnd</code></td><td>いっぱい</td><td>受け継ぐ</td><td>中身に合わせる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
-  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Tappable</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Space</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Slider</code>、<code>Progress</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Divider</code></td><td>いっぱい</td><td>固定（1dp）</td><td>—</td><td>—</td></tr>
   <tr><td><code>Column</code>、<code>Row</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
   <tr><td><code>Text</code>、<code>Button</code> などの末端の部品</td><td>受け継ぐ</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
 </table>
 </div>
 <p id="layout-fill-up"><strong>広がる指定は外側へ伝わる。</strong>「受け継ぐ」と書いた方向について、受け継いだ値が「中身に合わせる」であっても、自分の中にその方向へ広がる部品があれば、その部品は「いっぱい」になる。</p>
 <ul>
-  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
+  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
   <li>高さの方向へ広がる部品：<code>FillHeight</code>、<code>Center</code>、<code>CenterVertical</code>、<code>AlignBottom</code>、および <code>Column</code> の直接の子の <code>Expand</code>。</li>
   <li>この伝わり方は、<code>Column</code> と <code>Row</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
   <li>伝わりが止まる場所：大きさを固定する部品（幅なら <code>Width</code>、高さなら <code>Height</code>、両方なら <code>Space</code>）と、スクロールする方向（<code>Scroll</code> の高さ、<code>HorizontalScroll</code> の幅）。</li>
@@ -265,6 +321,16 @@ class AlignBottom implements Ui {
   <li><code>onChange</code> の中で <code>value</code> に渡すフィールドを更新しないと、入力は次の再描画で元に戻る。</li>
   <li><code>hint</code> は、内容が空のときに薄く表示する文字列。不要なら <code>""</code> を渡す。</li>
   <li>入力欄の幅は、既定では中身に合わせる。広げるときは <code>FillWidth</code> で包む。</li>
+</ul>
+
+<h2 id="controls">入力部品</h2>
+<p><code>Checkbox</code>、<code>Switch</code>、<code>Slider</code>、<code>TextArea</code> は、<code>TextField</code> と同じ考え方で動く。</p>
+<ul>
+  <li>値（チェックの有無、オン・オフ、つまみの位置、文字列）は <code>Screen</code> のフィールドに持ち、部品に渡す。部品そのものは値を保持する場所ではない。</li>
+  <li>利用者が操作すると、新しい値を引数にして <code>onChange</code> を実行し、<code>view</code> を呼び直す。</li>
+  <li><code>onChange</code> の中で値を保存しないと、次の再描画で表示が元に戻る。この戻しでは <code>onChange</code> を実行しない。</li>
+  <li><code>Slider</code> の <code>onChange</code> は、つまみを動かしている間、値が変わるたびに実行される。</li>
+  <li><code>Slider</code> と <code>Progress</code> は、<code>max</code> が 1 以上で、<code>value</code> が 0 から <code>max</code> の範囲でなければならない。<code>TextArea</code> の <code>lines</code> は 1 以上。違反は描画するときにパニックになる。</li>
 </ul>
 
 <h2 id="screen">Screen</h2>

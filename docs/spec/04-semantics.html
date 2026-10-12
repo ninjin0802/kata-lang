@@ -231,7 +231,7 @@ while (i &lt; 3) {
 
 <h2 id="panic">パニック</h2>
 <ul>
-  <li>M1 でパニックになるのは、<code>Int</code> の 0 による除算、数として読めない文字列の <code>toFloat</code>、負の桁数の <code>round</code>、<code>List</code> の <code>get</code> の範囲外アクセス、<a href="05-ui.html#styling">見た目の指定</a>の値が範囲外である場合。</li>
+  <li>M1 でパニックになるのは、<code>Int</code> の 0 による除算、数として読めない文字列の <code>toFloat</code>、負の桁数の <code>round</code>、<code>List</code> の <code>get</code> の範囲外アクセス、<a href="05-ui.html#styling">見た目の指定</a>や<a href="05-ui.html#controls">入力部品</a>の値が範囲外である場合。</li>
   <li>パニックは捕まえられない。アプリは停止し、kata のファイル名と行番号を含むスタックトレースが logcat に出る。</li>
 </ul>
 

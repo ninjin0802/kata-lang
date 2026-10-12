@@ -385,8 +385,54 @@ def check_calculator():
     adb("uninstall", app_id, check=False)
 
 
+def check_controls():
+    app_id = "dev.kata.controls"
+    install_and_launch(build("controls"), app_id)
+    root = wait_for(lambda r: exists(r, text="taps=0"), "the controls example to appear")
+    screen_width, _ = screen_size()
+
+    # Checkbox and Switch report the new state and show it.
+    tap(find(root, cls="android.widget.CheckBox"))
+    wait_for(lambda r: exists(r, text="done=yes"), "the checkbox to turn on")
+    tap(find(dump(), cls="android.widget.CheckBox"))
+    wait_for(lambda r: exists(r, text="done=no"), "the checkbox to turn off")
+    tap(find(dump(), cls="android.widget.Switch"))
+    wait_for(lambda r: exists(r, text="dark=yes"), "the switch to turn on")
+
+    # Slider spans the width; tapping near its right end raises the value, and Progress follows.
+    slider = find(dump(), cls="android.widget.SeekBar")
+    near(slider.width, screen_width, "Slider fills the width")
+    adb("shell", "input", "tap", str(slider.left + int(slider.width * 0.8)), str(slider.center[1]))
+    wait_for(lambda r: any(exists(r, text=f"level={n}") for n in (7, 8, 9)), "the slider to move to about 8")
+    bars = find_all(dump(), cls="android.widget.ProgressBar")
+    assert len(bars) == 2, f"expected Progress and Loading, found {bars}"
+    near(bars[0].width, screen_width, "Progress fills the width")
+
+    # Divider is a 1dp line across the width.
+    assert has_bounds(dump(), 0, bars[0].bottom, screen_width, bars[0].bottom + px(1)), "Divider below Progress"
+
+    # TextArea is taller than a single-line field and reports its text.
+    area = find(dump(), cls="android.widget.EditText")
+    tap(area)
+    type_text("12345")
+    wait_for(lambda r: not exists(r, text="notes=0"), "the text area to report its text")
+    adb("shell", "input", "keyevent", "KEYCODE_ESCAPE")
+
+    # Tappable makes the rounded box respond; Rounded paints inside but not in the corner.
+    label = find(dump(), text="taps=0")
+    tap(label)
+    root = wait_for(lambda r: exists(r, text="taps=1"), "the tappable box to count a tap")
+    label = find(root, text="taps=1")
+    box_left, box_top = label.left - px(16), label.top - px(16)
+    teal = (0, 150, 136)
+    assert pixel(box_left + px(8), label.center[1]) == teal, "Rounded paints its color"
+    assert pixel(box_left + 1, box_top + 1) != teal, "Rounded leaves the corner unpainted"
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "controls": check_controls,
     "counter": check_counter,
     "styled": check_styled,
     "form": check_form,

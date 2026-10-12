@@ -3,7 +3,7 @@ module app.main;
 import kata.ui.Screen;
 import kata.ui.Text;
 import kata.ui.Ui;
-import kata.ui.Slider;
+import kata.ui.Gizmo;
 import other.mod.Thing;
 
 

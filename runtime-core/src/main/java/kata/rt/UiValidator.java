@@ -30,9 +30,30 @@ public final class UiValidator {
             nonNegative("Height.dp", ((Height) root).dp);
         } else if (root instanceof Space) {
             nonNegative("Space.dp", ((Space) root).dp);
+        } else if (root instanceof Slider) {
+            range("Slider", ((Slider) root).value, ((Slider) root).max);
+        } else if (root instanceof Progress) {
+            range("Progress", ((Progress) root).value, ((Progress) root).max);
+        } else if (root instanceof TextArea) {
+            if (((TextArea) root).lines < 1) {
+                throw new IllegalArgumentException("TextArea.lines out of range: " + ((TextArea) root).lines);
+            }
+        } else if (root instanceof Rounded) {
+            nonNegative("Rounded.radius", ((Rounded) root).radius);
+            color(((Rounded) root).color);
         }
         for (Ui child : UiNodes.children(root)) {
             validate(child);
+        }
+    }
+
+    /** max must be at least 1 and value within 0..max. */
+    private static void range(String component, long value, long max) {
+        if (max < 1) {
+            throw new IllegalArgumentException(component + ".max out of range: " + max);
+        }
+        if (value < 0 || value > max) {
+            throw new IllegalArgumentException(component + ".value out of range: " + value);
         }
     }
 

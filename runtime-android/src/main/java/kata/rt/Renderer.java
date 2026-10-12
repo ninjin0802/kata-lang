@@ -25,8 +25,8 @@ final class Renderer implements Host<View> {
     private final float density;
     private Ui current;
     private View rootView;
-    /** True while the renderer itself is changing an EditText, so that the change is not reported. */
-    private boolean settingText;
+    /** True while the renderer itself is changing a control, so that the change is not reported. */
+    private boolean binding;
 
     Renderer(KataActivity activity, FrameLayout container) {
         this.activity = activity;
@@ -113,8 +113,67 @@ final class Renderer implements Host<View> {
             });
             return button;
         }
-        if (node instanceof TextField) {
-            return newTextField();
+        if (node instanceof TextField || node instanceof TextArea) {
+            return newTextInput(node instanceof TextArea);
+        }
+        if (node instanceof Checkbox || node instanceof Switch) {
+            android.widget.CompoundButton toggle = node instanceof Checkbox
+                    ? new android.widget.CheckBox(activity) : new android.widget.Switch(activity);
+            toggle.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(android.widget.CompoundButton view, boolean checked) {
+                    if (binding) {
+                        return;
+                    }
+                    Object tag = view.getTag();
+                    Handler handler = tag instanceof Checkbox ? ((Checkbox) tag).onChange : ((Switch) tag).onChange;
+                    handler.run(Boolean.valueOf(checked));
+                    activity.rerender();
+                }
+            });
+            return toggle;
+        }
+        if (node instanceof Slider) {
+            android.widget.SeekBar bar = new android.widget.SeekBar(activity);
+            bar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(android.widget.SeekBar view, int progress, boolean fromUser) {
+                    if (binding || !fromUser) {
+                        return;
+                    }
+                    ((Slider) view.getTag()).onChange.run(Long.valueOf(progress));
+                    activity.rerender();
+                }
+
+                @Override
+                public void onStartTrackingTouch(android.widget.SeekBar view) {}
+
+                @Override
+                public void onStopTrackingTouch(android.widget.SeekBar view) {}
+            });
+            return bar;
+        }
+        if (node instanceof Progress) {
+            return new android.widget.ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+        }
+        if (node instanceof Loading) {
+            return new android.widget.ProgressBar(activity);
+        }
+        if (node instanceof Divider) {
+            View line = new View(activity);
+            line.setBackgroundColor(0x1F000000);
+            return line;
+        }
+        if (node instanceof Tappable) {
+            FrameLayout frame = new FrameLayout(activity);
+            frame.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    ((Tappable) view.getTag()).onTap.run();
+                    activity.rerender();
+                }
+            });
+            return frame;
         }
         if (node instanceof Scroll) {
             return new ScrollView(activity);
@@ -131,9 +190,15 @@ final class Renderer implements Host<View> {
         throw new IllegalStateException("unknown ui component: " + node.getClass().getName());
     }
 
-    private EditText newTextField() {
+    private EditText newTextInput(boolean multiLine) {
         final EditText field = new EditText(activity);
-        field.setSingleLine(true);
+        if (multiLine) {
+            field.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                    | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            field.setGravity(Gravity.TOP | Gravity.LEFT);
+        } else {
+            field.setSingleLine(true);
+        }
         field.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
@@ -143,14 +208,32 @@ final class Renderer implements Host<View> {
 
             @Override
             public void afterTextChanged(Editable text) {
-                if (settingText) {
+                if (binding) {
                     return;
                 }
-                ((TextField) field.getTag()).onChange.run(text.toString());
+                Object tag = field.getTag();
+                Handler handler = tag instanceof TextField ? ((TextField) tag).onChange : ((TextArea) tag).onChange;
+                handler.run(text.toString());
                 activity.rerender();
             }
         });
         return field;
+    }
+
+    /** Shows the stored text in an input, without reporting it as a change made by the user. */
+    private void bindText(EditText edit, String value, String hint) {
+        if (!hint.contentEquals(edit.getHint() == null ? "" : edit.getHint())) {
+            edit.setHint(hint);
+        }
+        if (!edit.getText().toString().equals(value)) {
+            binding = true;
+            try {
+                edit.setText(value);
+                edit.setSelection(edit.getText().length());
+            } finally {
+                binding = false;
+            }
+        }
     }
 
     /** Applies the component's own properties to its view. Sizes and placement are set by layout(). */
@@ -173,20 +256,50 @@ final class Renderer implements Host<View> {
             button.setTextColor(argb(styled.textColor));
             button.setBackgroundColor(argb(styled.background));
         } else if (node instanceof TextField) {
-            TextField field = (TextField) node;
+            bindText((EditText) view, ((TextField) node).value, ((TextField) node).hint);
+        } else if (node instanceof TextArea) {
+            TextArea area = (TextArea) node;
             EditText edit = (EditText) view;
-            if (!field.hint.contentEquals(edit.getHint() == null ? "" : edit.getHint())) {
-                edit.setHint(field.hint);
+            if (edit.getMinLines() != (int) area.lines) {
+                edit.setLines((int) area.lines);
             }
-            if (!edit.getText().toString().equals(field.value)) {
-                settingText = true;
+            bindText(edit, area.value, area.hint);
+        } else if (node instanceof Checkbox || node instanceof Switch) {
+            android.widget.CompoundButton toggle = (android.widget.CompoundButton) view;
+            boolean checked = node instanceof Checkbox ? ((Checkbox) node).checked : ((Switch) node).on;
+            setText(toggle, node instanceof Checkbox ? ((Checkbox) node).label : ((Switch) node).label);
+            if (toggle.isChecked() != checked) {
+                binding = true;
                 try {
-                    edit.setText(field.value);
-                    edit.setSelection(edit.getText().length());
+                    toggle.setChecked(checked);
                 } finally {
-                    settingText = false;
+                    binding = false;
                 }
             }
+        } else if (node instanceof Slider || node instanceof Progress) {
+            android.widget.ProgressBar bar = (android.widget.ProgressBar) view;
+            int max = (int) Math.min(Integer.MAX_VALUE, node instanceof Slider ? ((Slider) node).max
+                    : ((Progress) node).max);
+            int value = (int) Math.min(Integer.MAX_VALUE, node instanceof Slider ? ((Slider) node).value
+                    : ((Progress) node).value);
+            binding = true;
+            try {
+                if (bar.getMax() != max) {
+                    bar.setMax(max);
+                }
+                if (bar.getProgress() != value) {
+                    bar.setProgress(value);
+                }
+            } finally {
+                binding = false;
+            }
+        } else if (node instanceof Rounded) {
+            Rounded rounded = (Rounded) node;
+            android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+            shape.setColor(argb(rounded.color));
+            shape.setCornerRadius(px(rounded.radius));
+            view.setBackground(shape);
+            view.setClipToOutline(true);
         } else if (node instanceof Padding) {
             int all = px(((Padding) node).all);
             view.setPadding(all, all, all, all);

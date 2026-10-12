@@ -1,0 +1,85 @@
+module app.controls;
+
+import kata.ui.Checkbox;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Divider;
+import kata.ui.Loading;
+import kata.ui.Padding;
+import kata.ui.Progress;
+import kata.ui.Rounded;
+import kata.ui.Screen;
+import kata.ui.Slider;
+import kata.ui.Switch;
+import kata.ui.Tappable;
+import kata.ui.Text;
+import kata.ui.TextArea;
+import kata.ui.Ui;
+
+// Every input control once, each followed by a text that shows the state it changed.
+class Controls implements Screen {
+  var done: Bool = false;
+  var dark: Bool = false;
+  var level: Int = 3;
+  var notes: String = "";
+  var taps: Int = 0;
+
+  fn view(self) -> Ui {
+    return Column {
+      children: [
+        Checkbox { label: "Done", checked: self.done, onChange: self.setDone },
+        Text { text: "done=".concat(other: self.yesNo(value: self.done)) },
+        Switch { label: "Dark", on: self.dark, onChange: self.setDark },
+        Text { text: "dark=".concat(other: self.yesNo(value: self.dark)) },
+        Slider { value: self.level, max: 10, onChange: self.setLevel },
+        Text { text: "level=".concat(other: self.level.toString()) },
+        Progress { value: self.level, max: 10 },
+        Divider {},
+        Loading {},
+        TextArea { value: self.notes, hint: "Notes", lines: 3, onChange: self.setNotes },
+        Text { text: "notes=".concat(other: self.notes.length().toString()) },
+        Tappable {
+          onTap: self.tap,
+          child: Rounded {
+            radius: 12,
+            color: Color { red: 0, green: 150, blue: 136, alpha: 255 },
+            child: Padding { all: 16, child: Text { text: "taps=".concat(other: self.taps.toString()) } },
+          },
+        },
+      ],
+    };
+  }
+
+  fn yesNo(self, value: Bool) -> String {
+    if (value) {
+      return "yes";
+    }
+    return "no";
+  }
+
+  fn setDone(self, value: Bool) -> Unit {
+    self.done = value;
+  }
+
+  fn setDark(self, value: Bool) -> Unit {
+    self.dark = value;
+  }
+
+  fn setLevel(self, value: Int) -> Unit {
+    self.level = value;
+  }
+
+  fn setNotes(self, value: String) -> Unit {
+    self.notes = value;
+  }
+
+  fn tap(self) -> Unit {
+    self.taps = self.taps + 1;
+  }
+}
+
+app {
+  id: "dev.kata.controls",
+  name: "Controls",
+  root: Controls {},
+}

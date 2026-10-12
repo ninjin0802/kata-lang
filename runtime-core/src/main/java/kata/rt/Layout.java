@@ -137,10 +137,13 @@ public final class Layout {
             Dim size = Dim.fixed(((Space) node).dp);
             return spec(size, size, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
+        if (node instanceof Divider) {
+            return spec(iw, Dim.fixed(1), Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
+        }
         if (node instanceof Column || node instanceof Row) {
             return spec(iw, ih, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
-        // Padding, PaddingEdges, Background, Scroll, HorizontalScroll and leaves.
+        // Padding, PaddingEdges, Background, Tappable, Rounded, Scroll, HorizontalScroll and leaves.
         return spec(iw, ih, pass(iw), pass(ih), Gravity.TOP_START);
     }
 
@@ -155,6 +158,9 @@ public final class Layout {
             return true;
         }
         if (node instanceof Center) {
+            return true;
+        }
+        if (widthAxis && (node instanceof Slider || node instanceof Progress || node instanceof Divider)) {
             return true;
         }
         if (node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis

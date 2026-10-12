@@ -195,6 +195,30 @@ class LayoutTest {
     }
 
     @Test
+    void barsFillTheWidthAndDividerIsOnePixelHigh() {
+        for (Ui bar : new Ui[] {new Slider(1, 10, value -> { }), new Progress(1, 10)}) {
+            Spec spec = other(bar, WRAP, WRAP);
+            assertEquals(FILL, spec.width);
+            assertEquals(WRAP, spec.height);
+        }
+        Spec divider = other(new Divider(), WRAP, WRAP);
+        assertEquals(FILL, divider.width);
+        assertEquals(Dim.fixed(1), divider.height);
+        assertEquals(FILL, other(column(LEAF, new Divider()), WRAP, WRAP).width);
+        assertEquals(WRAP, other(new Loading(), WRAP, WRAP).width);
+        assertEquals(WRAP, other(new Checkbox("c", true, value -> { }), WRAP, WRAP).width);
+    }
+
+    @Test
+    void tappableAndRoundedPassSizesThrough() {
+        for (Ui node : new Ui[] {new Tappable(() -> { }, LEAF), new Rounded(4, BLACK, LEAF)}) {
+            assertSpec(other(node, WRAP, WRAP), WRAP, WRAP, WRAP, WRAP, Gravity.TOP_START);
+            assertSpec(other(node, FILL, Dim.fixed(48)), FILL, Dim.fixed(48), FILL, FILL, Gravity.TOP_START);
+        }
+        assertEquals(FILL, other(new Tappable(() -> { }, new FillWidth(LEAF)), WRAP, WRAP).width);
+    }
+
+    @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));
         assertEquals(Parent.ROW, Layout.parentKind(new Row(KList.of(new Object[0]))));

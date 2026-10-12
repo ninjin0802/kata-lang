@@ -51,6 +51,15 @@ public final class Builtins {
         ui("CenterVertical", field("child", UI_TYPE));
         ui("AlignEnd", field("child", UI_TYPE));
         ui("AlignBottom", field("child", UI_TYPE));
+        ui("Checkbox", field("label", Type.STRING), field("checked", Type.BOOL), field("onChange", new Type.HandlerType(Type.BOOL)));
+        ui("Switch", field("label", Type.STRING), field("on", Type.BOOL), field("onChange", new Type.HandlerType(Type.BOOL)));
+        ui("Slider", field("value", Type.INT), field("max", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("Progress", field("value", Type.INT), field("max", Type.INT));
+        ui("Loading");
+        ui("Divider");
+        ui("TextArea", field("value", Type.STRING), field("hint", Type.STRING), field("lines", Type.INT), field("onChange", new Type.HandlerType(Type.STRING)));
+        ui("Tappable", field("onTap", Type.ACTION), field("child", UI_TYPE));
+        ui("Rounded", field("radius", Type.INT), field("color", COLOR_TYPE), field("child", UI_TYPE));
     }
 
     /** Classes that are values passed to components rather than components themselves. */

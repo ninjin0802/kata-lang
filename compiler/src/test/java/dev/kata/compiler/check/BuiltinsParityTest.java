@@ -18,7 +18,8 @@ class BuiltinsParityTest {
     private static final Set<String> SPEC_NAMES = Set.of("Ui", "Screen", "Column", "Row", "Text", "Button",
             "TextField", "Scroll", "HorizontalScroll", "Color", "StyledText", "StyledButton", "Padding",
             "PaddingEdges", "Background", "Width", "Height", "FillWidth", "FillHeight", "Expand", "Space", "Center",
-            "CenterHorizontal", "CenterVertical", "AlignEnd", "AlignBottom");
+            "CenterHorizontal", "CenterVertical", "AlignEnd", "AlignBottom", "Checkbox", "Switch", "Slider",
+            "Progress", "Loading", "Divider", "TextArea", "Tappable", "Rounded");
 
     @Test
     void exportsExactlyTheNamesInTheSpec() {
@@ -67,6 +68,9 @@ class BuiltinsParityTest {
     private static Class<?> runtimeType(Type type) throws Exception {
         if (type.equals(Type.INT)) {
             return long.class;
+        }
+        if (type.equals(Type.BOOL)) {
+            return boolean.class;
         }
         if (type.equals(Type.STRING)) {
             return String.class;

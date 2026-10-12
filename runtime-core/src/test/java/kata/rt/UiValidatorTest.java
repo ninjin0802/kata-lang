@@ -47,6 +47,24 @@ class UiValidatorTest {
     }
 
     @Test
+    void controlsAreChecked() {
+        Handler ignore = value -> { };
+        assertInvalid("Slider.max out of range: 0", new Slider(0, 0, ignore));
+        assertInvalid("Slider.value out of range: -1", new Slider(-1, 10, ignore));
+        assertInvalid("Slider.value out of range: 11", new Slider(11, 10, ignore));
+        assertInvalid("Progress.max out of range: 0", new Progress(0, 0));
+        assertInvalid("Progress.value out of range: 11", new Progress(11, 10));
+        assertInvalid("TextArea.lines out of range: 0", new TextArea("", "", 0, ignore));
+        assertInvalid("Rounded.radius out of range: -1", new Rounded(-1, BLACK, LEAF));
+        assertInvalid("Color.red out of range: 256", new Rounded(1, new Color(256, 0, 0, 255), LEAF));
+        assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
+            new Slider(0, 1, ignore), new Slider(10, 10, ignore), new Progress(0, 1), new TextArea("", "", 1, ignore),
+            new Rounded(0, BLACK, LEAF), new Tappable(() -> { }, new Width(-0, LEAF)),
+        }))));
+        assertInvalid("Width.dp out of range: -3", new Tappable(() -> { }, new Width(-3, LEAF)));
+    }
+
+    @Test
     void zeroIsAllowed() {
         assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
             new StyledText("t", 0, BLACK), new Padding(0, LEAF), new PaddingEdges(0, 0, 0, 0, LEAF),
