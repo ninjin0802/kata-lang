@@ -112,6 +112,12 @@ public final class UiNodes {
         if (node instanceof Animated) {
             return ((Animated) node).child;
         }
+        if (node instanceof Timer) {
+            return ((Timer) node).child;
+        }
+        if (node instanceof Request) {
+            return ((Request) node).child;
+        }
         if (node instanceof BackHandler) {
             return ((BackHandler) node).child;
         }

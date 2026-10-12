@@ -16,6 +16,7 @@ public final class Builtins {
     private Builtins() {}
 
     public static final String UI_MODULE = "kata.ui";
+    public static final String SYS_MODULE = "kata.sys";
     public static final String UI = UI_MODULE + ".Ui";
     public static final String SCREEN = UI_MODULE + ".Screen";
     public static final String ITEMS = UI_MODULE + ".Items";
@@ -104,6 +105,48 @@ public final class Builtins {
         ui("SecretField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
         ui("NumberField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
         ui("WebView", field("url", Type.STRING));
+        ui("Timer", field("millis", Type.INT), field("onTick", Type.ACTION), field("child", UI_TYPE));
+        ui("Request", field("method", Type.STRING), field("url", Type.STRING), field("body", Type.STRING),
+                field("onResult", new Type.HandlerType(Type.STRING)),
+                field("onError", new Type.HandlerType(Type.STRING)), field("child", UI_TYPE));
+    }
+
+    /** kata.sys: classes without fields whose methods reach the device (storage, clock). */
+    private static final Map<String, List<MethodInfo>> SYS_CLASSES = new LinkedHashMap<>();
+
+    static {
+        List<MethodInfo> store = new ArrayList<>();
+        Type[] kinds = {Type.STRING, Type.INT, Type.FLOAT, Type.BOOL};
+        for (Type kind : kinds) {
+            store.add(new MethodInfo("get" + kind.display(),
+                    List.of(new ParamInfo("key", Type.STRING), new ParamInfo("fallback", kind)), kind));
+            store.add(new MethodInfo("set" + kind.display(),
+                    List.of(new ParamInfo("key", Type.STRING), new ParamInfo("value", kind)), Type.UNIT));
+        }
+        store.add(new MethodInfo("remove", List.of(new ParamInfo("key", Type.STRING)), Type.UNIT));
+        SYS_CLASSES.put("Store", store);
+        SYS_CLASSES.put("Clock", List.of(
+                new MethodInfo("now", List.of(), Type.INT),
+                new MethodInfo("today", List.of(), new Type.ClassType(UI_MODULE + ".Date")),
+                new MethodInfo("time", List.of(), new Type.ClassType(UI_MODULE + ".Time"))));
+    }
+
+    /** Simple names exported by kata.sys. */
+    public static Set<String> sysNames() {
+        return SYS_CLASSES.keySet();
+    }
+
+    /** The built-in module that exports the name, or null. Names are unique across the modules. */
+    public static String moduleOf(String simpleName) {
+        if (uiNames().contains(simpleName)) {
+            return UI_MODULE;
+        }
+        return SYS_CLASSES.containsKey(simpleName) ? SYS_MODULE : null;
+    }
+
+    /** The names a built-in module exports, or null when there is no such module. */
+    public static Set<String> namesOf(String module) {
+        return module.equals(UI_MODULE) ? uiNames() : module.equals(SYS_MODULE) ? sysNames() : null;
     }
 
     /** Classes that are values passed to components rather than components themselves. */
@@ -132,6 +175,7 @@ public final class Builtins {
     }
 
     public static void register(ClassTable table) {
+        registerSys(table);
         table.add(new InterfaceInfo(UI, List.of(), false));
         table.add(new InterfaceInfo(SCREEN, List.of(new MethodInfo("view", List.of(), UI_TYPE)), true));
         table.add(new InterfaceInfo(ITEMS, List.of(new MethodInfo("size", List.of(), Type.INT),
@@ -139,6 +183,12 @@ public final class Builtins {
         for (Map.Entry<String, List<FieldInfo>> entry : UI_CLASSES.entrySet()) {
             List<String> interfaces = NOT_UI.contains(entry.getKey()) ? List.of() : List.of(UI);
             table.add(new ClassInfo(UI_MODULE + "." + entry.getKey(), interfaces, entry.getValue(), List.of(), true));
+        }
+    }
+
+    private static void registerSys(ClassTable table) {
+        for (Map.Entry<String, List<MethodInfo>> entry : SYS_CLASSES.entrySet()) {
+            table.add(new ClassInfo(SYS_MODULE + "." + entry.getKey(), List.of(), List.of(), entry.getValue(), true));
         }
     }
 
@@ -163,12 +213,29 @@ public final class Builtins {
             methods.add(new MethodInfo("round", List.of(new ParamInfo("decimals", Type.INT)), Type.FLOAT));
         } else if (receiver.equals(Type.STRING)) {
             methods.add(new MethodInfo("toFloat", List.of(), Type.FLOAT));
+            methods.add(new MethodInfo("toInt", List.of(), Type.INT));
+            methods.add(new MethodInfo("contains", List.of(new ParamInfo("part", Type.STRING)), Type.BOOL));
+            methods.add(new MethodInfo("startsWith", List.of(new ParamInfo("prefix", Type.STRING)), Type.BOOL));
+            methods.add(new MethodInfo("endsWith", List.of(new ParamInfo("suffix", Type.STRING)), Type.BOOL));
+            methods.add(new MethodInfo("indexOf", List.of(new ParamInfo("part", Type.STRING)), Type.INT));
+            methods.add(new MethodInfo("substring",
+                    List.of(new ParamInfo("start", Type.INT), new ParamInfo("end", Type.INT)), Type.STRING));
+            methods.add(new MethodInfo("split", List.of(new ParamInfo("separator", Type.STRING)),
+                    new Type.ListType(Type.STRING)));
+            methods.add(new MethodInfo("trim", List.of(), Type.STRING));
+            methods.add(new MethodInfo("toUpper", List.of(), Type.STRING));
+            methods.add(new MethodInfo("toLower", List.of(), Type.STRING));
+            methods.add(new MethodInfo("replace",
+                    List.of(new ParamInfo("part", Type.STRING), new ParamInfo("with", Type.STRING)), Type.STRING));
             methods.add(new MethodInfo("concat", List.of(new ParamInfo("other", Type.STRING)), Type.STRING));
             methods.add(new MethodInfo("length", List.of(), Type.INT));
         } else if (receiver instanceof Type.ListType list) {
             methods.add(new MethodInfo("size", List.of(), Type.INT));
             methods.add(new MethodInfo("get", List.of(new ParamInfo("index", Type.INT)), list.elem()));
             methods.add(new MethodInfo("append", List.of(new ParamInfo("item", list.elem())), list));
+            methods.add(new MethodInfo("removeAt", List.of(new ParamInfo("index", Type.INT)), list));
+            methods.add(new MethodInfo("set",
+                    List.of(new ParamInfo("index", Type.INT), new ParamInfo("item", list.elem())), list));
         }
         return methods;
     }

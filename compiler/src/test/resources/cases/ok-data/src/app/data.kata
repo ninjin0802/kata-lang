@@ -1,0 +1,84 @@
+module app.data;
+
+import kata.sys.Clock;
+import kata.sys.Store;
+import kata.ui.Button;
+import kata.ui.Column;
+import kata.ui.Padding;
+import kata.ui.Request;
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Timer;
+import kata.ui.Ui;
+
+// Things beyond the screen: a value that survives restarts, the clock, a timer and a network request.
+class Data implements Screen {
+  var count: Int = Store {}.getInt(key: "count", fallback: 0);
+  var ticks: Int = 0;
+  var loading: Bool = false;
+  var status: String = "idle";
+
+  fn view(self) -> Ui {
+    return Timer { millis: 2000, onTick: self.tick, child: Padding { all: 16, child: self.page() } };
+  }
+
+  fn page(self) -> Ui {
+    let rows: Ui = Column {
+      children: [
+        Text { text: "count=".concat(other: self.count.toString()) },
+        Button { label: "Add", onTap: self.add },
+        Text { text: "year=".concat(other: Clock {}.today().year.toString()) },
+        Text { text: "ticks=".concat(other: self.ticks.toString()) },
+        Button { label: "Load", onTap: self.load },
+        Text { text: "status=".concat(other: self.status) },
+      ],
+    };
+    if (self.loading) {
+      // Android refuses plain http, so this request fails at once and reports through onError.
+      return Request {
+        method: "GET",
+        url: "http://127.0.0.1:9/",
+        body: "",
+        onResult: self.loaded,
+        onError: self.failed,
+        child: rows,
+      };
+    }
+    return rows;
+  }
+
+  fn add(self) -> Unit {
+    self.count = self.count + 1;
+    Store {}.setInt(key: "count", value: self.count);
+  }
+
+  fn tick(self) -> Unit {
+    self.ticks = self.ticks + 1;
+  }
+
+  fn load(self) -> Unit {
+    self.loading = true;
+    self.status = "loading";
+  }
+
+  fn loaded(self, body: String) -> Unit {
+    self.loading = false;
+    self.status = "ok ".concat(other: body.length().toString());
+  }
+
+  fn failed(self, message: String) -> Unit {
+    self.loading = false;
+    // A reply with an error status arrives as "HTTP 404"; anything else never reached a server.
+    if (message.startsWith(prefix: "HTTP ")) {
+      self.status = "refused by server";
+    } else {
+      self.status = "error";
+    }
+  }
+}
+
+app {
+  id: "dev.kata.data",
+  name: "Data",
+  root: Data {},
+}

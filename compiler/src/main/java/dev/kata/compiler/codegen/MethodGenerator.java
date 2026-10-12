@@ -315,6 +315,15 @@ final class MethodGenerator {
             expr(call.args().get(0).value());
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.STRING, "concat",
                     "(Ljava/lang/String;)Ljava/lang/String;", false);
+        } else if (receiver.equals(Type.STRING) && !name.equals("length")) {
+            // Every other String method is a static helper taking the receiver first.
+            StringBuilder descriptor = new StringBuilder("(Ljava/lang/String;");
+            for (int i = 0; i < call.args().size(); i++) {
+                expr(call.args().get(i).value());
+                descriptor.append(Names.descriptor(builtin.method().params().get(i).type()));
+            }
+            descriptor.append(")").append(Names.descriptor(builtin.method().returnType()));
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "kata/rt/Strings", name, descriptor.toString(), false);
         } else if (receiver.equals(Type.STRING)) {
             // length(): the number of code points
             mv.visitInsn(Opcodes.DUP);
@@ -329,6 +338,15 @@ final class MethodGenerator {
             expr(call.args().get(0).value());
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, "get", "(J)Ljava/lang/Object;", false);
             unbox(((Type.ListType) receiver).elem());
+        } else if (name.equals("removeAt")) {
+            expr(call.args().get(0).value());
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, "removeAt", "(J)L" + Names.KLIST + ";", false);
+        } else if (name.equals("set")) {
+            expr(call.args().get(0).value());
+            expr(call.args().get(1).value());
+            box(program.typeOf(call.args().get(1).value()));
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, "set",
+                    "(JLjava/lang/Object;)L" + Names.KLIST + ";", false);
         } else {
             expr(call.args().get(0).value());
             box(program.typeOf(call.args().get(0).value()));

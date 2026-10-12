@@ -102,7 +102,7 @@ class Calculator implements Screen {
   }
 
   fn point(self) -> Unit {
-    if (self.hasPoint(text: self.entry)) {
+    if (self.entry.contains(part: ".")) {
       return;
     }
     if (self.entry == "") {
@@ -110,16 +110,6 @@ class Calculator implements Screen {
     }
     self.entry = self.entry.concat(other: ".");
     self.display = self.entry;
-  }
-
-  // Whether the text already holds a decimal point: a whole number equals its truncation and
-  // prints without a fraction, so the check is done on the typed text's shape instead.
-  fn hasPoint(self, text: String) -> Bool {
-    if (text == "") {
-      return false;
-    }
-    let whole: String = text.toFloat().toInt().toString();
-    return text.length() > whole.length();
   }
 
   fn operator(self, next: String) -> Unit {

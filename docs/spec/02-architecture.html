@@ -27,6 +27,7 @@ examples/shell/      M1 のサンプルアプリ（画面の骨組み）
 examples/overlays/   M1 のサンプルアプリ（重ねて出す部品と長い一覧）
 examples/media/      M1 のサンプルアプリ（画像、アイコン、日付と時刻、メニュー）
 examples/effects/    M1 のサンプルアプリ（効果、操作、特殊な入力欄、Web 表示）
+examples/data/       M1 のサンプルアプリ（保存、時刻、タイマー、通信）
 scripts/             エミュレータでの確認スクリプト</code></pre>
 
 <h2 id="components">部品と依存</h2>
@@ -99,7 +100,7 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
 <ul>
   <li><code>package</code> は <code>app</code> 宣言の <code>id</code>。</li>
   <li><code>application</code> の <code>android:label</code> は <code>app</code> 宣言の <code>name</code>。テーマは <code>@android:style/Theme.Material.Light.NoActionBar</code>（既定のタイトルバーなし）。</li>
-  <li id="permissions">権限は、プログラムが使う部品から自動で決まる。<code>WebView</code> を構築する式がプログラムにあれば <code>android.permission.INTERNET</code> を付ける。それ以外の権限は付けない。</li>
+  <li id="permissions">権限は、プログラムが使う部品から自動で決まる。<code>WebView</code> か <code>Request</code> を構築する式がプログラムにあれば <code>android.permission.INTERNET</code> を付ける。それ以外の権限は付けない。</li>
   <li>Activity は <code>kata.gen.MainActivity</code> の1つだけ。<code>android:exported="true"</code> とし、<code>MAIN</code> / <code>LAUNCHER</code> の intent-filter を持つ。</li>
   <li>Activity には <code>android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"</code> を付ける。画面の回転などで Activity が作り直されず、画面の状態が保たれるようにするため。</li>
 </ul>

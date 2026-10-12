@@ -95,6 +95,9 @@
 <h3 id="device-effects">効果、操作、Web 表示の確認</h3>
 <p><code>examples/effects/</code> で、<code>Opacity</code> の色の混ざり方、<code>Rotate</code> で縦横が入れ替わること、<code>Scale</code> が周りに切り取られずに広がること、<code>Gradient</code> の上下の色、<code>Theme</code> の色が <code>Fab</code> に届くこと、<code>Disabled</code> の中のボタンが反応しないこと、<code>Swipeable</code> の左右、<code>LongPress</code>、<code>SecretField</code> が文字を隠したまま内容を伝えること、<code>Animated</code> の中で行が現れて消えること、<code>WebView</code> がページを表示し通信の権限が付いていることを確かめる。</p>
 
+<h3 id="device-data">保存、時刻、タイマー、通信の確認</h3>
+<p><code>examples/data/</code> で、<code>Store</code> の値がアプリを止めて起動し直しても残ること、<code>Clock</code> が妥当な年を返すこと、<code>Timer</code> が自分で数を増やし続けること、<code>Request</code> の失敗が <code>onError</code> に届くこと、通信の権限が付いていることを確かめる。通信の成功と各メソッドは、端末を使わないテスト（手元に立てたサーバーとの通信）で確かめる。</p>
+
 <h2 id="commands">実行方法</h2>
 <div class="table-wrap">
 <table>

@@ -85,7 +85,7 @@ app {
 - **No operator precedence.** Only one kind of binary operator per unparenthesized expression. `+ * && ||` may repeat (`a + b + c`); every other operator appears once. Write `(a + b) * c`, `(a < b) && (c < d)`, `(a - b) - c`.
 - **No null, no exceptions, no inheritance, no overloading, no default arguments, no shadowing, no lambdas/closures, no implicit conversions.**
 - **File order is fixed**: `module`, then `import`s, then `class`es, then one `app` block. Inside a class: all fields, then all methods.
-- **Imports**: one name per line, only from `kata.ui`, every UI name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
+- **Imports**: one name per line, only from `kata.ui` (components) and `kata.sys` (`Store`, `Clock`); every such name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
 - **`return`**: non-`Unit` methods must end every path with `return expr;` (loops do not count as ending a path). In `Unit` methods use bare `return;` to exit early; nothing may follow a `return` in the same block.
 - A statement that is only an expression must be a call returning `Unit` (results cannot be discarded).
 - Identifiers: values/methods `lowerCamel`, types `UpperCamel`, letters and digits only (no `_`). Comments: `//` only.
@@ -116,10 +116,10 @@ Built-in methods (these are all of them):
 |---|---|
 | `Int` | `toString() -> String`, `toFloat() -> Float` |
 | `Float` | `toString() -> String` — a decimal that reads back as exactly the same number, never an exponent, always with a point (`3.0`, `0.1`; `0.1 + 0.2` prints `0.30000000000000004`, so `round` first when showing results); `toInt() -> Int` (truncates); `round(decimals: Int) -> Float` |
-| `String` | `concat(other: String) -> String`, `length() -> Int`, `toFloat() -> Float` (accepts `12`, `-0.5`, `3.`; anything else crashes the app) |
-| `List<T>` | `size() -> Int`, `get(index: Int) -> T` (out of range crashes), `append(item: T) -> List<T>` (returns a new list) |
+| `String` | `concat(other: String) -> String`, `length() -> Int`, `contains(part: String) -> Bool`, `startsWith(prefix: String) -> Bool`, `endsWith(suffix: String) -> Bool`, `indexOf(part: String) -> Int` (-1 if absent), `substring(start: Int, end: Int) -> String` (end exclusive; out of range crashes), `split(separator: String) -> List<String>`, `trim() -> String`, `toUpper() -> String`, `toLower() -> String`, `replace(part: String, with: String) -> String`, `toInt() -> Int` and `toFloat() -> Float` (text that is not a number crashes the app) |
+| `List<T>` | `size() -> Int`, `get(index: Int) -> T` (out of range crashes), `append(item: T) -> List<T>`, `removeAt(index: Int) -> List<T>`, `set(index: Int, item: T) -> List<T>` — lists never change; each returns a new list |
 
-There is no way to inspect the characters of a string (no `contains`, `substring`, `indexOf`). Track such facts in your own fields.
+Positions and lengths in strings count Unicode characters (code points).
 
 ## Classes
 
@@ -236,6 +236,13 @@ return Stack { children: layers };
 **Several pages**: there is no navigation system. Keep the current page in a field and return different `Ui` from `view`; wrap a sub-page in `BackHandler` so the back gesture returns instead of closing the app.
 
 **Long lists**: a class may `implements Items` (besides `Screen`) by defining `fn size(self) -> Int` and `fn item(self, index: Int) -> Ui`; pass it as `LazyList { items: self }`. For a few dozen rows, `Scroll { child: Column {...} }` is enough.
+
+## Beyond the screen
+
+- **Saving** (`import kata.sys.Store;`): `Store {}.getInt(key: "count", fallback: 0)` / `.setInt(key: "count", value: n)`; also `getString/setString`, `getFloat/setFloat`, `getBool/setBool`, `remove(key:)`. Values survive restarts. Read in a field initializer, write in the method that changes the state.
+- **Clock** (`import kata.sys.Clock;`): `Clock {}.now() -> Int` (ms since 1970), `.today() -> Date`, `.time() -> Time`.
+- **Timer**: `Timer { millis: Int, onTick: Action, child: Ui }` runs `onTick` every `millis` while it is part of the view.
+- **Network**: `Request { method: String, url: String, body: String, onResult: Handler<String>, onError: Handler<String>, child: Ui }` performs one HTTP exchange while it is part of the view (https only; method GET/POST/PUT/PATCH/DELETE). Show it while a `loading` field is true and clear that field in both callbacks. An error status arrives in `onError` as `"HTTP 404"`. There is no JSON parser; use the `String` methods.
 
 `app { id: "...", name: "...", root: <expr of a Screen> }` — exactly these three, in this order. `id` is lowercase words joined by periods (`dev.example.app`).
 

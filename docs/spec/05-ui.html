@@ -393,6 +393,21 @@ class WebView implements Ui {
   let url: String;
 }
 
+class Timer implements Ui {
+  let millis: Int;
+  let onTick: Action;
+  let child: Ui;
+}
+
+class Request implements Ui {
+  let method: String;
+  let url: String;
+  let body: String;
+  let onResult: Handler&lt;String&gt;;
+  let onError: Handler&lt;String&gt;;
+  let child: Ui;
+}
+
 interface Items {
   fn size(self) -&gt; Int;
   fn item(self, index: Int) -&gt; Ui;
@@ -503,7 +518,7 @@ class LazyList implements Ui {
   <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
   <tr><td><code>Grid</code></td><td>いっぱい</td><td>受け継ぐ</td><td>列の幅いっぱい</td><td>中身に合わせる</td></tr>
   <tr><td><code>Stack</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
-  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Theme</code>、<code>Opacity</code>、<code>Rotate</code>、<code>Scale</code>、<code>Gradient</code>、<code>Disabled</code>、<code>Swipeable</code>、<code>LongPress</code>、<code>Animated</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Theme</code>、<code>Opacity</code>、<code>Rotate</code>、<code>Scale</code>、<code>Gradient</code>、<code>Disabled</code>、<code>Swipeable</code>、<code>LongPress</code>、<code>Animated</code>、<code>Timer</code>、<code>Request</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Space</code>、<code>Icon</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
@@ -668,6 +683,75 @@ class LazyList implements Ui {
   <li><code>Opacity</code> の <code>percent</code> が 0 から 100 の範囲にない場合と、<code>Scale</code> の <code>percent</code> が負の場合は、描画するときにパニックになる。</li>
   <li id="webview-limits"><code>WebView</code> が表示できるのは、<code>http://</code>、<code>https://</code>、<code>data:</code> で始まる <code>url</code> と <code>about:blank</code> だけ。それ以外（<code>file:</code>、<code>content:</code>、<code>javascript:</code> など）は空のページになり、ページ内のリンクからも移動できない。ページからは端末のファイル、他のアプリのデータ、位置情報に届かない。外から受け取ったアドレスを渡しても、端末の中身を読まれないようにするため。</li>
   <li><code>WebView</code> を使うプログラムには、ビルド時に通信の権限（<code>android.permission.INTERNET</code>）が自動で付く。権限を手で宣言する場所はない。</li>
+</ul>
+
+<h2 id="beyond">画面の外とつながる</h2>
+<p>保存、時刻、タイマー、通信は、UI と同じ考え方で扱う。値を返すものは <code>kata.sys</code> のクラスのメソッドとして、時間のかかるものは「表示されている間だけ働く部品」として用意する。</p>
+
+<h3 id="store">保存（kata.sys.Store）</h3>
+<pre><code>import kata.sys.Store;
+
+class Counter implements Screen {
+  var count: Int = Store {}.getInt(key: "count", fallback: 0);
+
+  fn add(self) -&gt; Unit {
+    self.count = self.count + 1;
+    Store {}.setInt(key: "count", value: self.count);
+  }
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <tr><th>メソッド</th><th>内容</th></tr>
+  <tr><td><code>getString(key: String, fallback: String) -&gt; String</code><br><code>getInt(key: String, fallback: Int) -&gt; Int</code><br><code>getFloat(key: String, fallback: Float) -&gt; Float</code><br><code>getBool(key: String, fallback: Bool) -&gt; Bool</code></td><td><code>key</code> に保存された値を返す。保存されていないか、その型として読めない場合は <code>fallback</code> を返す。</td></tr>
+  <tr><td><code>setString(key: String, value: String) -&gt; Unit</code><br><code>setInt</code>、<code>setFloat</code>、<code>setBool</code> も同じ形</td><td><code>key</code> に値を保存する。アプリを終了しても残る。</td></tr>
+  <tr><td><code>remove(key: String) -&gt; Unit</code></td><td><code>key</code> の値を消す。</td></tr>
+</table>
+</div>
+<ul>
+  <li><code>Store {}</code> は何個作っても同じ保存場所を指す。保存場所はアプリごとに1つで、他のアプリからは読めない。</li>
+  <li>フィールドの初期化の式で読み、状態を変えるメソッドの中で書くのが基本の使い方。</li>
+  <li>保存できるのは4種類の値だけ。リストやオブジェクトは、文字列に組み立てて保存する。</li>
+</ul>
+
+<h3 id="clock">時刻（kata.sys.Clock）</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>メソッド</th><th>内容</th></tr>
+  <tr><td><code>now() -&gt; Int</code></td><td>1970年1月1日 0時（UTC）からの経過ミリ秒。</td></tr>
+  <tr><td><code>today() -&gt; Date</code></td><td>端末のタイムゾーンでの今日の日付。</td></tr>
+  <tr><td><code>time() -&gt; Time</code></td><td>端末のタイムゾーンでの現在の時と分。</td></tr>
+</table>
+</div>
+
+<h3 id="timer">タイマー（Timer）</h3>
+<ul>
+  <li><code>Timer { millis, onTick, child }</code> は、表示されている間、<code>millis</code> ミリ秒ごとに <code>onTick</code> を実行して再描画する。止めるには UI から外す。</li>
+  <li>見た目は <code>child</code> そのもの。<code>millis</code> は 1 以上（違反は描画するときにパニック）。</li>
+</ul>
+
+<h3 id="request">通信（Request）</h3>
+<pre><code>fn view(self) -&gt; Ui {
+  if (self.loading) {
+    return Request {
+      method: "GET",
+      url: "https://example.com/items",
+      body: "",
+      onResult: self.loaded,
+      onError: self.failed,
+      child: Loading {},
+    };
+  }
+  return self.page();
+}</code></pre>
+<ul>
+  <li><code>Request</code> は、表示されると HTTP の通信を1回行う。応答の本文（UTF-8 の文字列）を <code>onResult</code> に、失敗の説明を <code>onError</code> に渡し、再描画する。見た目は <code>child</code> そのもの。</li>
+  <li>結果を受け取るメソッドの中で、表示の条件にしているフィールドを戻す。表示されたままでも、<code>method</code>、<code>url</code>、<code>body</code> が変わらない限り、通信をやり直さない。</li>
+  <li>結果が届く前に UI から外すと、その結果は捨てられる。</li>
+  <li><code>method</code> は <code>GET</code>、<code>POST</code>、<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>。<code>body</code> が空でなければ本文として送る。</li>
+  <li>応答の状態が 200 番台でない場合は、<code>HTTP 404</code> の形の説明で <code>onError</code> になる。</li>
+  <li>使えるのは <code>https://</code> のアドレス。<code>http://</code> は Android が既定で拒否するため <code>onError</code> になる。</li>
+  <li><code>Request</code> を使うプログラムには、通信の権限が自動で付く。</li>
+  <li>応答の本文は文字列で渡される。JSON を読み取る機能は M1 にないので、<code>String</code> のメソッドで取り出す。</li>
 </ul>
 
 <h2 id="controls">入力部品</h2>

@@ -16,7 +16,7 @@
     },
     {
       "code": "E0307",
-      "message": "unknown module 'other.mod'; only kata.ui can be imported",
+      "message": "unknown module 'other.mod'; only kata.ui and kata.sys can be imported",
       "file": "src/app/main.kata",
       "line": 7,
       "column": 1,

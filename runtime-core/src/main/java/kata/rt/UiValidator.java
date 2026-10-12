@@ -104,6 +104,10 @@ public final class UiValidator {
             }
         } else if (root instanceof Scale) {
             nonNegative("Scale.percent", ((Scale) root).percent);
+        } else if (root instanceof Timer) {
+            if (((Timer) root).millis < 1) {
+                throw new IllegalArgumentException("Timer.millis out of range: " + ((Timer) root).millis);
+            }
         } else if (root instanceof Rounded) {
             nonNegative("Rounded.radius", ((Rounded) root).radius);
             color(((Rounded) root).color);

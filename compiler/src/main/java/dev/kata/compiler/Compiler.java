@@ -68,7 +68,7 @@ public final class Compiler {
             Sdk sdk = Sdk.locate(env);
             // Permissions follow from the components the program uses; there is nothing to declare by hand.
             List<String> permissions = new ArrayList<>();
-            if (program.constructs("kata.ui.WebView")) {
+            if (program.constructs("kata.ui.WebView") || program.constructs("kata.ui.Request")) {
                 permissions.add("android.permission.INTERNET");
             }
             Path apk = ApkBuilder.build(project, classes, program.app(), permissions, kataHome, sdk);

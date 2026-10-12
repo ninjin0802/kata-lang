@@ -120,6 +120,12 @@ final class Extras {
         if (node instanceof Disabled) {
             return new BlockedFrame(activity);
         }
+        if (node instanceof Timer) {
+            return new TimerFrame(r);
+        }
+        if (node instanceof Request) {
+            return new RequestFrame(r);
+        }
         if (node instanceof Swipeable) {
             return new SwipeFrame(r);
         }
@@ -287,7 +293,10 @@ final class Extras {
                 web.loaded = url;
                 web.loadUrl(Web.allowed(url) ? url : "about:blank");
             }
-        } else if (node instanceof Theme || node instanceof Swipeable || node instanceof LongPress) {
+        } else if (node instanceof Request) {
+            ((RequestFrame) view).sync();
+        } else if (node instanceof Theme || node instanceof Swipeable || node instanceof LongPress
+                || node instanceof Timer) {
             return true;
         } else if (node instanceof Image) {
             ((AssetImage) view).show(((Image) node).name);
@@ -392,6 +401,102 @@ final class Extras {
 
         LoadedWebView(android.content.Context context) {
             super(context);
+        }
+    }
+
+    /** While attached, runs its Timer's action at the Timer's interval. */
+    private static final class TimerFrame extends FrameLayout {
+        private final Renderer r;
+        private final Runnable tick = new Runnable() {
+            @Override
+            public void run() {
+                Timer timer = (Timer) getTag();
+                timer.onTick.run();
+                r.activity.rerender();
+                // The interval is read again: the re-render may have changed it.
+                if (isAttachedToWindow()) {
+                    postDelayed(this, ((Timer) getTag()).millis);
+                }
+            }
+        };
+
+        TimerFrame(Renderer r) {
+            super(r.activity);
+            this.r = r;
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            postDelayed(tick, ((Timer) getTag()).millis);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            removeCallbacks(tick);
+            super.onDetachedFromWindow();
+        }
+    }
+
+    /** While attached, performs its Request once (again when method, url or body change). */
+    private static final class RequestFrame extends FrameLayout {
+        private final Renderer r;
+        /** Identifies the exchange in flight or finished; a reply for any other one is dropped. */
+        private String started;
+        private boolean attached;
+
+        RequestFrame(Renderer r) {
+            super(r.activity);
+            this.r = r;
+        }
+
+        void sync() {
+            if (!attached) {
+                return;
+            }
+            final Request request = (Request) getTag();
+            final String key = request.method + "\n" + request.url + "\n" + request.body;
+            if (key.equals(started)) {
+                return;
+            }
+            started = key;
+            new Thread(() -> {
+                String body = null;
+                String failure = null;
+                try {
+                    body = Http.send(request.method, request.url, request.body);
+                } catch (java.io.IOException | RuntimeException e) {
+                    failure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                }
+                final String result = body;
+                final String error = failure;
+                post(() -> {
+                    if (!attached || !key.equals(started)) {
+                        return;
+                    }
+                    Request current = (Request) getTag();
+                    if (error == null) {
+                        current.onResult.run(result);
+                    } else {
+                        current.onError.run(error);
+                    }
+                    r.activity.rerender();
+                });
+            }, "kata-request").start();
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            attached = true;
+            sync();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            attached = false;
+            started = null;
+            super.onDetachedFromWindow();
         }
     }
 

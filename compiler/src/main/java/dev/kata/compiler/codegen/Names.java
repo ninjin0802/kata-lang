@@ -32,9 +32,11 @@ final class Names {
 
     /** kata.ui.X lives in kata/rt/X; a user class a.b.C in a/b/C. */
     static String internal(String qualifiedName) {
-        String prefix = Builtins.UI_MODULE + ".";
-        if (qualifiedName.startsWith(prefix)) {
-            return "kata/rt/" + qualifiedName.substring(prefix.length());
+        for (String module : new String[] {Builtins.UI_MODULE, Builtins.SYS_MODULE}) {
+            String prefix = module + ".";
+            if (qualifiedName.startsWith(prefix)) {
+                return "kata/rt/" + qualifiedName.substring(prefix.length());
+            }
         }
         return qualifiedName.replace('.', '/');
     }

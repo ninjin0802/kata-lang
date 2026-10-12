@@ -23,7 +23,8 @@ class BuiltinsParityTest {
             "Border", "Card", "Grid", "Stack", "Items", "Label", "TopBar", "BackBar", "Tabs", "BottomNav",
             "BackHandler", "Fab", "Chip", "Badge", "Alert", "Modal", "BottomSheet", "Snackbar", "LazyList", "Image",
             "Icon", "Date", "Time", "DatePicker", "TimePicker", "Menu", "Theme", "Opacity", "Rotate", "Scale",
-            "Gradient", "Disabled", "Swipeable", "LongPress", "Animated", "SecretField", "NumberField", "WebView");
+            "Gradient", "Disabled", "Swipeable", "LongPress", "Animated", "SecretField", "NumberField", "WebView",
+            "Timer", "Request");
 
     @Test
     void exportsExactlyTheNamesInTheSpec() {

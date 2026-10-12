@@ -176,9 +176,18 @@ Counter {}</code></pre>
   <tr><td><code>String</code></td><td><code>toFloat() -&gt; Float</code></td><td>10進数の文字列を数にする。受け付ける形は、先頭に任意の <code>-</code>、1桁以上の数字、任意で <code>.</code> と0桁以上の数字（<code>12</code>、<code>-0.5</code>、<code>3.</code>）。それ以外はパニック。</td></tr>
   <tr><td><code>String</code></td><td><code>concat(other: String) -&gt; String</code></td><td>後ろに <code>other</code> をつないだ文字列を返す。</td></tr>
   <tr><td><code>String</code></td><td><code>length() -&gt; Int</code></td><td>文字数（Unicode のコードポイントの数）。</td></tr>
+  <tr><td><code>String</code></td><td><code>contains(part: String) -&gt; Bool</code><br><code>startsWith(prefix: String) -&gt; Bool</code><br><code>endsWith(suffix: String) -&gt; Bool</code></td><td>含むか、その文字列で始まるか、終わるか。</td></tr>
+  <tr><td><code>String</code></td><td><code>indexOf(part: String) -&gt; Int</code></td><td>最初に現れる位置（0始まり、コードポイント単位）。なければ -1。</td></tr>
+  <tr><td><code>String</code></td><td><code>substring(start: Int, end: Int) -&gt; String</code></td><td><code>start</code> 番目から <code>end</code> 番目の手前まで（コードポイント単位）。範囲外はパニック。</td></tr>
+  <tr><td><code>String</code></td><td><code>split(separator: String) -&gt; List&lt;String&gt;</code></td><td><code>separator</code> で区切る。空の部分も残す。<code>separator</code> が空ならパニック。</td></tr>
+  <tr><td><code>String</code></td><td><code>trim() -&gt; String</code><br><code>toUpper() -&gt; String</code><br><code>toLower() -&gt; String</code></td><td>前後の空白を除く、大文字にする、小文字にする。</td></tr>
+  <tr><td><code>String</code></td><td><code>replace(part: String, with: String) -&gt; String</code></td><td><code>part</code> をすべて <code>with</code> に置き換える。</td></tr>
+  <tr><td><code>String</code></td><td><code>toInt() -&gt; Int</code></td><td>10進の整数の文字列を数にする（先頭に任意の <code>-</code>、1桁以上の数字）。それ以外と範囲外はパニック。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>get(index: Int) -&gt; T</code></td><td><code>index</code> 番目（0始まり）の要素。範囲外ならパニックになる。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>append(item: T) -&gt; List&lt;T&gt;</code></td><td>末尾に <code>item</code> を加えた新しいリストを返す。元のリストは変わらない。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>removeAt(index: Int) -&gt; List&lt;T&gt;</code></td><td><code>index</code> 番目を除いた新しいリストを返す。範囲外はパニック。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>set(index: Int, item: T) -&gt; List&lt;T&gt;</code></td><td><code>index</code> 番目を <code>item</code> に替えた新しいリストを返す。範囲外はパニック。</td></tr>
 </table>
 </div>
 <p>リストは不変なので、フィールドのリストに要素を足すときは <code>self.items = self.items.append(item: x);</code> と書く。</p>
@@ -223,8 +232,8 @@ while (i &lt; 3) {
   <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。</li>
   <li><code>kata</code> で始まるモジュール名は、組み込みとランタイムのために予約されていて使えない（<code>E0601</code>）。</li>
   <li>import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
-  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code> の名前だけ。それ以外は <code>E0307</code>。</li>
-  <li>import していない <code>kata.ui</code> の名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>
+  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code>（UI の部品）と <code>kata.sys</code>（<code>Store</code>、<code>Clock</code>）の名前だけ。それ以外は <code>E0307</code>。</li>
+  <li>import していない組み込みモジュールの名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>
   <li>使っていない import は <code>E0306</code>（削除を修正案として返す）。</li>
   <li><span class="tag m1">M1</span> のプロジェクトは1モジュールで構成する。</li>
 </ul>

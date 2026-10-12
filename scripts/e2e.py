@@ -690,8 +690,43 @@ def check_effects():
     adb("uninstall", app_id, check=False)
 
 
+def check_data():
+    app_id = "dev.kata.data"
+    adb("uninstall", app_id, check=False)
+    install_and_launch(build("data"), app_id)
+    wait_for(lambda r: exists(r, text="count=0"), "the data example to appear")
+
+    # Store: the value survives the app being stopped and started again.
+    tap_text("Add")
+    tap_text("Add")
+    wait_for(lambda r: exists(r, text="count=2"), "the count to reach 2")
+    adb("shell", "am", "force-stop", app_id)
+    adb("shell", "am", "start", "-W", "-n", f"{app_id}/{ACTIVITY}")
+    wait_for(lambda r: exists(r, text="count=2"), "the stored count after a restart")
+
+    # Clock gives a plausible year; Timer keeps ticking by itself.
+    root = dump()
+    year = [n.text for n in find_all(root) if n.text and n.text.startswith("year=")][0]
+    assert 2024 <= int(year.split("=")[1]) < 2200, year
+
+    def ticks(r):
+        return int([n.text for n in find_all(r) if n.text and n.text.startswith("ticks=")][0].split("=")[1])
+
+    before = ticks(root)
+    # The example ticks every two seconds: a screen that changes more often never becomes idle,
+    # and the UI dump used by these checks waits for idle.
+    wait_for(lambda r: ticks(r) >= before + 2, "the timer to tick two more times", timeout=25)
+
+    # Request: a failed exchange reports through onError and the component goes away.
+    tap_text("Load")
+    wait_for(lambda r: exists(r, text="status=error"), "the failed request to report an error", timeout=30)
+    assert "android.permission.INTERNET" in adb("shell", "dumpsys", "package", app_id), "internet permission"
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "data": check_data,
     "effects": check_effects,
     "media": check_media,
     "shell": check_shell,

@@ -20,6 +20,24 @@ public abstract class KataActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Store values live in the app's private preferences; installed before any kata code runs.
+        final android.content.SharedPreferences preferences = getSharedPreferences("kata", MODE_PRIVATE);
+        Store.install(new Store.Backend() {
+            @Override
+            public String get(String key) {
+                return preferences.getString(key, null);
+            }
+
+            @Override
+            public void put(String key, String value) {
+                preferences.edit().putString(key, value).apply();
+            }
+
+            @Override
+            public void remove(String key) {
+                preferences.edit().remove(key).apply();
+            }
+        });
         root = createRoot();
         FrameLayout container = new FrameLayout(this);
         container.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {

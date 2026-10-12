@@ -25,7 +25,7 @@
   <tr><td><code>Action</code></td><td><code>kata.rt.Action</code></td></tr>
   <tr><td><code>Handler&lt;T&gt;</code></td><td><code>kata.rt.Handler</code>（型引数は消去する）</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>kata.rt.KList</code>（型引数は消去する）。要素の <code>Int</code> は <code>java.lang.Long</code>、<code>Float</code> は <code>java.lang.Double</code>、<code>Bool</code> は <code>java.lang.Boolean</code> に包んで持つ。</td></tr>
-  <tr><td><code>kata.ui</code> の名前（<code>Ui</code>、<code>Screen</code>、<code>Column</code> など）</td><td><code>kata.rt</code> の同名のクラスまたはインターフェース</td></tr>
+  <tr><td><code>kata.ui</code> と <code>kata.sys</code> の名前（<code>Ui</code>、<code>Screen</code>、<code>Column</code>、<code>Store</code> など）</td><td><code>kata.rt</code> の同名のクラスまたはインターフェース</td></tr>
   <tr><td>モジュール <code>a.b</code> のクラス <code>C</code></td><td><code>a.b.C</code></td></tr>
 </table>
 </div>
@@ -53,6 +53,8 @@
   <tr><td><code>List</code> の <code>size</code> / <code>get</code> / <code>append</code></td><td><code>KList</code> の同名のメソッド。<code>get</code> の結果は要素の型に <code>checkcast</code> し、<code>Int</code> と <code>Bool</code> は中身を取り出す。</td></tr>
   <tr><td><code>while</code></td><td>条件分岐と後ろ向きのジャンプ。</td></tr>
   <tr><td><code>for</code></td><td>リストを1回評価してローカル変数に置き、添字を 0 から <code>size</code> の手前まで進めながら <code>get</code> で要素を取り出す。</td></tr>
+  <tr><td><code>String</code> のその他のメソッド、<code>List</code> の <code>removeAt</code> / <code>set</code></td><td><code>kata.rt.Strings</code> の同名の静的メソッド（最初の引数が対象の文字列）、<code>KList</code> の同名のメソッド。</td></tr>
+  <tr><td><code>kata.sys</code> のクラスのメソッド</td><td><code>kata.rt</code> の同名のクラスの同名のメソッドへの <code>invokevirtual</code>。</td></tr>
   <tr><td><code>String.length()</code></td><td><code>String.codePointCount(0, length())</code> の結果を <code>long</code> に広げる。</td></tr>
   <tr><td><code>Int</code> の演算</td><td><code>long</code> の命令（<code>ladd</code>、<code>lsub</code>、<code>lmul</code>、<code>ldiv</code>、<code>lrem</code>、<code>lneg</code>、<code>lcmp</code>）。</td></tr>
   <tr><td><code>Float</code> の演算</td><td><code>double</code> の命令（<code>dadd</code>、<code>dsub</code>、<code>dmul</code>、<code>ddiv</code>、<code>drem</code>、<code>dneg</code>）。比較は、非数を含むと偽になるよう <code>dcmpg</code>（<code>&lt;</code>、<code>&lt;=</code>）と <code>dcmpl</code>（それ以外）を使い分ける。</td></tr>

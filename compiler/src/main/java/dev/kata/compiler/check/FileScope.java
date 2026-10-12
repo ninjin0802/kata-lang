@@ -31,11 +31,13 @@ final class FileScope {
 
     void addImports() {
         for (Ast.Import decl : file.imports()) {
-            if (!decl.module().name().equals(Builtins.UI_MODULE)) {
+            Set<String> exported = Builtins.namesOf(decl.module().name());
+            if (exported == null) {
                 out.add(Diagnostic.of("E0307", "unknown module '" + decl.module().name()
-                        + "'; only kata.ui can be imported", file.path(), decl.span()));
-            } else if (!Builtins.uiNames().contains(decl.name())) {
-                out.add(Diagnostic.of("E0307", "kata.ui has no '" + decl.name() + "'", file.path(), decl.span()));
+                        + "'; only kata.ui and kata.sys can be imported", file.path(), decl.span()));
+            } else if (!exported.contains(decl.name())) {
+                out.add(Diagnostic.of("E0307", decl.module().name() + " has no '" + decl.name() + "'", file.path(),
+                        decl.span()));
             } else if (imports.containsKey(decl.name())) {
                 out.add(Diagnostic.of("E0303", "'" + decl.name() + "' is already imported", file.path(),
                         decl.span()));
@@ -79,7 +81,7 @@ final class FileScope {
         String name = ref.name();
         int arity = name.equals("List") || name.equals("Handler") ? 1 : 0;
         boolean known = Builtins.CORE_TYPES.contains(name) || localClasses.contains(name)
-                || Builtins.uiNames().contains(name);
+                || Builtins.moduleOf(name) != null;
         if (known && ref.args().size() != arity) {
             out.add(Diagnostic.of("E0408", "'" + name + "' takes " + arity + " type argument"
                     + (arity == 1 ? "" : "s"), file.path(), ref.span())
@@ -121,15 +123,16 @@ final class FileScope {
         if (localClasses.contains(name)) {
             return new Type.ClassType(qualify(name));
         }
-        if (Builtins.uiNames().contains(name)) {
+        String builtinModule = Builtins.moduleOf(name);
+        if (builtinModule != null) {
             if (imports.containsKey(name)) {
                 usedImports.add(name);
             } else if (reportedMissingImports.add(name)) {
                 Span insertAt = importInsertionPoint();
-                out.add(Diagnostic.of("E0305", "'" + name + "' must be imported from kata.ui", file.path(), span)
-                        .withFix(insertAt, "\nimport kata.ui." + name + ";"));
+                out.add(Diagnostic.of("E0305", "'" + name + "' must be imported from " + builtinModule, file.path(),
+                        span).withFix(insertAt, "\nimport " + builtinModule + "." + name + ";"));
             }
-            String qualified = Builtins.UI_MODULE + "." + name;
+            String qualified = builtinModule + "." + name;
             return Builtins.isUiInterface(name) ? new Type.InterfaceType(qualified) : new Type.ClassType(qualified);
         }
         out.add(Diagnostic.of("E0302", "unknown type '" + name + "'", file.path(), span));
