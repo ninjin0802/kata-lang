@@ -747,7 +747,8 @@ class Counter implements Screen {
   <li><code>Request</code> は、表示されると HTTP の通信を1回行う。応答の本文（UTF-8 の文字列）を <code>onResult</code> に、失敗の説明を <code>onError</code> に渡し、再描画する。見た目は <code>child</code> そのもの。</li>
   <li>結果を受け取るメソッドの中で、表示の条件にしているフィールドを戻す。表示されたままでも、<code>method</code>、<code>url</code>、<code>body</code> が変わらない限り、通信をやり直さない。</li>
   <li>結果が届く前に UI から外すと、その結果は捨てられる。</li>
-  <li><code>method</code> は <code>GET</code>、<code>POST</code>、<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>。<code>body</code> が空でなければ本文として送る。</li>
+  <li><code>method</code> は <code>GET</code>、<code>POST</code>、<code>PUT</code>、<code>DELETE</code>。<code>body</code> が空でなければ本文として送る。指定したメソッドは、そのままサーバーに送られる。</li>
+  <li id="request-once">同じ通信（<code>method</code>、<code>url</code>、<code>body</code> の組）が送られるのは1回だけ。例外は <code>GET</code> で、結果を渡せなかった場合（結果が届いたときに部品が画面から外れていた場合）に限り、画面に戻ったときに取得し直す。<code>POST</code> などは、結果を渡せなくても送り直さない。注文や削除が二重に行われないようにするため。</li>
   <li>応答の状態が 200 番台でない場合は、<code>HTTP 404</code> の形の説明で <code>onError</code> になる。</li>
   <li>応答の本文が 8MB を超える場合は、読むのをやめて <code>onError</code> になる。本文は1つの文字列としてメモリに載るので、相手のサーバーが送り続けてもアプリのメモリを使い切らないようにするため。接続と読み取りは、それぞれ15秒で打ち切る。</li>
   <li>使えるのは <code>https://</code> のアドレス。<code>http://</code> は Android が既定で拒否するため <code>onError</code> になる。</li>

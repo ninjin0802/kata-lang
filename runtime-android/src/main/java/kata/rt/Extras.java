@@ -438,11 +438,10 @@ final class Extras {
         }
     }
 
-    /** While attached, performs its Request once (again when method, url or body change). */
+    /** While attached, performs its Request; RequestState decides when it is sent. */
     private static final class RequestFrame extends FrameLayout {
         private final Renderer r;
-        /** Identifies the exchange in flight or finished; a reply for any other one is dropped. */
-        private String started;
+        private final RequestState state = new RequestState();
         private boolean attached;
 
         RequestFrame(Renderer r) {
@@ -456,10 +455,9 @@ final class Extras {
             }
             final Request request = (Request) getTag();
             final String key = request.method + "\n" + request.url + "\n" + request.body;
-            if (key.equals(started)) {
+            if (!state.shouldStart(request.method, key)) {
                 return;
             }
-            started = key;
             new Thread(() -> {
                 String body = null;
                 String failure = null;
@@ -470,8 +468,8 @@ final class Extras {
                 }
                 final String result = body;
                 final String error = failure;
-                post(() -> {
-                    if (!attached || !key.equals(started)) {
+                r.activity.runOnUiThread(() -> {
+                    if (!state.replyArrived(key, attached)) {
                         return;
                     }
                     Request current = (Request) getTag();
@@ -495,7 +493,6 @@ final class Extras {
         @Override
         protected void onDetachedFromWindow() {
             attached = false;
-            started = null;
             super.onDetachedFromWindow();
         }
     }

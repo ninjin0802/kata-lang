@@ -14,7 +14,7 @@ import java.util.List;
 public final class Http {
     private Http() {}
 
-    private static final List<String> METHODS = Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE");
+    private static final List<String> METHODS = Arrays.asList("GET", "POST", "PUT", "DELETE");
     private static final int TIMEOUT_MILLIS = 15000;
     /** A reply is held in memory as one String, so a server must not be able to send without end. */
     static final long MAX_RESPONSE_BYTES = 8L * 1024 * 1024;
@@ -45,13 +45,7 @@ public final class Http {
         try {
             connection.setConnectTimeout(TIMEOUT_MILLIS);
             connection.setReadTimeout(TIMEOUT_MILLIS);
-            if (method.equals("PATCH")) {
-                // HttpURLConnection rejects PATCH; servers accept it through this override.
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("X-HTTP-Method-Override", "PATCH");
-            } else {
-                connection.setRequestMethod(method);
-            }
+            connection.setRequestMethod(method);
             if (!body.isEmpty()) {
                 byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                 connection.setDoOutput(true);

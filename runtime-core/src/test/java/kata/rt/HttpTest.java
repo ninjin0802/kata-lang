@@ -75,6 +75,12 @@ class HttpTest {
     }
 
     @Test
+    void putAndDeleteAreSentAsThemselves() throws IOException {
+        assertEquals("PUT:x:日本語", Http.send("PUT", base + "/echo", "x"));
+        assertEquals("DELETE::日本語", Http.send("DELETE", base + "/echo", ""));
+    }
+
+    @Test
     void errorStatusIsAnIOException() {
         IOException e = assertThrows(IOException.class, () -> Http.send("GET", base + "/missing", ""));
         assertEquals("HTTP 404", e.getMessage());
@@ -85,6 +91,8 @@ class HttpTest {
         assertThrows(IOException.class, () -> Http.send("GET", "file:///etc/hostname", ""));
         assertThrows(IOException.class, () -> Http.send("GET", "not a url", ""));
         assertThrows(IOException.class, () -> Http.send("FETCH", base + "/echo", ""));
+        IOException patch = assertThrows(IOException.class, () -> Http.send("PATCH", base + "/echo", "x"));
+        assertEquals("unsupported method: PATCH", patch.getMessage());
         IOException refused = assertThrows(IOException.class, () -> Http.send("GET", "http://127.0.0.1:1/", ""));
         assertTrue(refused.getMessage() != null);
     }
