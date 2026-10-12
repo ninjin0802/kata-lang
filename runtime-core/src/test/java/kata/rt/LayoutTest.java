@@ -242,6 +242,37 @@ class LayoutTest {
     }
 
     @Test
+    void barsAndLazyListFillTheWidth() {
+        KList one = KList.of(new Object[] {"a"});
+        Ui[] bars = {new TopBar("t"), new BackBar("t", () -> { }), new Tabs(one, 0, value -> { }),
+            new BottomNav(one, 0, value -> { }), new LazyList(null)};
+        for (Ui bar : bars) {
+            assertEquals(FILL, other(bar, WRAP, WRAP).width, bar.getClass().getSimpleName());
+            assertEquals(WRAP, other(bar, WRAP, WRAP).height, bar.getClass().getSimpleName());
+        }
+    }
+
+    @Test
+    void overlaysTakeNoRoomAndDoNotStretchTheirSurroundings() {
+        Ui sheet = new BottomSheet(new FillWidth(LEAF), () -> { });
+        Spec sheetSpec = other(sheet, FILL, FILL);
+        assertSpec(sheetSpec, Dim.fixed(0), Dim.fixed(0), FILL, WRAP, Gravity.TOP_START);
+        Spec modal = other(new Modal(new Center(LEAF), () -> { }), WRAP, WRAP);
+        assertSpec(modal, Dim.fixed(0), Dim.fixed(0), WRAP, WRAP, Gravity.TOP_START);
+        assertEquals(Dim.fixed(0), other(new Alert("t", "m", "ok", () -> { }, "no", () -> { }), FILL, FILL).width);
+        assertEquals(Dim.fixed(0), other(new Snackbar("m", "a", () -> { }, () -> { }), FILL, FILL).height);
+        Ui stack = new Stack(KList.of(new Object[] {LEAF, sheet, new Modal(new Center(LEAF), () -> { })}));
+        assertEquals(WRAP, other(stack, WRAP, WRAP).width);
+        assertEquals(WRAP, other(stack, WRAP, WRAP).height);
+    }
+
+    @Test
+    void backHandlerPassesSizesThrough() {
+        assertSpec(other(new BackHandler(() -> { }, LEAF), FILL, WRAP), FILL, WRAP, FILL, WRAP, Gravity.TOP_START);
+        assertEquals(FILL, other(new BackHandler(() -> { }, new FillWidth(LEAF)), WRAP, WRAP).width);
+    }
+
+    @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));
         assertEquals(Parent.ROW, Layout.parentKind(new Row(KList.of(new Object[0]))));

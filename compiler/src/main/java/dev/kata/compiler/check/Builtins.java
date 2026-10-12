@@ -18,12 +18,14 @@ public final class Builtins {
     public static final String UI_MODULE = "kata.ui";
     public static final String UI = UI_MODULE + ".Ui";
     public static final String SCREEN = UI_MODULE + ".Screen";
+    public static final String ITEMS = UI_MODULE + ".Items";
 
     /** Type names usable without an import. */
     public static final Set<String> CORE_TYPES = Set.of("Int", "Float", "Bool", "String", "Unit", "Action", "Handler", "List");
 
     private static final Type UI_TYPE = new Type.InterfaceType(UI);
     private static final Type COLOR_TYPE = new Type.ClassType(UI_MODULE + ".Color");
+    private static final Type ITEMS_TYPE = new Type.InterfaceType(ITEMS);
     private static final Map<String, List<FieldInfo>> UI_CLASSES = new LinkedHashMap<>();
 
     static {
@@ -67,6 +69,20 @@ public final class Builtins {
         ui("Card", field("child", UI_TYPE));
         ui("Grid", field("columns", Type.INT), field("children", new Type.ListType(UI_TYPE)));
         ui("Stack", field("children", new Type.ListType(UI_TYPE)));
+        ui("Label", field("text", Type.STRING), field("size", Type.INT), field("color", COLOR_TYPE), field("bold", Type.BOOL), field("italic", Type.BOOL), field("maxLines", Type.INT));
+        ui("TopBar", field("title", Type.STRING));
+        ui("BackBar", field("title", Type.STRING), field("onBack", Type.ACTION));
+        ui("Tabs", field("labels", new Type.ListType(Type.STRING)), field("selected", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("BottomNav", field("labels", new Type.ListType(Type.STRING)), field("selected", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("BackHandler", field("onBack", Type.ACTION), field("child", UI_TYPE));
+        ui("Fab", field("label", Type.STRING), field("onTap", Type.ACTION));
+        ui("Chip", field("label", Type.STRING), field("selected", Type.BOOL), field("onTap", Type.ACTION));
+        ui("Badge", field("count", Type.INT));
+        ui("Alert", field("title", Type.STRING), field("message", Type.STRING), field("confirmLabel", Type.STRING), field("onConfirm", Type.ACTION), field("cancelLabel", Type.STRING), field("onCancel", Type.ACTION));
+        ui("Modal", field("child", UI_TYPE), field("onDismiss", Type.ACTION));
+        ui("BottomSheet", field("child", UI_TYPE), field("onDismiss", Type.ACTION));
+        ui("Snackbar", field("message", Type.STRING), field("actionLabel", Type.STRING), field("onAction", Type.ACTION), field("onDismiss", Type.ACTION));
+        ui("LazyList", field("items", ITEMS_TYPE));
     }
 
     /** Classes that are values passed to components rather than components themselves. */
@@ -82,18 +98,20 @@ public final class Builtins {
 
     /** Simple names exported by kata.ui. */
     public static Set<String> uiNames() {
-        Set<String> names = new java.util.LinkedHashSet<>(List.of("Ui", "Screen"));
+        Set<String> names = new java.util.LinkedHashSet<>(List.of("Ui", "Screen", "Items"));
         names.addAll(UI_CLASSES.keySet());
         return names;
     }
 
     public static boolean isUiInterface(String simpleName) {
-        return simpleName.equals("Ui") || simpleName.equals("Screen");
+        return simpleName.equals("Ui") || simpleName.equals("Screen") || simpleName.equals("Items");
     }
 
     public static void register(ClassTable table) {
         table.add(new InterfaceInfo(UI, List.of(), false));
         table.add(new InterfaceInfo(SCREEN, List.of(new MethodInfo("view", List.of(), UI_TYPE)), true));
+        table.add(new InterfaceInfo(ITEMS, List.of(new MethodInfo("size", List.of(), Type.INT),
+                new MethodInfo("item", List.of(new ParamInfo("index", Type.INT)), UI_TYPE)), true));
         for (Map.Entry<String, List<FieldInfo>> entry : UI_CLASSES.entrySet()) {
             List<String> interfaces = NOT_UI.contains(entry.getKey()) ? List.of() : List.of(UI);
             table.add(new ClassInfo(UI_MODULE + "." + entry.getKey(), interfaces, entry.getValue(), List.of(), true));

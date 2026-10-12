@@ -1,0 +1,163 @@
+module app.overlays;
+
+import kata.ui.Alert;
+import kata.ui.BottomSheet;
+import kata.ui.Button;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.Items;
+import kata.ui.LazyList;
+import kata.ui.Modal;
+import kata.ui.Padding;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Snackbar;
+import kata.ui.Stack;
+import kata.ui.Tappable;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+// A row of the long list; tapping it tells the screen which one was picked.
+class Pick {
+  let owner: Overlays;
+  let index: Int;
+
+  fn press(self) -> Unit {
+    self.owner.pick(index: self.index);
+  }
+}
+
+// Overlays are shown by adding them to the view while a flag is set, and hidden by clearing the flag.
+class Overlays implements Screen, Items {
+  var asking: Bool = false;
+  var answer: String = "none";
+  var sheet: Bool = false;
+  var modal: Bool = false;
+  var notice: Bool = false;
+  var undone: Int = 0;
+  var picked: Int = 0;
+
+  fn view(self) -> Ui {
+    var layers: List<Ui> = [self.page()];
+    if (self.asking) {
+      layers = layers.append(item: Alert {
+        title: "Delete?",
+        message: "This cannot be undone.",
+        confirmLabel: "Delete",
+        onConfirm: self.confirm,
+        cancelLabel: "Keep",
+        onCancel: self.cancel,
+      });
+    }
+    if (self.sheet) {
+      layers = layers.append(item: BottomSheet { child: self.panel(title: "sheet body"), onDismiss: self.closeSheet });
+    }
+    if (self.modal) {
+      layers = layers.append(item: Modal { child: self.panel(title: "modal body"), onDismiss: self.closeModal });
+    }
+    if (self.notice) {
+      layers = layers.append(item: Snackbar {
+        message: "Item removed",
+        actionLabel: "Undo",
+        onAction: self.undo,
+        onDismiss: self.closeNotice,
+      });
+    }
+    return Stack { children: layers };
+  }
+
+  fn page(self) -> Ui {
+    return Column {
+      children: [
+        Row {
+          children: [
+            Button { label: "Ask", onTap: self.ask },
+            Button { label: "Sheet", onTap: self.openSheet },
+            Button { label: "Modal", onTap: self.openModal },
+            Button { label: "Notify", onTap: self.notify },
+          ],
+        },
+        Text { text: "answer=".concat(other: self.answer) },
+        Text { text: "undone=".concat(other: self.undone.toString()) },
+        Text { text: "picked=".concat(other: self.picked.toString()) },
+        Expand { child: LazyList { items: self } },
+      ],
+    };
+  }
+
+  fn panel(self, title: String) -> Ui {
+    return Padding {
+      all: 24,
+      child: Column { children: [Text { text: title }, Button { label: "Close", onTap: self.closeAll }] },
+    };
+  }
+
+  fn size(self) -> Int {
+    return 1000;
+  }
+
+  fn item(self, index: Int) -> Ui {
+    return Tappable {
+      onTap: Pick { owner: self, index: index }.press,
+      child: Padding { all: 12, child: Text { text: "Item ".concat(other: index.toString()) } },
+    };
+  }
+
+  fn pick(self, index: Int) -> Unit {
+    self.picked = index;
+  }
+
+  fn ask(self) -> Unit {
+    self.asking = true;
+  }
+
+  fn confirm(self) -> Unit {
+    self.asking = false;
+    self.answer = "delete";
+  }
+
+  fn cancel(self) -> Unit {
+    self.asking = false;
+    self.answer = "keep";
+  }
+
+  fn openSheet(self) -> Unit {
+    self.sheet = true;
+  }
+
+  fn closeSheet(self) -> Unit {
+    self.sheet = false;
+  }
+
+  fn openModal(self) -> Unit {
+    self.modal = true;
+  }
+
+  fn closeModal(self) -> Unit {
+    self.modal = false;
+  }
+
+  fn closeAll(self) -> Unit {
+    self.sheet = false;
+    self.modal = false;
+  }
+
+  fn notify(self) -> Unit {
+    self.notice = true;
+  }
+
+  fn undo(self) -> Unit {
+    self.notice = false;
+    self.undone = self.undone + 1;
+  }
+
+  fn closeNotice(self) -> Unit {
+    self.notice = false;
+  }
+}
+
+app {
+  id: "dev.kata.overlays",
+  name: "Overlays",
+  root: Overlays {},
+}

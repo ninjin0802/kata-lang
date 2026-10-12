@@ -1,0 +1,134 @@
+module app.shell;
+
+import kata.ui.AlignBottom;
+import kata.ui.AlignEnd;
+import kata.ui.BackBar;
+import kata.ui.BackHandler;
+import kata.ui.Badge;
+import kata.ui.BottomNav;
+import kata.ui.Chip;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.Fab;
+import kata.ui.Label;
+import kata.ui.Padding;
+import kata.ui.PaddingEdges;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Stack;
+import kata.ui.Tabs;
+import kata.ui.Text;
+import kata.ui.TopBar;
+import kata.ui.Ui;
+
+// The frame of a typical app: a title bar, tabs, a bottom navigation bar and a floating button.
+// Opening the detail page swaps the title bar for one with a back arrow.
+class Shell implements Screen {
+  var tab: Int = 0;
+  var nav: Int = 0;
+  var detail: Bool = false;
+  var picked: Bool = false;
+  var added: Int = 0;
+
+  fn view(self) -> Ui {
+    if (self.detail) {
+      return BackHandler { onBack: self.close, child: self.detailPage() };
+    }
+    return Stack {
+      children: [
+        self.homePage(),
+        AlignBottom {
+          child: AlignEnd {
+            child: PaddingEdges {
+              left: 0,
+              top: 0,
+              right: 16,
+              bottom: 72,
+              child: Fab { label: "+", onTap: self.add },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  fn homePage(self) -> Ui {
+    return Column {
+      children: [
+        TopBar { title: "Home" },
+        Tabs { labels: ["One", "Two", "Three"], selected: self.tab, onChange: self.setTab },
+        Expand {
+          child: Padding {
+            all: 16,
+            child: Column {
+              children: [
+                Text { text: "tab=".concat(other: self.tab.toString()) },
+                Text { text: "nav=".concat(other: self.nav.toString()) },
+                Row { children: [Text { text: "added=" }, Badge { count: self.added }] },
+                Chip { label: "Pick me", selected: self.picked, onTap: self.togglePicked },
+                Text { text: "picked=".concat(other: self.yesNo(value: self.picked)) },
+                Label {
+                  text: "A long bold label that is cut off after one line because it does not fit the screen width at all",
+                  size: 18,
+                  color: Color { red: 20, green: 20, blue: 20, alpha: 255 },
+                  bold: true,
+                  italic: false,
+                  maxLines: 1,
+                },
+                Chip { label: "Open detail", selected: false, onTap: self.open },
+              ],
+            },
+          },
+        },
+        BottomNav { labels: ["Home", "Search", "Me"], selected: self.nav, onChange: self.setNav },
+      ],
+    };
+  }
+
+  fn detailPage(self) -> Ui {
+    return Column {
+      children: [
+        BackBar { title: "Detail", onBack: self.close },
+        Padding { all: 16, child: Text { text: "detail page" } },
+      ],
+    };
+  }
+
+  fn yesNo(self, value: Bool) -> String {
+    if (value) {
+      return "yes";
+    }
+    return "no";
+  }
+
+  fn setTab(self, value: Int) -> Unit {
+    self.tab = value;
+  }
+
+  fn setNav(self, value: Int) -> Unit {
+    self.nav = value;
+  }
+
+  fn togglePicked(self) -> Unit {
+    self.picked = !self.picked;
+  }
+
+  fn add(self) -> Unit {
+    self.added = self.added + 1;
+  }
+
+  fn open(self) -> Unit {
+    self.detail = true;
+  }
+
+  fn close(self) -> Unit {
+    self.detail = false;
+  }
+}
+
+app {
+  id: "dev.kata.shell",
+  name: "Shell",
+  root: Shell {},
+}

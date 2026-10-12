@@ -88,6 +88,24 @@ class UiValidatorTest {
     }
 
     @Test
+    void barsLabelsAndBadgesAreChecked() {
+        Handler ignore = value -> { };
+        KList two = KList.of(new Object[] {"a", "b"});
+        assertInvalid("Tabs.labels out of range: 0", new Tabs(KList.of(new Object[0]), 0, ignore));
+        assertInvalid("Tabs.selected out of range: 2", new Tabs(two, 2, ignore));
+        assertInvalid("BottomNav.selected out of range: -1", new BottomNav(two, -1, ignore));
+        assertInvalid("Badge.count out of range: -1", new Badge(-1));
+        assertInvalid("Label.maxLines out of range: 0", new Label("t", 12, BLACK, false, false, 0));
+        assertInvalid("Label.size out of range: -1", new Label("t", -1, BLACK, false, false, 1));
+        assertInvalid("Width.dp out of range: -4", new Modal(new Width(-4, LEAF), () -> { }));
+        assertInvalid("Width.dp out of range: -4", new BackHandler(() -> { }, new BottomSheet(new Width(-4, LEAF), () -> { })));
+        assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
+            new Tabs(two, 1, ignore), new BottomNav(two, 0, ignore), new Badge(0),
+            new Label("t", 0, BLACK, true, true, 1),
+        }))));
+    }
+
+    @Test
     void zeroIsAllowed() {
         assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
             new StyledText("t", 0, BLACK), new Padding(0, LEAF), new PaddingEdges(0, 0, 0, 0, LEAF),

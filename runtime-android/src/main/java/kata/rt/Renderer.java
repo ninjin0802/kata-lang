@@ -19,8 +19,8 @@ import java.util.List;
  * touched (spec 05 #reconcile), so focus, cursor and scroll positions survive a re-render.
  */
 final class Renderer implements Host<View> {
-    private final KataActivity activity;
-    private final FrameLayout container;
+    final KataActivity activity;
+    final FrameLayout container;
     private final Reconciler<View> reconciler = new Reconciler<View>(this);
     private final float density;
     private Ui current;
@@ -42,13 +42,50 @@ final class Renderer implements Host<View> {
         } else {
             View patched = reconciler.patch(rootView, current, ui);
             if (patched != rootView) {
-                container.removeAllViews();
-                container.addView(patched);
+                // Only the root is swapped: the container may also hold overlay bars.
+                container.removeView(rootView);
+                container.addView(patched, 0);
                 rootView = patched;
             }
         }
         current = ui;
         layout(rootView, ui, Layout.Parent.OTHER, Layout.Dim.WRAP, Layout.Dim.WRAP, Layout.Gravity.TOP_START);
+    }
+
+    /** Runs the innermost BackHandler of the current screen. Returns false when there is none. */
+    boolean handleBack() {
+        BackHandler handler = current == null ? null : findBackHandler(current);
+        if (handler == null) {
+            return false;
+        }
+        handler.onBack.run();
+        activity.rerender();
+        return true;
+    }
+
+    private static BackHandler findBackHandler(Ui node) {
+        BackHandler found = node instanceof BackHandler ? (BackHandler) node : null;
+        for (Ui child : UiNodes.children(node)) {
+            BackHandler inner = findBackHandler(child);
+            if (inner != null) {
+                found = inner;
+            }
+        }
+        return found;
+    }
+
+    // ---- rows of a LazyList, which are small trees of their own
+
+    View mountRow(Ui node) {
+        return reconciler.mount(node);
+    }
+
+    View patchRow(View view, Ui oldNode, Ui newNode) {
+        return reconciler.patch(view, oldNode, newNode);
+    }
+
+    void layoutRow(View view, Ui node) {
+        layout(view, node, Layout.Parent.OTHER, Layout.Dim.FILL, Layout.Dim.WRAP, Layout.Gravity.TOP_START);
     }
 
     // ---- Host
@@ -67,29 +104,33 @@ final class Renderer implements Host<View> {
 
     @Override
     public void insertChild(View parent, int index, View child) {
-        ((ViewGroup) parent).addView(child, index);
+        Extras.childContainer(parent).addView(child, index);
     }
 
     @Override
     public void removeChild(View parent, int index) {
-        ((ViewGroup) parent).removeViewAt(index);
+        Extras.childContainer(parent).removeViewAt(index);
     }
 
     @Override
     public void replaceChild(View parent, int index, View child) {
-        ViewGroup group = (ViewGroup) parent;
+        ViewGroup group = Extras.childContainer(parent);
         group.removeViewAt(index);
         group.addView(child, index);
     }
 
     @Override
     public View childAt(View parent, int index) {
-        return ((ViewGroup) parent).getChildAt(index);
+        return Extras.childContainer(parent).getChildAt(index);
     }
 
     // ---- views
 
     private View newView(Ui node) {
+        View extra = Extras.create(this, node);
+        if (extra != null) {
+            return extra;
+        }
         if (node instanceof Column || node instanceof Row) {
             LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(node instanceof Column ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
@@ -302,6 +343,9 @@ final class Renderer implements Host<View> {
     /** Applies the component's own properties to its view. Sizes and placement are set by layout(). */
     private void bind(View view, Ui node) {
         view.setTag(node);
+        if (Extras.bind(this, view, node)) {
+            return;
+        }
         if (node instanceof Text) {
             setText((TextView) view, ((Text) node).text);
         } else if (node instanceof StyledText) {
@@ -461,11 +505,11 @@ final class Renderer implements Host<View> {
         }
     }
 
-    private static int argb(Color color) {
+    static int argb(Color color) {
         return android.graphics.Color.argb((int) color.alpha, (int) color.red, (int) color.green, (int) color.blue);
     }
 
-    private int px(long dp) {
+    int px(long dp) {
         return (int) (dp * density + 0.5f);
     }
 
@@ -507,7 +551,7 @@ final class Renderer implements Host<View> {
         List<Ui> children = UiNodes.children(node);
         Layout.Parent kind = Layout.parentKind(node);
         for (int i = 0; i < children.size(); i++) {
-            layout(((ViewGroup) view).getChildAt(i), children.get(i), kind, spec.childWidth, spec.childHeight,
+            layout(Extras.childContainer(view).getChildAt(i), children.get(i), kind, spec.childWidth, spec.childHeight,
                     spec.childGravity);
         }
     }

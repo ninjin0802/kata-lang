@@ -23,6 +23,8 @@ examples/form/       M1 のサンプルアプリ（入力欄とスクロール�
 examples/calculator/ M1 のサンプルアプリ（電卓）
 examples/controls/   M1 のサンプルアプリ（入力部品）
 examples/widgets/    M1 のサンプルアプリ（選択の部品と配置の部品）
+examples/shell/      M1 のサンプルアプリ（画面の骨組み）
+examples/overlays/   M1 のサンプルアプリ（重ねて出す部品と長い一覧）
 scripts/             エミュレータでの確認スクリプト</code></pre>
 
 <h2 id="components">部品と依存</h2>
@@ -92,7 +94,7 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
 <h2 id="manifest">生成するマニフェスト</h2>
 <ul>
   <li><code>package</code> は <code>app</code> 宣言の <code>id</code>。</li>
-  <li><code>application</code> の <code>android:label</code> は <code>app</code> 宣言の <code>name</code>。テーマは <code>@android:style/Theme.Material.Light</code>。</li>
+  <li><code>application</code> の <code>android:label</code> は <code>app</code> 宣言の <code>name</code>。テーマは <code>@android:style/Theme.Material.Light.NoActionBar</code>（既定のタイトルバーなし）。</li>
   <li>Activity は <code>kata.gen.MainActivity</code> の1つだけ。<code>android:exported="true"</code> とし、<code>MAIN</code> / <code>LAUNCHER</code> の intent-filter を持つ。</li>
   <li>Activity には <code>android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"</code> を付ける。画面の回転などで Activity が作り直されず、画面の状態が保たれるようにするため。</li>
 </ul>

@@ -43,6 +43,14 @@ public abstract class KataActivity extends Activity {
         rerender();
     }
 
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onBackPressed() {
+        if (!renderer.handleBack()) {
+            super.onBackPressed();
+        }
+    }
+
     /** Calls view() on the root and reflects the result. A call made while rendering runs once afterwards. */
     public final void rerender() {
         if (rendering) {

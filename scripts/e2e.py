@@ -475,8 +475,113 @@ def check_widgets():
     adb("uninstall", app_id, check=False)
 
 
+def check_shell():
+    app_id = "dev.kata.shell"
+    install_and_launch(build("shell"), app_id)
+    root = wait_for(lambda r: exists(r, text="tab=0"), "the shell example to appear")
+    screen_width, screen_height = screen_size()
+
+    # TopBar spans the width; Tabs and BottomNav split it equally and report the tapped index.
+    near(find(root, text="Home", cls="android.widget.TextView").width, screen_width, "TopBar fills the width")
+    one, two, three = find(root, text="One"), find(root, text="Two"), find(root, text="Three")
+    near(one.width, two.width, "tabs have equal width", tolerance=2)
+    near(three.right, screen_width, "tabs reach the right edge")
+    tap(two)
+    wait_for(lambda r: exists(r, text="tab=1"), "the second tab")
+    me = find(dump(), text="Me")
+    assert me.top > screen_height // 2, "BottomNav sits in the lower half"
+    tap(me)
+    wait_for(lambda r: exists(r, text="nav=2"), "the third destination")
+
+    # Chip toggles, Fab counts into the Badge.
+    tap(find(dump(), text="Pick me"))
+    wait_for(lambda r: exists(r, text="picked=yes"), "the chip to be selected")
+    fab = find(dump(), text="+")
+    near(fab.width, px(56), "Fab is 56dp wide")
+    assert fab.right > screen_width - px(40) and fab.bottom < me.top, "Fab floats above the bottom bar, at the right"
+    tap(fab)
+    tap(fab)
+    wait_for(lambda r: exists(r, text="2"), "the badge to show 2")
+
+    # Label is limited to one line.
+    label = [n for n in find_all(dump()) if n.text and n.text.startswith("A long bold label")][0]
+    assert label.height < px(40), f"Label is one line high, got {label.height}px"
+
+    # BackBar's arrow and the system back gesture both run the back action; the app stays open.
+    tap(find(dump(), text="Open detail"))
+    wait_for(lambda r: exists(r, text="detail page"), "the detail page")
+    tap(find(dump(), text="\u2190"))
+    wait_for(lambda r: exists(r, text="tab=1"), "the arrow to go back, keeping the state")
+    tap(find(dump(), text="Open detail"))
+    wait_for(lambda r: exists(r, text="detail page"), "the detail page again")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for(lambda r: exists(r, text="tab=1"), "the system back to return to the home page")
+    adb("uninstall", app_id, check=False)
+
+
+def check_overlays():
+    app_id = "dev.kata.overlays"
+    install_and_launch(build("overlays"), app_id)
+    wait_for(lambda r: exists(r, text="answer=none"), "the overlays example to appear")
+
+    # Alert: both buttons close it and report which one was pressed.
+    tap_text("Ask")
+    wait_for(lambda r: exists(r, text="This cannot be undone."), "the alert")
+    tap_text("Delete")
+    wait_for(lambda r: exists(r, text="answer=delete"), "the confirm action")
+    tap_text("Ask")
+    wait_for(lambda r: exists(r, text="Delete?"), "the alert again")
+    tap_text("Keep")
+    wait_for(lambda r: exists(r, text="answer=keep"), "the cancel action")
+
+    # BottomSheet and Modal show a kata-built panel whose button works.
+    for opener, body in (("Sheet", "sheet body"), ("Modal", "modal body")):
+        tap_text(opener)
+        wait_for(lambda r: exists(r, text=body), f"the {opener.lower()}")
+        tap_text("Close")
+        wait_for(lambda r: exists(r, text="answer=keep") and not exists(r, text=body), f"the {opener.lower()} to close")
+    # The system back gesture dismisses a sheet through onDismiss.
+    tap_text("Sheet")
+    wait_for(lambda r: exists(r, text="sheet body"), "the sheet")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for(lambda r: exists(r, text="answer=keep"), "back to dismiss the sheet")
+
+    # Snackbar: its action runs and removes it; left alone, it asks to be dismissed.
+    tap_text("Notify")
+    # The bar leaves by itself after four seconds, so the action is tapped from the same dump.
+    tap(find(wait_for(lambda r: exists(r, text="Item removed"), "the snackbar"), text="Undo"))
+    wait_for(lambda r: exists(r, text="undone=1") and not exists(r, text="Item removed"), "the undo action")
+    tap_text("Notify")
+    wait_for(lambda r: exists(r, text="Item removed"), "the snackbar again")
+    wait_for(lambda r: not exists(r, text="Item removed"), "the snackbar to time out", timeout=12)
+
+    # LazyList: a thousand rows, only the visible ones exist; rows respond to taps after scrolling.
+    root = dump()
+    rows = [n for n in find_all(root) if n.text and n.text.startswith("Item ")]
+    assert exists(root, text="Item 0") and len(rows) < 60, f"only visible rows are built, found {len(rows)}"
+    # Start well above the bottom edge: a swipe from the very bottom is the system's "go home" gesture.
+    x, top, bottom = rows[0].center[0], rows[0].center[1], rows[-4].center[1]
+    for _ in range(3):
+        adb("shell", "input", "swipe", str(x), str(bottom), str(x), str(top), "200")
+        time.sleep(0.7)
+    def item_rows(r):
+        return [n for n in find_all(r) if n.text and n.text.startswith("Item ")]
+
+    # A dump taken while the list is still moving can come back without rows; wait until it settles.
+    root = wait_for(lambda r: not exists(r, text="Item 0") and len(item_rows(r)) > 3, "the list to scroll")
+    rows = item_rows(root)
+    target = rows[len(rows) // 2]
+    tap(target)
+    number = target.text.split()[1]
+    root = wait_for(lambda r: exists(r, text=f"picked={number}"), f"row {number} to be picked")
+    assert exists(root, text=target.text), "the list keeps its position after the re-render"
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "shell": check_shell,
+    "overlays": check_overlays,
     "widgets": check_widgets,
     "controls": check_controls,
     "counter": check_counter,

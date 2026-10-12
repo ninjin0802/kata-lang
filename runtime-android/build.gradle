@@ -8,7 +8,8 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << '-Xlint:-options'
-    options.bootstrapClasspath = files(androidJar)
+    // core-lambda-stubs provides the lambda bootstrap classes that android.jar leaves out.
+    options.bootstrapClasspath = files(androidJar, "${androidHome}/build-tools/35.0.0/core-lambda-stubs.jar")
 }
 
 dependencies {

@@ -137,6 +137,15 @@ public final class Layout {
             Dim size = Dim.fixed(((Space) node).dp);
             return spec(size, size, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
+        if (node instanceof Alert || node instanceof Snackbar) {
+            return spec(Dim.fixed(0), Dim.fixed(0), Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
+        }
+        if (node instanceof Modal) {
+            return spec(Dim.fixed(0), Dim.fixed(0), Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
+        }
+        if (node instanceof BottomSheet) {
+            return spec(Dim.fixed(0), Dim.fixed(0), Dim.FILL, Dim.WRAP, Gravity.TOP_START);
+        }
         if (node instanceof Divider) {
             return spec(iw, Dim.fixed(1), Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
@@ -163,8 +172,13 @@ public final class Layout {
         if (node instanceof Center) {
             return true;
         }
+        if (node instanceof Alert || node instanceof Modal || node instanceof BottomSheet || node instanceof Snackbar) {
+            // Shown in a layer of their own; they take no room where they are written.
+            return false;
+        }
         if (widthAxis && (node instanceof Slider || node instanceof Progress || node instanceof Divider
-                || node instanceof Grid)) {
+                || node instanceof Grid || node instanceof TopBar || node instanceof BackBar || node instanceof Tabs
+                || node instanceof BottomNav || node instanceof LazyList)) {
             return true;
         }
         if (node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis

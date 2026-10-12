@@ -106,7 +106,7 @@ public final class ApkBuilder {
         return """
                 <?xml version="1.0" encoding="utf-8"?>
                 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="%s">
-                    <application android:label="%s" android:theme="@android:style/Theme.Material.Light">
+                    <application android:label="%s" android:theme="@android:style/Theme.Material.Light.NoActionBar">
                         <activity
                             android:name="kata.gen.MainActivity"
                             android:exported="true"

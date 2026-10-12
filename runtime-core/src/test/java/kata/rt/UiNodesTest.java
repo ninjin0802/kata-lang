@@ -26,7 +26,8 @@ class UiNodesTest {
                 new PaddingEdges(1, 2, 3, 4, A), new Background(BLACK, A), new Width(1, A), new Height(1, A),
                 new FillWidth(A), new FillHeight(A), new Expand(A), new Center(A), new CenterHorizontal(A),
                 new CenterVertical(A), new AlignEnd(A), new AlignBottom(A), new Tappable(() -> { }, A),
-                new Rounded(4, BLACK, A), new Border(1, BLACK, 0, A), new Card(A));
+                new Rounded(4, BLACK, A), new Border(1, BLACK, 0, A), new Card(A),
+                new BackHandler(() -> { }, A), new Modal(A, () -> { }), new BottomSheet(A, () -> { }));
         for (Ui wrapper : wrappers) {
             List<Ui> children = UiNodes.children(wrapper);
             assertEquals(1, children.size(), wrapper.getClass().getSimpleName());

@@ -61,6 +61,19 @@ public final class UiValidator {
             nonNegative("Border.width", ((Border) root).width);
             nonNegative("Border.radius", ((Border) root).radius);
             color(((Border) root).color);
+        } else if (root instanceof Label) {
+            Label label = (Label) root;
+            nonNegative("Label.size", label.size);
+            if (label.maxLines < 1) {
+                throw new IllegalArgumentException("Label.maxLines out of range: " + label.maxLines);
+            }
+            color(label.color);
+        } else if (root instanceof Tabs) {
+            index("Tabs", ((Tabs) root).labels.size(), ((Tabs) root).selected);
+        } else if (root instanceof BottomNav) {
+            index("BottomNav", ((BottomNav) root).labels.size(), ((BottomNav) root).selected);
+        } else if (root instanceof Badge) {
+            nonNegative("Badge.count", ((Badge) root).count);
         } else if (root instanceof Rounded) {
             nonNegative("Rounded.radius", ((Rounded) root).radius);
             color(((Rounded) root).color);
@@ -77,6 +90,16 @@ public final class UiValidator {
         }
         if (value < 0 || value > max) {
             throw new IllegalArgumentException(component + ".value out of range: " + value);
+        }
+    }
+
+    /** There must be at least one label and selected must be one of them. */
+    private static void index(String component, long size, long selected) {
+        if (size < 1) {
+            throw new IllegalArgumentException(component + ".labels out of range: " + size);
+        }
+        if (selected < 0 || selected >= size) {
+            throw new IllegalArgumentException(component + ".selected out of range: " + selected);
         }
     }
 

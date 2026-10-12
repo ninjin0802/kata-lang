@@ -187,12 +187,39 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Width`, `Height` | `dp: Int, child: Ui` — fixed size |
 | `FillWidth`, `FillHeight` | `child: Ui` — take all the space offered on that axis |
 | `Expand` | `child: Ui` — as a direct child of a `Row`/`Column`, takes the remaining length along it; several `Expand`s share it equally, whatever their contents, and each child is stretched to its share |
+| `Label` | `text: String, size: Int, color: Color, bold: Bool, italic: Bool, maxLines: Int` — full text control; `maxLines` ≥ 1 |
+| `TopBar` | `title: String` — title bar, full width (apps have no title bar unless you add one) |
+| `BackBar` | `title: String, onBack: Action` — title bar with a back arrow |
+| `Tabs`, `BottomNav` | `labels: List<String>, selected: Int, onChange: Handler<Int>` — equal-width segments, full width |
+| `BackHandler` | `onBack: Action, child: Ui` — while shown, the system back gesture runs `onBack` instead of closing the app |
+| `Fab` | `label: String, onTap: Action` — round floating button; position it with `Stack` + `AlignBottom`/`AlignEnd` |
+| `Chip` | `label: String, selected: Bool, onTap: Action` |
+| `Badge` | `count: Int` |
+| `Alert` | `title: String, message: String, confirmLabel: String, onConfirm: Action, cancelLabel: String, onCancel: Action` |
+| `Modal`, `BottomSheet` | `child: Ui, onDismiss: Action` |
+| `Snackbar` | `message: String, actionLabel: String, onAction: Action, onDismiss: Action` — `onDismiss` runs after 4 s |
+| `LazyList` | `items: Items` — builds only the visible rows; full width, give it a height with `Expand` |
 | `Space` | `dp: Int` — an empty square, for gaps |
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 
 Input controls (`TextField`, `TextArea`, `Checkbox`, `Switch`, `Slider`, `RadioGroup`, `Dropdown`, `Rating`) do not keep their own value: pass the current value from a field and store the new one in `onChange`, or the control snaps back.
 
 Layout: a component is as big as its content unless told otherwise. A request to fill travels outward: a `Row` containing an `Expand`, or a `Column` containing a `FillWidth`/`AlignEnd`/`CenterHorizontal`, itself becomes full width (same for height). So equal-width buttons across the screen are simply `Row { children: [Expand {...}, Expand {...}] }`. Sizes cannot be negative and colors must be in range, or the app crashes.
+
+**Overlays** (`Alert`, `Modal`, `BottomSheet`, `Snackbar`) are visible exactly while they are part of what `view` returns, and take no room where written. Build the child list conditionally and clear the flag in the dismiss callbacks:
+
+```
+var layers: List<Ui> = [self.page()];
+if (self.asking) {
+  layers = layers.append(item: Alert { title: "Delete?", message: "Sure?", confirmLabel: "Delete",
+    onConfirm: self.confirm, cancelLabel: "Keep", onCancel: self.cancel });
+}
+return Stack { children: layers };
+```
+
+**Several pages**: there is no navigation system. Keep the current page in a field and return different `Ui` from `view`; wrap a sub-page in `BackHandler` so the back gesture returns instead of closing the app.
+
+**Long lists**: a class may `implements Items` (besides `Screen`) by defining `fn size(self) -> Int` and `fn item(self, index: Int) -> Ui`; pass it as `LazyList { items: self }`. For a few dozen rows, `Scroll { child: Column {...} }` is enough.
 
 `app { id: "...", name: "...", root: <expr of a Screen> }` — exactly these three, in this order. `id` is lowercase words joined by periods (`dev.example.app`).
 

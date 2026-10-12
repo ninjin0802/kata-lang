@@ -85,6 +85,15 @@ public final class UiNodes {
         if (node instanceof Card) {
             return ((Card) node).child;
         }
+        if (node instanceof BackHandler) {
+            return ((BackHandler) node).child;
+        }
+        if (node instanceof Modal) {
+            return ((Modal) node).child;
+        }
+        if (node instanceof BottomSheet) {
+            return ((BottomSheet) node).child;
+        }
         return null;
     }
 

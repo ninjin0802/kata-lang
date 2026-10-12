@@ -217,6 +217,91 @@ class Grid implements Ui {
 
 class Stack implements Ui {
   let children: List&lt;Ui&gt;;
+}
+
+class Label implements Ui {
+  let text: String;
+  let size: Int;
+  let color: Color;
+  let bold: Bool;
+  let italic: Bool;
+  let maxLines: Int;
+}
+
+class TopBar implements Ui {
+  let title: String;
+}
+
+class BackBar implements Ui {
+  let title: String;
+  let onBack: Action;
+}
+
+class Tabs implements Ui {
+  let labels: List&lt;String&gt;;
+  let selected: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class BottomNav implements Ui {
+  let labels: List&lt;String&gt;;
+  let selected: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class BackHandler implements Ui {
+  let onBack: Action;
+  let child: Ui;
+}
+
+class Fab implements Ui {
+  let label: String;
+  let onTap: Action;
+}
+
+class Chip implements Ui {
+  let label: String;
+  let selected: Bool;
+  let onTap: Action;
+}
+
+class Badge implements Ui {
+  let count: Int;
+}
+
+class Alert implements Ui {
+  let title: String;
+  let message: String;
+  let confirmLabel: String;
+  let onConfirm: Action;
+  let cancelLabel: String;
+  let onCancel: Action;
+}
+
+class Modal implements Ui {
+  let child: Ui;
+  let onDismiss: Action;
+}
+
+class BottomSheet implements Ui {
+  let child: Ui;
+  let onDismiss: Action;
+}
+
+class Snackbar implements Ui {
+  let message: String;
+  let actionLabel: String;
+  let onAction: Action;
+  let onDismiss: Action;
+}
+
+interface Items {
+  fn size(self) -&gt; Int;
+  fn item(self, index: Int) -&gt; Ui;
+}
+
+class LazyList implements Ui {
+  let items: Items;
 }</code></pre>
 
 <h2 id="components">UI 部品</h2>
@@ -248,7 +333,7 @@ class Stack implements Ui {
 <ul>
   <li>UI 部品は値であり、作っただけでは画面に出ない。<code>Screen</code> の <code>view</code> が返したものが表示される。</li>
   <li><code>Text</code> と <code>Button</code> の見た目は Android の既定に従う。色や大きさを指定するときは<a href="#styling">見た目の指定</a>の部品を、位置を指定するときは<a href="#layout">配置</a>の部品を使う。</li>
-  <li>利用者は <code>Ui</code> を実装するクラスを作れない（<code>E0506</code>）。画面の部品化は、<code>Ui</code> を返すメソッドで行う。</li>
+  <li>利用者が実装できるインターフェースは <code>Screen</code> と <code>Items</code> だけで、<code>Ui</code> を実装するクラスは作れない（<code>E0506</code>）。画面の部品化は、<code>Ui</code> を返すメソッドで行う。</li>
 </ul>
 
 <h2 id="styling">見た目の指定</h2>
@@ -320,11 +405,12 @@ class Stack implements Ui {
   <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
   <tr><td><code>Grid</code></td><td>いっぱい</td><td>受け継ぐ</td><td>列の幅いっぱい</td><td>中身に合わせる</td></tr>
   <tr><td><code>Stack</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
-  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Space</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
-  <tr><td><code>Slider</code>、<code>Progress</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Slider</code>、<code>Progress</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Alert</code>、<code>Modal</code>、<code>BottomSheet</code>、<code>Snackbar</code></td><td>0</td><td>0</td><td>（重ねた層の中で決まる）</td><td>（同左）</td></tr>
   <tr><td><code>Divider</code></td><td>いっぱい</td><td>固定（1dp）</td><td>—</td><td>—</td></tr>
   <tr><td><code>Column</code>、<code>Row</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
   <tr><td><code>Text</code>、<code>Button</code> などの末端の部品</td><td>受け継ぐ</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
@@ -332,7 +418,7 @@ class Stack implements Ui {
 </div>
 <p id="layout-fill-up"><strong>広がる指定は外側へ伝わる。</strong>「受け継ぐ」と書いた方向について、受け継いだ値が「中身に合わせる」であっても、自分の中にその方向へ広がる部品があれば、その部品は「いっぱい」になる。</p>
 <ul>
-  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、<code>Grid</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
+  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、<code>Grid</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
   <li>高さの方向へ広がる部品：<code>FillHeight</code>、<code>Center</code>、<code>CenterVertical</code>、<code>AlignBottom</code>、および <code>Column</code> の直接の子の <code>Expand</code>。</li>
   <li>この伝わり方は、<code>Column</code>、<code>Row</code>、<code>Stack</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
   <li>伝わりが止まる場所：大きさを固定する部品（幅なら <code>Width</code>、高さなら <code>Height</code>、両方なら <code>Space</code>）と、スクロールする方向（<code>Scroll</code> の高さ、<code>HorizontalScroll</code> の幅）。</li>
@@ -368,6 +454,79 @@ class Stack implements Ui {
   <li><code>onChange</code> の中で <code>value</code> に渡すフィールドを更新しないと、入力は次の再描画で元に戻る。</li>
   <li><code>hint</code> は、内容が空のときに薄く表示する文字列。不要なら <code>""</code> を渡す。</li>
   <li>入力欄の幅は、既定では中身に合わせる。広げるときは <code>FillWidth</code> で包む。</li>
+</ul>
+
+<h2 id="shell">画面の骨組み</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>内容</th></tr>
+  <tr><td><code>TopBar</code></td><td>画面の上に置くタイトルのバー。幅いっぱいに広がる。</td></tr>
+  <tr><td><code>BackBar</code></td><td>戻る矢印つきのタイトルのバー。矢印を押すと <code>onBack</code> を実行する。</td></tr>
+  <tr><td><code>Tabs</code></td><td>等幅のタブの並び。<code>selected</code> は選ばれているタブの番号（0始まり）。別のタブを押すと、その番号で <code>onChange</code> を実行する。</td></tr>
+  <tr><td><code>BottomNav</code></td><td>画面の下に置く行き先の並び。使い方は <code>Tabs</code> と同じ。</td></tr>
+  <tr><td><code>BackHandler</code></td><td>表示されている間、端末の「戻る」操作で、アプリを閉じる代わりに <code>onBack</code> を実行する。複数あるときは、最も内側で最後に書かれたものが使われる。</td></tr>
+  <tr><td><code>Fab</code></td><td>丸い浮きボタン。<code>label</code> には <code>"+"</code> のような短い文字を書く。置く場所は <code>Stack</code> と配置の部品で決める。</td></tr>
+  <tr><td><code>Chip</code></td><td>小さな丸みのあるボタン。<code>selected</code> が <code>true</code> のとき塗って表示する。</td></tr>
+  <tr><td><code>Badge</code></td><td>件数を示す小さな丸い印。100 以上は <code>99+</code> と表示する。</td></tr>
+  <tr><td><code>Label</code></td><td>大きさ（sp）、色、太字、斜体、行数の上限を指定した文字列。上限を超える分は省略記号になる。</td></tr>
+</table>
+</div>
+<ul>
+  <li>画面の切り替えは、状態に応じて <code>view</code> が返す UI を変えることで行う。専用の仕組みはない。</li>
+  <li>アプリには既定のタイトルバーがない。必要なら <code>TopBar</code> か <code>BackBar</code> を置く。</li>
+  <li><code>Tabs</code> と <code>BottomNav</code> は、項目が1つ以上で、<code>selected</code> が 0 から項目数-1 でなければならない。<code>Badge</code> の <code>count</code> は 0 以上、<code>Label</code> の <code>maxLines</code> は 1 以上。違反は描画するときにパニックになる。</li>
+</ul>
+
+<h2 id="overlays">重ねて出す部品</h2>
+<p><code>Alert</code>、<code>Modal</code>、<code>BottomSheet</code>、<code>Snackbar</code> は、<code>view</code> が返す UI の中に含まれている間だけ、画面の上に重ねて表示される。出すには UI に加え、消すには UI から外す。</p>
+<pre><code>fn view(self) -&gt; Ui {
+  var layers: List&lt;Ui&gt; = [self.page()];
+  if (self.asking) {
+    layers = layers.append(item: Alert {
+      title: "Delete?",
+      message: "This cannot be undone.",
+      confirmLabel: "Delete",
+      onConfirm: self.confirm,
+      cancelLabel: "Keep",
+      onCancel: self.cancel,
+    });
+  }
+  return Stack { children: layers };
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>内容</th></tr>
+  <tr><td><code>Alert</code></td><td>題名、本文、2つのボタンを持つダイアログ。ボタンを押すと <code>onConfirm</code> か <code>onCancel</code> を実行する。ダイアログの外を押すか「戻る」操作をした場合は <code>onCancel</code>。</td></tr>
+  <tr><td><code>Modal</code></td><td><code>child</code> を画面の中央のダイアログに表示する。外を押すか「戻る」操作をすると <code>onDismiss</code> を実行する。</td></tr>
+  <tr><td><code>BottomSheet</code></td><td><code>child</code> を画面の下から出る面に表示する。幅は画面いっぱい。閉じる操作は <code>Modal</code> と同じ。</td></tr>
+  <tr><td><code>Snackbar</code></td><td>画面の下に短い知らせと1つのボタンを出す。ボタンを押すと <code>onAction</code>、押されないまま4秒たつと <code>onDismiss</code> を実行する。</td></tr>
+</table>
+</div>
+<ul>
+  <li>これらは、書いた場所では大きさを持たない。どこに置いても周りの配置に影響しない。</li>
+  <li>閉じるための処理（<code>onCancel</code>、<code>onDismiss</code> など）の中で、表示の条件にしているフィールドを戻す。戻さなければ、次の再描画でまた表示される。</li>
+</ul>
+
+<h2 id="lazy-list">長い一覧</h2>
+<pre><code>class Inbox implements Screen, Items {
+  fn view(self) -&gt; Ui {
+    return Column { children: [TopBar { title: "Inbox" }, Expand { child: LazyList { items: self } }] };
+  }
+
+  fn size(self) -&gt; Int {
+    return 1000;
+  }
+
+  fn item(self, index: Int) -&gt; Ui {
+    return Text { text: "Item ".concat(other: index.toString()) };
+  }
+}</code></pre>
+<ul>
+  <li><code>LazyList</code> は、画面に見えている行だけを作る縦の一覧。行数と各行の UI は、<code>Items</code> を実装したクラスが答える。</li>
+  <li><code>Items</code> は <code>Screen</code> と同じく、利用者のクラスが実装できるインターフェース。画面のクラス自身が実装してもよい。</li>
+  <li><code>item</code> は、行が画面に入るたびに、0 から <code>size() - 1</code> の番号で呼ばれる。フィールドを書き換えてはならない。</li>
+  <li><code>LazyList</code> は幅いっぱいに広がる。高さは自分では決まらないので、<code>Expand</code> や <code>Height</code> で与える。</li>
+  <li>数十件までの一覧は <code>Scroll</code> と <code>Column</code> で足りる。件数が多いときに <code>LazyList</code> を使う。</li>
 </ul>
 
 <h2 id="controls">入力部品</h2>
