@@ -1,0 +1,24 @@
+{
+  "note": "One run per row. Tokens are the agent's total for the whole task. Wall time is the agent's own, start to finish. Checks are the shared on-device script for that task.",
+  "runs": [
+    {"task": "calculator", "model": "opus", "lang": "kata", "variant": "full spec as reference", "tokens": 62054, "seconds": 54, "builds": 1, "failed_builds": 0, "lines": 158, "chars": 4542, "apk_kb": 25, "checks_passed": 1, "checks_total": 1},
+    {"task": "calculator", "model": "opus", "lang": "kata", "variant": "guide as reference", "tokens": 46131, "seconds": 39, "builds": 1, "failed_builds": 0, "lines": 141, "chars": 3476, "apk_kb": 25, "checks_passed": 1, "checks_total": 1},
+    {"task": "calculator", "model": "opus", "lang": "kotlin", "variant": "Views, run 1", "tokens": 43349, "seconds": 88, "builds": 2, "failed_builds": 1, "lines": 137, "chars": 4660, "apk_kb": 845, "checks_passed": 1, "checks_total": 1},
+    {"task": "calculator", "model": "opus", "lang": "kotlin", "variant": "Views, run 2", "tokens": 42896, "seconds": 81, "builds": 2, "failed_builds": 1, "lines": 127, "chars": 4622, "apk_kb": 855, "checks_passed": 1, "checks_total": 1},
+    {"task": "converter", "model": "opus", "lang": "kata", "variant": "guide as reference", "tokens": 53257, "seconds": 60, "builds": 1, "failed_builds": 0, "lines": 182, "chars": 4541, "apk_kb": 58, "checks_passed": 14, "checks_total": 14},
+    {"task": "converter", "model": "opus", "lang": "kotlin", "variant": "Views", "tokens": 45704, "seconds": 115, "builds": 2, "failed_builds": 1, "lines": 172, "chars": 6098, "apk_kb": 858, "checks_passed": 7, "checks_total": 14},
+    {"task": "converter", "model": "sonnet", "lang": "kata", "variant": "guide as reference", "tokens": 49664, "seconds": 25, "builds": 1, "failed_builds": 0, "lines": 156, "chars": 3811, "apk_kb": 62, "checks_passed": 14, "checks_total": 14},
+    {"task": "converter", "model": "sonnet", "lang": "kotlin", "variant": "Views", "tokens": 41657, "seconds": 117, "builds": 1, "failed_builds": 0, "lines": 136, "chars": 5554, "apk_kb": 820, "checks_passed": 14, "checks_total": 14},
+    {"task": "expense", "model": "opus", "lang": "kata", "variant": "guide as reference", "tokens": 56437, "seconds": 89, "builds": 1, "failed_builds": 0, "lines": 347, "chars": 9178, "apk_kb": 62, "checks_passed": 22, "checks_total": 22},
+    {"task": "expense", "model": "opus", "lang": "kotlin", "variant": "Compose", "tokens": 46115, "seconds": 177, "builds": 2, "failed_builds": 1, "lines": 184, "chars": 8068, "apk_kb": 9400, "checks_passed": 22, "checks_total": 22},
+    {"task": "expense", "model": "sonnet", "lang": "kata", "variant": "guide as reference", "tokens": 51674, "seconds": 40, "builds": 1, "failed_builds": 0, "lines": 318, "chars": 8765, "apk_kb": 62, "checks_passed": 22, "checks_total": 22},
+    {"task": "expense", "model": "sonnet", "lang": "kotlin", "variant": "Compose", "tokens": 44652, "seconds": 139, "builds": 2, "failed_builds": 1, "lines": 161, "chars": 7966, "apk_kb": 11400, "checks_passed": 22, "checks_total": 22}
+  ],
+  "build_seconds": [
+    {"lang": "kata", "step": "kata check", "seconds": 0.1},
+    {"lang": "kata", "step": "kata build (full APK)", "seconds": 2.0},
+    {"lang": "kotlin", "step": "Gradle, warm, one file changed", "seconds": 3.6},
+    {"lang": "kotlin", "step": "Gradle, warm, clean build", "seconds": 7.5},
+    {"lang": "kotlin", "step": "Gradle, cold, clean build", "seconds": 24.6}
+  ]
+}

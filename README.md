@@ -65,21 +65,42 @@ To write an app, read [`docs/kata-guide.md`](docs/kata-guide.md) — one file wi
 
 ## Does it actually help an AI agent?
 
-We measured it once, on one small task, and the honest answer is: not on token cost, yet.
+We measured it, and the honest answer is: not as a language, but the toolchain is fast and small.
 
-The same model built the same calculator from scratch, with the same requirements, in kata (given only the guide) and in Kotlin (plain Views, Gradle). All four results passed the same on-device check.
+Fresh agents built three apps from scratch (a calculator, a unit converter, an expense tracker), once in kata with only the guide and once in Kotlin with Gradle, from the same requirements. Each result was checked on a device by the same script. Twelve runs in all, six per language.
 
-| | kata (full spec) | kata (guide) | Kotlin, run 1 | Kotlin, run 2 |
-|---|---|---|---|---|
-| Total tokens | 62,054 | 46,131 | 43,349 | 42,896 |
-| Wall time | 54 s | 39 s | 88 s | 81 s |
-| Builds (failed) | 1 (0) | 1 (0) | 2 (1) | 2 (1) |
-| Source size | 4,542 chars | 3,476 chars | 4,660 chars | 4,622 chars |
-| APK size | 25 KB | 25 KB | 845 KB | 855 KB |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/reliability-dark.svg">
+  <img src="docs/benchmarks/img/reliability-light.svg" alt="Runs that worked without a retry">
+</picture>
 
-- kata built on the first try both times; Kotlin failed once both times, on the same implicit name clash (`display` vs `View.getDisplay()`).
-- kata's source was shorter, but the agent has to read the guide first, which Kotlin does not need. On a small app that fixed cost outweighs the saving.
-- This is one task with one or two runs per column. Treat it as an anecdote, not a result.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/time-dark.svg">
+  <img src="docs/benchmarks/img/time-light.svg" alt="Time the agent took">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/tokens-dark.svg">
+  <img src="docs/benchmarks/img/tokens-light.svg" alt="Tokens the agent used">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/apk-dark.svg">
+  <img src="docs/benchmarks/img/apk-light.svg" alt="Size of the APK">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/build-dark.svg">
+  <img src="docs/benchmarks/img/build-light.svg" alt="Build time for the expense tracker">
+</picture>
+
+- **Correctness is about equal.** Eleven of twelve runs passed every check. The one that did not was a Kotlin run that drew its buttons under the system bar.
+- **kata built on the first attempt every time; Kotlin did once in six.** Two of Kotlin's failures were a name clash in the code, and at least two were Gradle or dependency versions rather than the code.
+- **kata took about half the time or less (21 to 52% of Kotlin's), and its APK is 13 to 180 times smaller.** Both come from having no Gradle and no dependencies, not from the syntax.
+- **Kotlin used 7 to 18% fewer tokens every time.** The agent has to read the kata guide first, and that cost did not shrink on the larger app.
+- A cheaper model (Sonnet) and a larger app did not tip the result toward kata.
+
+Each condition was run once, so treat the numbers as indications. The data, the requirements, the check scripts and the script that draws these figures are in [`docs/benchmarks/`](docs/benchmarks/).
 
 ## How this was made
 

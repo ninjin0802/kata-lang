@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 292" width="760" height="292" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Build time for the expense tracker">
+<rect width="760" height="292" rx="8" fill="#1a1a19"/>
+<text x="24" y="34" font-size="17" font-weight="600" fill="#f0efec">Build time for the expense tracker</text>
+<text x="24" y="54" font-size="12.5" fill="#c3c2b7">Measured directly, same machine, in seconds. Lower is better.</text>
+<text x="692.8" y="34" font-size="12.5" fill="#f0efec">Kotlin</text>
+<rect x="674.8" y="24" width="12" height="12" rx="3" fill="#d95926"/>
+<text x="628.0" y="34" font-size="12.5" fill="#f0efec">kata</text>
+<rect x="610.0" y="24" width="12" height="12" rx="3" fill="#3987e5"/>
+<line x1="210.0" y1="82" x2="210.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="210.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">0 s</text>
+<line x1="298.0" y1="82" x2="298.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="298.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">5 s</text>
+<line x1="386.0" y1="82" x2="386.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="386.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">10 s</text>
+<line x1="474.0" y1="82" x2="474.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="474.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">15 s</text>
+<line x1="562.0" y1="82" x2="562.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="562.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">20 s</text>
+<line x1="650.0" y1="82" x2="650.0" y2="254" stroke="#383836" stroke-width="1"/>
+<text x="650.0" y="270" font-size="11" text-anchor="middle" fill="#c3c2b7">25 s</text>
+<text x="198" y="104.5" font-size="13" text-anchor="end" fill="#f0efec">kata check</text>
+<path d="M210,92 h1.0 a1.0,1.0 0 0 1 1.0,1.0 v14.0 a1.0,1.0 0 0 1 -1.0,1.0 h-1.0 z" fill="#3987e5"/>
+<text x="220" y="104" font-size="12" fill="#f0efec">0.1 s</text>
+<text x="198" y="138.5" font-size="13" text-anchor="end" fill="#f0efec">kata build (full APK)</text>
+<path d="M210,126 h31.2 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-31.2 z" fill="#3987e5"/>
+<text x="253.2" y="138" font-size="12" fill="#f0efec">2.0 s</text>
+<text x="198" y="172.5" font-size="13" text-anchor="end" fill="#f0efec">Gradle, warm, one file changed</text>
+<path d="M210,160 h59.36 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-59.36 z" fill="#d95926"/>
+<text x="281.4" y="172" font-size="12" fill="#f0efec">3.6 s</text>
+<text x="198" y="206.5" font-size="13" text-anchor="end" fill="#f0efec">Gradle, warm, clean build</text>
+<path d="M210,194 h128.0 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-128.0 z" fill="#d95926"/>
+<text x="350.0" y="206" font-size="12" fill="#f0efec">7.5 s</text>
+<text x="198" y="240.5" font-size="13" text-anchor="end" fill="#f0efec">Gradle, cold, clean build</text>
+<path d="M210,228 h428.96 a4.0,4.0 0 0 1 4.0,4.0 v8.0 a4.0,4.0 0 0 1 -4.0,4.0 h-428.96 z" fill="#d95926"/>
+<text x="651.0" y="240" font-size="12" fill="#f0efec">24.6 s</text>
+</svg>

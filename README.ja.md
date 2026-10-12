@@ -32,21 +32,42 @@ adb install examples/counter/build/app.apk
 
 ## AI エージェントにとって本当に有利か
 
-小さな課題で1度計測しました。結論は「トークンコストでは、まだ有利ではない」です。
+計測しました。結論は「言語としては有利ではない。ただし、ビルドの仕組みは速くて小さい」です。
 
-同じモデルに、同じ要件の電卓を、kata（手引きだけを渡す）と Kotlin（View と Gradle）でゼロから作らせました。4つとも同じ端末上の動作確認を通っています。
+新しく起動したエージェントに、同じ要件の3つのアプリ（電卓、単位換算、支出の記録）をゼロから作らせました。kata では手引きだけを渡し、Kotlin では Gradle を使わせています。できたものは、同じスクリプトで端末上の動作を確かめました。全部で12回、言語ごとに6回です。
 
-| | kata（仕様書） | kata（手引き） | Kotlin 1回目 | Kotlin 2回目 |
-|---|---|---|---|---|
-| 総トークン | 62,054 | 46,131 | 43,349 | 42,896 |
-| 所要時間 | 54秒 | 39秒 | 88秒 | 81秒 |
-| ビルド回数（うち失敗） | 1（0） | 1（0） | 2（1） | 2（1） |
-| ソースの量 | 4,542文字 | 3,476文字 | 4,660文字 | 4,622文字 |
-| APK | 25 KB | 25 KB | 845 KB | 855 KB |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/reliability-dark.svg">
+  <img src="docs/benchmarks/img/reliability-light.svg" alt="Runs that worked without a retry">
+</picture>
 
-- kata は2回とも1回目のビルドで通りました。Kotlin は2回とも、同じ暗黙の名前の衝突（`display` と `View.getDisplay()`）で1回失敗しています。
-- ソースは kata のほうが短いものの、エージェントは先に手引きを読む必要があります。小さなアプリでは、この固定費が節約分を上回ります。
-- 課題は1つ、各列1〜2回の計測です。傾向であって、確かな結果ではありません。
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/time-dark.svg">
+  <img src="docs/benchmarks/img/time-light.svg" alt="Time the agent took">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/tokens-dark.svg">
+  <img src="docs/benchmarks/img/tokens-light.svg" alt="Tokens the agent used">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/apk-dark.svg">
+  <img src="docs/benchmarks/img/apk-light.svg" alt="Size of the APK">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/benchmarks/img/build-dark.svg">
+  <img src="docs/benchmarks/img/build-light.svg" alt="Build time for the expense tracker">
+</picture>
+
+- **正しさは、ほぼ同じです。** 12回のうち11回が、すべての確認項目を通りました。通らなかった1回は Kotlin で、ボタンがシステムバーの下に隠れていました。
+- **kata は毎回、1回目のビルドで通りました。Kotlin は6回のうち1回です。** Kotlin の失敗のうち2回はコードの名前の衝突で、少なくとも2回はコードではなく Gradle やライブラリのバージョンが原因でした。
+- **kata の所要時間は Kotlin の 21〜52% で、APK は 13〜180分の1 です。** どちらも文法ではなく、Gradle と依存ライブラリがないことから来ています。
+- **トークンは、毎回 Kotlin のほうが 7〜18% 少なくなりました。** エージェントは先に kata の手引きを読む必要があり、この費用はアプリを大きくしても薄まりませんでした。
+- 安いモデル（Sonnet）でも、大きいアプリでも、結果は kata に傾きませんでした。
+
+各条件1回ずつの計測なので、数字は目安です。データ、要件、確認スクリプト、図を描くスクリプトは [`docs/benchmarks/`](docs/benchmarks/) にあります（図の文字は英語です）。
 
 ## 作り方について
 
