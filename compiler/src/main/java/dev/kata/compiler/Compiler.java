@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -107,7 +108,8 @@ public final class Compiler {
         }
         List<Source> sources = new ArrayList<>();
         try (Stream<Path> paths = Files.walk(src)) {
-            List<Path> files = paths.filter(p -> p.toString().endsWith(".kata") && Files.isRegularFile(p))
+            List<Path> files = paths.filter(p -> p.toString().endsWith(".kata")
+                            && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS))
                     .sorted().toList();
             for (Path file : files) {
                 String relative = project.relativize(file).toString().replace(File.separatorChar, '/');

@@ -54,6 +54,41 @@ class ApkBuilderTest {
     }
 
     @Test
+    void symlinkedBuildDirectoryIsRefusedAndLeftUntouched(@TempDir Path tmp) throws Exception {
+        Path project = Files.createDirectories(tmp.resolve("project"));
+        Path elsewhere = Files.createDirectories(tmp.resolve("elsewhere"));
+        Path keep = Files.createDirectories(elsewhere.resolve("classes")).resolve("keep.txt");
+        Files.writeString(keep, "keep");
+        Files.createSymbolicLink(project.resolve("build"), elsewhere);
+
+        ToolFailure failure = org.junit.jupiter.api.Assertions.assertThrows(ToolFailure.class, () -> build(project));
+        assertEquals("E0903", failure.code());
+        assertTrue(failure.getMessage().contains("symbolic link"), failure.getMessage());
+        assertTrue(Files.exists(keep));
+        try (java.util.stream.Stream<Path> entries = Files.list(elsewhere)) {
+            assertEquals(List.of(elsewhere.resolve("classes")), entries.toList());
+        }
+    }
+
+    @Test
+    void symlinkedOutputInsideBuildIsRefused(@TempDir Path tmp) throws Exception {
+        Path project = Files.createDirectories(tmp.resolve("project"));
+        Path elsewhere = Files.createDirectories(tmp.resolve("elsewhere"));
+        Path keep = elsewhere.resolve("keep.txt");
+        Files.writeString(keep, "keep");
+        Files.createDirectories(project.resolve("build"));
+        Files.createSymbolicLink(project.resolve("build/classes"), elsewhere);
+        Path victim = tmp.resolve("victim.apk");
+        Files.writeString(victim, "victim");
+        Files.createSymbolicLink(project.resolve("build/app.apk"), victim);
+
+        ToolFailure failure = org.junit.jupiter.api.Assertions.assertThrows(ToolFailure.class, () -> build(project));
+        assertEquals("E0903", failure.code());
+        assertTrue(Files.exists(keep));
+        assertEquals("victim", Files.readString(victim));
+    }
+
+    @Test
     void projectPathWithSpacesWorks(@TempDir Path tmp) throws Exception {
         Path project = Files.createDirectories(tmp.resolve("my project dir"));
         assertTrue(Files.exists(build(project)));

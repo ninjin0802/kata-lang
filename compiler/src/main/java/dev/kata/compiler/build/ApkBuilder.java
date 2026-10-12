@@ -22,6 +22,7 @@ public final class ApkBuilder {
             throws ToolFailure {
         try {
             Path build = project.toAbsolutePath().normalize().resolve("build");
+            refuseSymbolicLinks(build);
             deleteTree(build.resolve("classes"));
             deleteTree(build.resolve("dex"));
             Path classesDir = Files.createDirectories(build.resolve("classes"));
@@ -83,6 +84,21 @@ public final class ApkBuilder {
             return apk;
         } catch (IOException e) {
             throw new ToolFailure("E0903", "io: " + e);
+        }
+    }
+
+    /**
+     * The build directory is deleted from and written to, so neither it nor the entries kata owns inside it
+     * may be symbolic links: a project could otherwise redirect those writes outside itself.
+     */
+    private static void refuseSymbolicLinks(Path build) throws ToolFailure {
+        List<Path> owned = List.of(build, build.resolve("classes"), build.resolve("dex"),
+                build.resolve("AndroidManifest.xml"), build.resolve("base.apk"), build.resolve("aligned.apk"),
+                build.resolve("app.apk"));
+        for (Path path : owned) {
+            if (Files.isSymbolicLink(path)) {
+                throw new ToolFailure("E0903", "kata: " + path + " is a symbolic link; remove it and build again");
+            }
         }
     }
 

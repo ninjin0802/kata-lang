@@ -42,6 +42,18 @@ class MainTest {
     }
 
     @Test
+    void symlinkedSourceFilesAreNotRead(@TempDir Path tmp) throws Exception {
+        Path project = Files.createDirectories(tmp.resolve("project"));
+        Files.createDirectories(project.resolve("src/app"));
+        Path outside = tmp.resolve("outside.kata");
+        Files.writeString(outside, "this is not kata");
+        Files.createSymbolicLink(project.resolve("src/app/main.kata"), outside);
+        assertEquals(1, run("check", project.toString()));
+        assertTrue(out.toString().contains("\"code\": \"E0602\""), out.toString());
+        assertFalse(out.toString().contains("E0201"), out.toString());
+    }
+
+    @Test
     void emptySrcReportsNoAppDeclaration(@TempDir Path project) throws Exception {
         Files.createDirectories(project.resolve("src"));
         assertEquals(1, run("check", project.toString()));

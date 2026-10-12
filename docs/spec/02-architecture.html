@@ -67,6 +67,10 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
   <li><strong>整列と署名</strong>：<code>zipalign</code> の後、<code>apksigner</code> で debug 鍵による署名を行い、<code>build/app.apk</code> を出力する。</li>
 </ol>
 <p>アプリのビルドに Gradle と Android Gradle Plugin は使わない。Android SDK の build-tools を直接呼ぶ。</p>
+<ul>
+  <li id="build-symlinks"><code>build/</code> と、その中で kata が書き換えるもの（<code>classes/</code>、<code>dex/</code>、<code>AndroidManifest.xml</code>、<code>base.apk</code>、<code>aligned.apk</code>、<code>app.apk</code>）がシンボリックリンクの場合、ビルドは何も削除も書き込みもせずに <code>E0903</code> で止まる。プロジェクトの外を書き換えないようにするため。</li>
+  <li id="source-symlinks"><code>src/</code> 以下のシンボリックリンクになっている <code>.kata</code> ファイルは読まない。</li>
+</ul>
 
 <h2 id="toolchain">固定するツールと値</h2>
 <div class="table-wrap">
