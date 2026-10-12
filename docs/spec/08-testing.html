@@ -48,7 +48,7 @@
 </ul>
 
 <h2 id="device">端末での確認</h2>
-<p><code>scripts/e2e.sh</code> が次を行う。接続中のエミュレータまたは実機が1台あることを前提にする。</p>
+<p><code>scripts/e2e.sh</code> が次を行う。接続中のエミュレータまたは実機が1台あることを前提にする。確認の本体は <code>scripts/e2e.py</code>（Python 3）で、画素の色は <code>scripts/Pixel.java</code> で読む。<code>scripts/e2e.sh counter</code> のように名前を渡すと、そのサンプルだけを確認する。</p>
 <ol>
   <li><code>kata build examples/counter</code> を実行する。</li>
   <li><code>adb install -r</code> で APK を入れ、アプリを起動する。</li>
@@ -70,7 +70,8 @@
 <h3 id="device-form">入力欄とスクロールの確認</h3>
 <p><code>examples/form/</code> に、入力欄と、画面に収まらない長さの一覧を持つサンプルを置く。<code>scripts/e2e.sh</code> は次を確かめる。</p>
 <ul>
-  <li>入力欄を押して <code>adb shell input text</code> で文字を送ると、その内容を使った別の <code>Text</code> の表示が変わること。</li>
+  <li>入力欄を押して <code>adb shell input text</code> で文字を送ると、その内容を使った別の <code>Text</code> の表示が変わること。端末の入力方式が文字を変換することがある（全角になるなど）ので、送った文字ではなく入力欄に表示された内容と比べる。</li>
+  <li><code>onChange</code> が値を保存しなかった場合（サンプルでは4文字目以降）、入力欄が保存済みの内容に戻ること。</li>
   <li>続けてもう一度文字を送ると、入力欄を押し直さなくても続きに入力されること（再描画でフォーカスが保たれている）。</li>
   <li>一覧をスワイプすると、最初は画面外だった項目が表示されること。</li>
   <li>スクロールした後にボタンを押して再描画しても、スクロールの位置が保たれていること。</li>
