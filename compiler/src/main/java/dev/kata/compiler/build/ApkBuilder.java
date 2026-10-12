@@ -20,6 +20,12 @@ public final class ApkBuilder {
 
     public static Path build(Path project, Map<String, byte[]> classes, AppInfo app, Path kataHome, Sdk sdk)
             throws ToolFailure {
+        return build(project, classes, app, List.of(), kataHome, sdk);
+    }
+
+    /** @param permissions Android permission names the app needs, e.g. android.permission.INTERNET */
+    public static Path build(Path project, Map<String, byte[]> classes, AppInfo app, List<String> permissions,
+            Path kataHome, Sdk sdk) throws ToolFailure {
         try {
             Path build = project.toAbsolutePath().normalize().resolve("build");
             refuseSymbolicLinks(build);
@@ -38,7 +44,7 @@ public final class ApkBuilder {
             }
 
             Path manifest = build.resolve("AndroidManifest.xml");
-            Files.writeString(manifest, manifest(app), StandardCharsets.UTF_8);
+            Files.writeString(manifest, manifest(app, permissions), StandardCharsets.UTF_8);
 
             Path base = build.resolve("base.apk");
             Path aligned = build.resolve("aligned.apk");
@@ -131,10 +137,14 @@ public final class ApkBuilder {
         return staged;
     }
 
-    static String manifest(AppInfo app) {
+    static String manifest(AppInfo app, List<String> permissions) {
+        StringBuilder uses = new StringBuilder();
+        for (String permission : permissions) {
+            uses.append("\n    <uses-permission android:name=\"").append(xml(permission)).append("\" />");
+        }
         return """
                 <?xml version="1.0" encoding="utf-8"?>
-                <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="%s">
+                <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="%s">%s
                     <application android:label="%s" android:theme="@android:style/Theme.Material.Light.NoActionBar">
                         <activity
                             android:name="kata.gen.MainActivity"
@@ -147,7 +157,7 @@ public final class ApkBuilder {
                         </activity>
                     </application>
                 </manifest>
-                """.formatted(xml(app.id()), xml(app.name()));
+                """.formatted(xml(app.id()), uses, xml(app.name()));
     }
 
     /** Escapes for an XML attribute; a leading @ or ? would otherwise be read as a resource reference. */

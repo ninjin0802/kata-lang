@@ -93,6 +93,17 @@ public final class UiValidator {
             if (time.minute < 0 || time.minute > 59) {
                 throw new IllegalArgumentException("Time.minute out of range: " + time.minute);
             }
+        } else if (root instanceof Theme) {
+            color(((Theme) root).accent);
+        } else if (root instanceof Gradient) {
+            color(((Gradient) root).from);
+            color(((Gradient) root).to);
+        } else if (root instanceof Opacity) {
+            if (((Opacity) root).percent < 0 || ((Opacity) root).percent > 100) {
+                throw new IllegalArgumentException("Opacity.percent out of range: " + ((Opacity) root).percent);
+            }
+        } else if (root instanceof Scale) {
+            nonNegative("Scale.percent", ((Scale) root).percent);
         } else if (root instanceof Rounded) {
             nonNegative("Rounded.radius", ((Rounded) root).radius);
             color(((Rounded) root).color);

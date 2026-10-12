@@ -123,6 +123,20 @@ class UiValidatorTest {
     }
 
     @Test
+    void effectsAreChecked() {
+        Color bad = new Color(0, 0, 0, 300);
+        assertInvalid("Opacity.percent out of range: 101", new Opacity(101, LEAF));
+        assertInvalid("Opacity.percent out of range: -1", new Opacity(-1, LEAF));
+        assertInvalid("Scale.percent out of range: -1", new Scale(-1, LEAF));
+        assertInvalid("Color.alpha out of range: 300", new Theme(bad, LEAF));
+        assertInvalid("Color.alpha out of range: 300", new Gradient(BLACK, bad, LEAF));
+        assertInvalid("Width.dp out of range: -2", new Animated(new Swipeable(() -> { }, () -> { },
+                new LongPress(() -> { }, new Disabled(new Rotate(45, new Width(-2, LEAF)))))));
+        assertDoesNotThrow(() -> UiValidator.validate(new Theme(BLACK, new Opacity(0, new Scale(0,
+                new Rotate(-720, new Gradient(BLACK, BLACK, LEAF)))))));
+    }
+
+    @Test
     void zeroIsAllowed() {
         assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
             new StyledText("t", 0, BLACK), new Padding(0, LEAF), new PaddingEdges(0, 0, 0, 0, LEAF),

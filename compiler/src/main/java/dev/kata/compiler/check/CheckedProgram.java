@@ -53,6 +53,16 @@ public final class CheckedProgram {
         return constructs.get(construct);
     }
 
+    /** Whether any construction expression in the program builds the given class. */
+    public boolean constructs(String qualifiedName) {
+        for (ClassInfo info : constructs.values()) {
+            if (info.qualifiedName().equals(qualifiedName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public AppInfo app() {
         return app;
     }

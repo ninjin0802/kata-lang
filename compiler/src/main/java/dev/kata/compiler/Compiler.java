@@ -66,7 +66,12 @@ public final class Compiler {
         }
         try {
             Sdk sdk = Sdk.locate(env);
-            Path apk = ApkBuilder.build(project, classes, program.app(), kataHome, sdk);
+            // Permissions follow from the components the program uses; there is nothing to declare by hand.
+            List<String> permissions = new ArrayList<>();
+            if (program.constructs("kata.ui.WebView")) {
+                permissions.add("android.permission.INTERNET");
+            }
+            Path apk = ApkBuilder.build(project, classes, program.app(), permissions, kataHome, sdk);
             Path root = project.toAbsolutePath().normalize();
             return new Result(diagnostics, root.relativize(apk).toString().replace(File.separatorChar, '/'));
         } catch (ToolFailure failure) {

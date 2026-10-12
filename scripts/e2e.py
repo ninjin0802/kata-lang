@@ -613,8 +613,86 @@ def check_media():
     adb("uninstall", app_id, check=False)
 
 
+def close_to(actual, expected, tolerance=6):
+    return all(abs(a - e) <= tolerance for a, e in zip(actual, expected))
+
+
+def check_effects():
+    app_id = "dev.kata.effects"
+    install_and_launch(build("effects"), app_id)
+    root = wait_for(lambda r: exists(r, text="blend"), "the effects example to appear")
+    purple = (123, 31, 162)
+
+    # Opacity blends with the white page; Rotate and Scale change what is drawn, around the center.
+    plain, faded = find(root, text="plain"), find(root, text="faded")
+    assert pixel(plain.right - 4, plain.bottom - 4) == (0, 0, 255), "the plain box is solid blue"
+    assert close_to(pixel(faded.right - 4, faded.bottom - 4), (127, 127, 255)), "Opacity 50% over white"
+    turned, big = find(root, text="turned"), find(root, text="big")
+    near(turned.width, plain.height, "Rotate 90 swaps width and height", tolerance=2)
+    near(turned.height, plain.width, "Rotate 90 swaps width and height", tolerance=2)
+    # Scale draws beyond the box's own space, and the surrounding components do not cut it off.
+    center_x, center_y = plain.left + px(30) + px(40), big.center[1]
+    assert pixel(center_x - px(70), center_y) == (0, 0, 255), "Scale 200% reaches 70dp left of the center"
+    assert pixel(center_x + px(70), center_y) == (0, 0, 255), "Scale 200% reaches 70dp right of the center"
+    assert pixel(center_x - px(90), center_y) != (0, 0, 255), "Scale 200% ends 80dp from the center"
+
+    # Gradient runs from the first color at the top to the second at the bottom.
+    blend = find(root, text="blend")
+    top, bottom = pixel(blend.center[0], blend.top + 2), pixel(blend.center[0], blend.bottom - 2)
+    assert top[0] > 230 and top[1] < 25, f"Gradient starts red, got {top}"
+    assert bottom[1] > 230 and bottom[0] < 25, f"Gradient ends green, got {bottom}"
+
+    # Theme: the accent reaches the Fab.
+    fab = find(root, text="+")
+    assert pixel(fab.left + fab.width // 2, fab.top + 8) == purple, "Fab uses the Theme accent"
+
+    # Disabled swallows the tap; the same button outside it works.
+    tap_text("Touch")
+    root = wait_for(lambda r: exists(r, text="taps=0"), "the touch page")
+    tap(find(root, text="Blocked"))
+    time.sleep(1)
+    assert exists(dump(), text="taps=0"), "a Disabled button does nothing"
+    tap_text("Open")
+    wait_for(lambda r: exists(r, text="taps=1"), "the enabled button")
+
+    # Swipeable and LongPress.
+    # The flick stays inside the component: its text plus the 24dp padding around it.
+    area = find(dump(), text="swipe=none")
+    # It also stays clear of the screen's left edge, where a swipe is the system's back gesture.
+    y, right, left = area.center[1], area.right + px(20), area.left + px(10)
+    adb("shell", "input", "swipe", str(right), str(y), str(left), str(y), "120")
+    wait_for(lambda r: exists(r, text="swipe=left"), "a swipe to the left")
+    adb("shell", "input", "swipe", str(left), str(y), str(right), str(y), "120")
+    wait_for(lambda r: exists(r, text="swipe=right"), "a swipe to the right")
+    x, y = find(dump(), text="held=0").center
+    adb("shell", "input", "swipe", str(x), str(y), str(x), str(y), "900")
+    wait_for(lambda r: exists(r, text="held=1"), "a long press")
+
+    # SecretField hides its text but reports it.
+    fields = find_all(dump(), cls="android.widget.EditText")
+    assert fields[0].element.get("password") == "true", "SecretField is a password field"
+    tap(fields[0])
+    type_text("1234")
+    wait_for(lambda r: not exists(r, text="secret=0"), "the secret field to report its text")
+    adb("shell", "input", "keyevent", "KEYCODE_ESCAPE")
+
+    # Animated: the row arrives (after its animation) and leaves again.
+    tap_text("Toggle")
+    wait_for(lambda r: exists(r, text="extra row"), "the extra row to appear")
+    tap_text("Toggle")
+    wait_for(lambda r: not exists(r, text="extra row"), "the extra row to leave")
+
+    # WebView renders a page; using it gave the app the internet permission.
+    tap_text("Web")
+    wait_for(lambda r: any("kata-web" in (n.get("text") or "") + (n.get("content-desc") or "")
+                           for n in r.iter("node")), "the web page", timeout=20)
+    assert "android.permission.INTERNET" in adb("shell", "dumpsys", "package", app_id), "internet permission"
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "effects": check_effects,
     "media": check_media,
     "shell": check_shell,
     "overlays": check_overlays,

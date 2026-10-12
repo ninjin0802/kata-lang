@@ -182,7 +182,7 @@ public final class Layout {
         }
         if (widthAxis && (node instanceof Slider || node instanceof Progress || node instanceof Divider
                 || node instanceof Grid || node instanceof TopBar || node instanceof BackBar || node instanceof Tabs
-                || node instanceof BottomNav || node instanceof LazyList)) {
+                || node instanceof BottomNav || node instanceof LazyList || node instanceof WebView)) {
             return true;
         }
         if (node instanceof Icon || node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis

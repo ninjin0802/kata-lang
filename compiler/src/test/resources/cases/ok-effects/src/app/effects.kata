@@ -1,0 +1,148 @@
+module app.effects;
+
+import kata.ui.Animated;
+import kata.ui.Background;
+import kata.ui.Button;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Disabled;
+import kata.ui.Expand;
+import kata.ui.Fab;
+import kata.ui.Gradient;
+import kata.ui.Height;
+import kata.ui.LongPress;
+import kata.ui.NumberField;
+import kata.ui.Opacity;
+import kata.ui.Padding;
+import kata.ui.Rotate;
+import kata.ui.Scale;
+import kata.ui.Screen;
+import kata.ui.SecretField;
+import kata.ui.Swipeable;
+import kata.ui.Tabs;
+import kata.ui.Text;
+import kata.ui.Theme;
+import kata.ui.Ui;
+import kata.ui.WebView;
+import kata.ui.Width;
+
+// Visual effects, gestures, special text inputs and a web page, one page per tab.
+// The Theme at the top sets the accent color for everything inside.
+class Effects implements Screen {
+  var page: Int = 0;
+  var taps: Int = 0;
+  var swipe: String = "none";
+  var held: Int = 0;
+  var extra: Bool = false;
+  var secret: String = "";
+  var amount: String = "";
+
+  fn view(self) -> Ui {
+    return Theme {
+      accent: Color { red: 123, green: 31, blue: 162, alpha: 255 },
+      child: Column {
+        children: [
+          Tabs { labels: ["Look", "Touch", "Web"], selected: self.page, onChange: self.setPage },
+          Expand { child: self.body() },
+        ],
+      },
+    };
+  }
+
+  fn body(self) -> Ui {
+    if (self.page == 1) {
+      return self.touchPage();
+    }
+    if (self.page == 2) {
+      return WebView { url: "data:text/html,<h1>kata-web</h1>" };
+    }
+    return self.lookPage();
+  }
+
+  fn box(self, label: String) -> Ui {
+    return Background {
+      color: Color { red: 0, green: 0, blue: 255, alpha: 255 },
+      child: Width { dp: 80, child: Height { dp: 40, child: Text { text: label } } },
+    };
+  }
+
+  fn lookPage(self) -> Ui {
+    return Padding {
+      all: 60,
+      child: Column {
+        children: [
+          self.box(label: "plain"),
+          Opacity { percent: 50, child: self.box(label: "faded") },
+          Padding { all: 30, child: Rotate { degrees: 90, child: self.box(label: "turned") } },
+          Padding { all: 30, child: Scale { percent: 200, child: self.box(label: "big") } },
+          Gradient {
+            from: Color { red: 255, green: 0, blue: 0, alpha: 255 },
+            to: Color { red: 0, green: 255, blue: 0, alpha: 255 },
+            child: Width { dp: 80, child: Height { dp: 80, child: Text { text: "blend" } } },
+          },
+          Fab { label: "+", onTap: self.tap },
+        ],
+      },
+    };
+  }
+
+  fn touchPage(self) -> Ui {
+    var rows: List<Ui> = [
+      Disabled { child: Button { label: "Blocked", onTap: self.tap } },
+      Button { label: "Open", onTap: self.tap },
+      Text { text: "taps=".concat(other: self.taps.toString()) },
+      Swipeable {
+        onSwipeLeft: self.swipeLeft,
+        onSwipeRight: self.swipeRight,
+        child: Padding { all: 24, child: Text { text: "swipe=".concat(other: self.swipe) } },
+      },
+      LongPress { onLongPress: self.hold, child: Padding { all: 24, child: Text { text: "held=".concat(other: self.held.toString()) } } },
+      SecretField { value: self.secret, hint: "Password", onChange: self.setSecret },
+      Text { text: "secret=".concat(other: self.secret.length().toString()) },
+      NumberField { value: self.amount, hint: "Amount", onChange: self.setAmount },
+      Button { label: "Toggle", onTap: self.toggle },
+    ];
+    if (self.extra) {
+      rows = rows.append(item: Text { text: "extra row" });
+    }
+    return Animated { child: Column { children: rows } };
+  }
+
+  fn setPage(self, value: Int) -> Unit {
+    self.page = value;
+  }
+
+  fn tap(self) -> Unit {
+    self.taps = self.taps + 1;
+  }
+
+  fn swipeLeft(self) -> Unit {
+    self.swipe = "left";
+  }
+
+  fn swipeRight(self) -> Unit {
+    self.swipe = "right";
+  }
+
+  fn hold(self) -> Unit {
+    self.held = self.held + 1;
+  }
+
+  fn toggle(self) -> Unit {
+    self.extra = !self.extra;
+  }
+
+  fn setSecret(self, value: String) -> Unit {
+    self.secret = value;
+  }
+
+  fn setAmount(self, value: String) -> Unit {
+    self.amount = value;
+  }
+}
+
+app {
+  id: "dev.kata.effects",
+  name: "Effects",
+  root: Effects {},
+}

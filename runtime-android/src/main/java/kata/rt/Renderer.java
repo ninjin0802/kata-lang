@@ -32,10 +32,29 @@ final class Renderer implements Host<View> {
         this.activity = activity;
         this.container = container;
         this.density = activity.getResources().getDisplayMetrics().density;
+        container.setClipChildren(false);
+    }
+
+    /** The accent color of the current screen: the outermost Theme's, or the default. */
+    int accent = Extras.DEFAULT_ACCENT;
+
+    private static Theme findTheme(Ui node) {
+        if (node instanceof Theme) {
+            return (Theme) node;
+        }
+        for (Ui child : UiNodes.children(node)) {
+            Theme found = findTheme(child);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
     void render(Ui ui) {
         UiValidator.validate(ui);
+        Theme theme = findTheme(ui);
+        accent = theme == null ? Extras.DEFAULT_ACCENT : argb(theme.accent);
         if (current == null) {
             rootView = reconciler.mount(ui);
             container.addView(rootView);
@@ -93,6 +112,14 @@ final class Renderer implements Host<View> {
     @Override
     public View create(Ui node) {
         View view = newView(node);
+        // Like the root container, components do not cut off children that are drawn outside their box
+        // (a scaled or rotated child, a shadow). Scrolling containers still clip to their viewport.
+        if (view instanceof ViewGroup && !(view instanceof android.widget.ScrollView)
+                && !(view instanceof android.widget.HorizontalScrollView)
+                && !(view instanceof android.widget.AbsListView)) {
+            ((ViewGroup) view).setClipChildren(false);
+            ((ViewGroup) view).setClipToPadding(false);
+        }
         bind(view, node);
         return view;
     }
@@ -154,8 +181,17 @@ final class Renderer implements Host<View> {
             });
             return button;
         }
-        if (node instanceof TextField || node instanceof TextArea) {
-            return newTextInput(node instanceof TextArea);
+        if (node instanceof TextField || node instanceof TextArea || node instanceof SecretField
+                || node instanceof NumberField) {
+            EditText input = newTextInput(node instanceof TextArea);
+            if (node instanceof SecretField) {
+                input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                        | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            } else if (node instanceof NumberField) {
+                input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
+                        | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
+            }
+            return input;
         }
         if (node instanceof Checkbox || node instanceof Switch) {
             android.widget.CompoundButton toggle = node instanceof Checkbox
@@ -312,11 +348,14 @@ final class Renderer implements Host<View> {
 
             @Override
             public void afterTextChanged(Editable text) {
-                if (binding) {
+                Object tag = field.getTag();
+                // No tag yet: the field is still being set up, and nothing was typed.
+                if (binding || tag == null) {
                     return;
                 }
-                Object tag = field.getTag();
-                Handler handler = tag instanceof TextField ? ((TextField) tag).onChange : ((TextArea) tag).onChange;
+                Handler handler = tag instanceof TextField ? ((TextField) tag).onChange
+                        : tag instanceof TextArea ? ((TextArea) tag).onChange
+                        : tag instanceof SecretField ? ((SecretField) tag).onChange : ((NumberField) tag).onChange;
                 handler.run(text.toString());
                 activity.rerender();
             }
@@ -364,6 +403,10 @@ final class Renderer implements Host<View> {
             button.setBackgroundColor(argb(styled.background));
         } else if (node instanceof TextField) {
             bindText((EditText) view, ((TextField) node).value, ((TextField) node).hint);
+        } else if (node instanceof SecretField) {
+            bindText((EditText) view, ((SecretField) node).value, ((SecretField) node).hint);
+        } else if (node instanceof NumberField) {
+            bindText((EditText) view, ((NumberField) node).value, ((NumberField) node).hint);
         } else if (node instanceof TextArea) {
             TextArea area = (TextArea) node;
             EditText edit = (EditText) view;
@@ -375,6 +418,11 @@ final class Renderer implements Host<View> {
             android.widget.CompoundButton toggle = (android.widget.CompoundButton) view;
             boolean checked = node instanceof Checkbox ? ((Checkbox) node).checked : ((Switch) node).on;
             setText(toggle, node instanceof Checkbox ? ((Checkbox) node).label : ((Switch) node).label);
+            if (toggle instanceof android.widget.Switch) {
+                ((android.widget.Switch) toggle).setThumbTintList(Extras.checkedTint(accent));
+            } else {
+                toggle.setButtonTintList(Extras.checkedTint(accent));
+            }
             if (toggle.isChecked() != checked) {
                 binding = true;
                 try {
@@ -389,6 +437,11 @@ final class Renderer implements Host<View> {
                     : ((Progress) node).max);
             int value = (int) Math.min(Integer.MAX_VALUE, node instanceof Slider ? ((Slider) node).value
                     : ((Progress) node).value);
+            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(accent);
+            bar.setProgressTintList(tint);
+            if (bar instanceof android.widget.SeekBar) {
+                ((android.widget.SeekBar) bar).setThumbTintList(tint);
+            }
             binding = true;
             try {
                 if (bar.getMax() != max) {
@@ -465,6 +518,9 @@ final class Renderer implements Host<View> {
                     button.setText((String) node.options.get(i));
                     group.addView(button);
                 }
+            }
+            for (int i = 0; i < group.getChildCount(); i++) {
+                ((android.widget.RadioButton) group.getChildAt(i)).setButtonTintList(Extras.checkedTint(accent));
             }
             int wanted = (int) node.selected + 1;
             if (node.selected < 0) {

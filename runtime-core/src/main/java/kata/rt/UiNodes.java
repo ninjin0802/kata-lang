@@ -85,6 +85,33 @@ public final class UiNodes {
         if (node instanceof Card) {
             return ((Card) node).child;
         }
+        if (node instanceof Theme) {
+            return ((Theme) node).child;
+        }
+        if (node instanceof Opacity) {
+            return ((Opacity) node).child;
+        }
+        if (node instanceof Rotate) {
+            return ((Rotate) node).child;
+        }
+        if (node instanceof Scale) {
+            return ((Scale) node).child;
+        }
+        if (node instanceof Gradient) {
+            return ((Gradient) node).child;
+        }
+        if (node instanceof Disabled) {
+            return ((Disabled) node).child;
+        }
+        if (node instanceof Swipeable) {
+            return ((Swipeable) node).child;
+        }
+        if (node instanceof LongPress) {
+            return ((LongPress) node).child;
+        }
+        if (node instanceof Animated) {
+            return ((Animated) node).child;
+        }
         if (node instanceof BackHandler) {
             return ((BackHandler) node).child;
         }

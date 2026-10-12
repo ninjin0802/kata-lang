@@ -204,6 +204,17 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Menu` | `label: String, options: List<String>, onSelect: Handler<Int>` — button that opens a pop-up menu |
 | `DatePicker` | `value: Date, onChange: Handler<Date>` — `Date { year, month, day }`, month 1–12 |
 | `TimePicker` | `value: Time, onChange: Handler<Time>` — `Time { hour, minute }`, hour 0–23 |
+| `SecretField`, `NumberField` | `value: String, hint: String, onChange: Handler<String>` — password input / numeric keyboard (value stays text) |
+| `Theme` | `accent: Color, child: Ui` — put it outermost; sets the color of controls, tabs, `Fab`, `Chip` |
+| `Opacity` | `percent: Int, child: Ui` — 0–100 |
+| `Rotate` | `degrees: Int, child: Ui` — clockwise, around the center; layout space unchanged |
+| `Scale` | `percent: Int, child: Ui` — 100 = normal; layout space unchanged |
+| `Gradient` | `from: Color, to: Color, child: Ui` — top-to-bottom background |
+| `Disabled` | `child: Ui` — dimmed, ignores touches |
+| `Swipeable` | `onSwipeLeft: Action, onSwipeRight: Action, child: Ui` — horizontal flick |
+| `LongPress` | `onLongPress: Action, child: Ui` |
+| `Animated` | `child: Ui` — changes inside it animate instead of jumping |
+| `WebView` | `url: String` — full width, give it a height with `Expand`; adds the internet permission automatically |
 | `Space` | `dp: Int` — an empty square, for gaps |
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 

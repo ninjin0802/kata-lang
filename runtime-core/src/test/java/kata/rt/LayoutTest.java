@@ -281,6 +281,21 @@ class LayoutTest {
     }
 
     @Test
+    void effectWrappersPassSizesThrough() {
+        Ui[] wrappers = {new Theme(BLACK, LEAF), new Opacity(50, LEAF), new Rotate(90, LEAF), new Scale(200, LEAF),
+            new Gradient(BLACK, BLACK, LEAF), new Disabled(LEAF), new Swipeable(() -> { }, () -> { }, LEAF),
+            new LongPress(() -> { }, LEAF), new Animated(LEAF)};
+        for (Ui node : wrappers) {
+            String name = node.getClass().getSimpleName();
+            assertEquals(1, UiNodes.children(node).size(), name);
+            assertEquals(WRAP, other(node, WRAP, WRAP).width, name);
+            assertEquals(FILL, other(node, FILL, WRAP).childWidth, name);
+        }
+        assertEquals(FILL, other(new Theme(BLACK, new FillWidth(LEAF)), WRAP, WRAP).width);
+        assertEquals(FILL, other(new WebView("about:blank"), WRAP, WRAP).width);
+    }
+
+    @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));
         assertEquals(Parent.ROW, Layout.parentKind(new Row(KList.of(new Object[0]))));

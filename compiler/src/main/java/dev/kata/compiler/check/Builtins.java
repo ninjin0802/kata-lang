@@ -92,6 +92,18 @@ public final class Builtins {
         ui("DatePicker", field("value", DATE_TYPE), field("onChange", new Type.HandlerType(DATE_TYPE)));
         ui("TimePicker", field("value", TIME_TYPE), field("onChange", new Type.HandlerType(TIME_TYPE)));
         ui("Menu", field("label", Type.STRING), field("options", new Type.ListType(Type.STRING)), field("onSelect", new Type.HandlerType(Type.INT)));
+        ui("Theme", field("accent", COLOR_TYPE), field("child", UI_TYPE));
+        ui("Opacity", field("percent", Type.INT), field("child", UI_TYPE));
+        ui("Rotate", field("degrees", Type.INT), field("child", UI_TYPE));
+        ui("Scale", field("percent", Type.INT), field("child", UI_TYPE));
+        ui("Gradient", field("from", COLOR_TYPE), field("to", COLOR_TYPE), field("child", UI_TYPE));
+        ui("Disabled", field("child", UI_TYPE));
+        ui("Swipeable", field("onSwipeLeft", Type.ACTION), field("onSwipeRight", Type.ACTION), field("child", UI_TYPE));
+        ui("LongPress", field("onLongPress", Type.ACTION), field("child", UI_TYPE));
+        ui("Animated", field("child", UI_TYPE));
+        ui("SecretField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
+        ui("NumberField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
+        ui("WebView", field("url", Type.STRING));
     }
 
     /** Classes that are values passed to components rather than components themselves. */

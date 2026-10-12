@@ -332,6 +332,67 @@ class Menu implements Ui {
   let onSelect: Handler&lt;Int&gt;;
 }
 
+class Theme implements Ui {
+  let accent: Color;
+  let child: Ui;
+}
+
+class Opacity implements Ui {
+  let percent: Int;
+  let child: Ui;
+}
+
+class Rotate implements Ui {
+  let degrees: Int;
+  let child: Ui;
+}
+
+class Scale implements Ui {
+  let percent: Int;
+  let child: Ui;
+}
+
+class Gradient implements Ui {
+  let from: Color;
+  let to: Color;
+  let child: Ui;
+}
+
+class Disabled implements Ui {
+  let child: Ui;
+}
+
+class Swipeable implements Ui {
+  let onSwipeLeft: Action;
+  let onSwipeRight: Action;
+  let child: Ui;
+}
+
+class LongPress implements Ui {
+  let onLongPress: Action;
+  let child: Ui;
+}
+
+class Animated implements Ui {
+  let child: Ui;
+}
+
+class SecretField implements Ui {
+  let value: String;
+  let hint: String;
+  let onChange: Handler&lt;String&gt;;
+}
+
+class NumberField implements Ui {
+  let value: String;
+  let hint: String;
+  let onChange: Handler&lt;String&gt;;
+}
+
+class WebView implements Ui {
+  let url: String;
+}
+
 interface Items {
   fn size(self) -&gt; Int;
   fn item(self, index: Int) -&gt; Ui;
@@ -442,11 +503,11 @@ class LazyList implements Ui {
   <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
   <tr><td><code>Grid</code></td><td>いっぱい</td><td>受け継ぐ</td><td>列の幅いっぱい</td><td>中身に合わせる</td></tr>
   <tr><td><code>Stack</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
-  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Theme</code>、<code>Opacity</code>、<code>Rotate</code>、<code>Scale</code>、<code>Gradient</code>、<code>Disabled</code>、<code>Swipeable</code>、<code>LongPress</code>、<code>Animated</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Space</code>、<code>Icon</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
-  <tr><td><code>Slider</code>、<code>Progress</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Slider</code>、<code>Progress</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code>、<code>WebView</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
   <tr><td><code>Alert</code>、<code>Modal</code>、<code>BottomSheet</code>、<code>Snackbar</code></td><td>0</td><td>0</td><td>（重ねた層の中で決まる）</td><td>（同左）</td></tr>
   <tr><td><code>Divider</code></td><td>いっぱい</td><td>固定（1dp）</td><td>—</td><td>—</td></tr>
   <tr><td><code>Column</code>、<code>Row</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
@@ -455,7 +516,7 @@ class LazyList implements Ui {
 </div>
 <p id="layout-fill-up"><strong>広がる指定は外側へ伝わる。</strong>「受け継ぐ」と書いた方向について、受け継いだ値が「中身に合わせる」であっても、自分の中にその方向へ広がる部品があれば、その部品は「いっぱい」になる。</p>
 <ul>
-  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、<code>Grid</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
+  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、<code>Grid</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code>、<code>WebView</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
   <li>高さの方向へ広がる部品：<code>FillHeight</code>、<code>Center</code>、<code>CenterVertical</code>、<code>AlignBottom</code>、および <code>Column</code> の直接の子の <code>Expand</code>。</li>
   <li>この伝わり方は、<code>Column</code>、<code>Row</code>、<code>Stack</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
   <li>伝わりが止まる場所：大きさを固定する部品（幅なら <code>Width</code>、高さなら <code>Height</code>、両方なら <code>Space</code>）と、スクロールする方向（<code>Scroll</code> の高さ、<code>HorizontalScroll</code> の幅）。</li>
@@ -581,6 +642,31 @@ class LazyList implements Ui {
   <li><code>DatePicker</code> はカレンダー、<code>TimePicker</code> は24時間表記の時計を表示する。考え方は<a href="#controls">入力部品</a>と同じで、選ばれた値は <code>onChange</code> に <code>Date</code> または <code>Time</code> として渡される。</li>
   <li>存在しない日付（2月30日など）や範囲外の時刻を <code>value</code> に渡すと、描画するときにパニックになる。</li>
   <li><code>Menu</code> は <code>label</code> を表示するボタンで、押すと <code>options</code> の一覧を開く。選ばれた項目の番号（0始まり）で <code>onSelect</code> を実行する。</li>
+</ul>
+
+<h2 id="effects">効果、操作、Web 表示</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>内容</th></tr>
+  <tr><td><code>Theme</code></td><td>画面全体の強調色を決める。入力部品、<code>Tabs</code>、<code>BottomNav</code>、<code>Fab</code>、<code>Chip</code> の色に使われる。UI の中に複数あるときは、最も外側で最初に書かれたものが画面全体に使われる。ないときは既定の青緑。</td></tr>
+  <tr><td><code>Opacity</code></td><td><code>child</code> を半透明に描く。<code>percent</code> は 0（見えない）から 100（不透明）。</td></tr>
+  <tr><td><code>Rotate</code></td><td><code>child</code> を、中心の周りに時計回りに <code>degrees</code> 度回して描く。</td></tr>
+  <tr><td><code>Scale</code></td><td><code>child</code> を、中心を基準に <code>percent</code>％の大きさで描く（100 が等倍）。</td></tr>
+  <tr><td><code>Gradient</code></td><td><code>child</code> の後ろを、上の <code>from</code> から下の <code>to</code> へ変わる色で塗る。</td></tr>
+  <tr><td><code>Disabled</code></td><td><code>child</code> を薄く表示し、その中への操作をすべて無視する。</td></tr>
+  <tr><td><code>Swipeable</code></td><td><code>child</code> の上で指を左右にはじくと、<code>onSwipeLeft</code> か <code>onSwipeRight</code> を実行する。<code>child</code> の中のボタンなどは、これまでどおり押せる。</td></tr>
+  <tr><td><code>LongPress</code></td><td><code>child</code> を長押しすると <code>onLongPress</code> を実行する。</td></tr>
+  <tr><td><code>Animated</code></td><td>中の変化（部品の出現と消滅、移動、大きさの変化）を、切り替えではなく動きで見せる。</td></tr>
+  <tr><td><code>SecretField</code></td><td>入力した文字を隠す1行の入力欄。パスワード用。使い方は <code>TextField</code> と同じ。</td></tr>
+  <tr><td><code>NumberField</code></td><td>数字用のキーボードを出す1行の入力欄。値は文字列のまま渡される。</td></tr>
+  <tr><td><code>WebView</code></td><td><code>url</code> の Web ページを表示する。幅いっぱいに広がり、高さは <code>Expand</code> などで与える。</td></tr>
+</table>
+</div>
+<ul>
+  <li><code>Rotate</code> と <code>Scale</code> は描き方だけを変える。部品が占める場所は変わらないので、周りの配置は動かない。</li>
+  <li>部品は、自分の範囲の外に描かれた子（拡大や回転ではみ出した部分、影）を切り取らない。切り取るのは、スクロールする部品（<code>Scroll</code>、<code>HorizontalScroll</code>、<code>LazyList</code>）と <code>Rounded</code>、<code>Card</code> だけ。</li>
+  <li><code>Opacity</code> の <code>percent</code> が 0 から 100 の範囲にない場合と、<code>Scale</code> の <code>percent</code> が負の場合は、描画するときにパニックになる。</li>
+  <li><code>WebView</code> を使うプログラムには、ビルド時に通信の権限（<code>android.permission.INTERNET</code>）が自動で付く。権限を手で宣言する場所はない。</li>
 </ul>
 
 <h2 id="controls">入力部品</h2>

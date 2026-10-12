@@ -20,10 +20,16 @@ import android.widget.TextView;
 final class Extras {
     private Extras() {}
 
-    private static final int ACCENT = 0xFF009688;
+    static final int DEFAULT_ACCENT = 0xFF009688;
     private static final int SURFACE = 0xFFF5F5F5;
     private static final int TEXT = 0xDE000000;
     private static final int MUTED = 0x99000000;
+
+    /** Accent when checked, gray otherwise: for check boxes, radio buttons and switches. */
+    static android.content.res.ColorStateList checkedTint(int accent) {
+        return new android.content.res.ColorStateList(
+                new int[][] {{android.R.attr.state_checked}, {}}, new int[] {accent, 0xFF9E9E9E});
+    }
 
     /** The view for the node, or null when the node is not one of these components. */
     static View create(final Renderer r, Ui node) {
@@ -79,7 +85,6 @@ final class Extras {
             fab.setTextColor(0xFFFFFFFF);
             GradientDrawable circle = new GradientDrawable();
             circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(ACCENT);
             fab.setBackground(circle);
             fab.setElevation(r.px(6));
             fab.setOnClickListener(view -> {
@@ -111,6 +116,28 @@ final class Extras {
             pill.setCornerRadius(r.px(10));
             badge.setBackground(pill);
             return badge;
+        }
+        if (node instanceof Disabled) {
+            return new BlockedFrame(activity);
+        }
+        if (node instanceof Swipeable) {
+            return new SwipeFrame(r);
+        }
+        if (node instanceof LongPress) {
+            final FrameLayout frame = new FrameLayout(activity);
+            frame.setOnLongClickListener(view -> {
+                ((LongPress) frame.getTag()).onLongPress.run();
+                activity.rerender();
+                return true;
+            });
+            return frame;
+        }
+        if (node instanceof WebView) {
+            LoadedWebView web = new LoadedWebView(activity);
+            web.getSettings().setJavaScriptEnabled(true);
+            // Links open inside the view instead of leaving the app.
+            web.setWebViewClient(new android.webkit.WebViewClient());
+            return web;
         }
         if (node instanceof Image || node instanceof Icon) {
             AssetImage image = new AssetImage(activity);
@@ -204,13 +231,15 @@ final class Extras {
             bindSegments(r, (LinearLayout) view, ((BottomNav) node).labels, ((BottomNav) node).selected, 18);
         } else if (node instanceof Fab) {
             setText((TextView) view, ((Fab) node).label);
+            ((GradientDrawable) view.getBackground()).setColor(r.accent);
         } else if (node instanceof Chip) {
             Chip chip = (Chip) node;
             setText((TextView) view, chip.label);
             GradientDrawable pill = new GradientDrawable();
             pill.setCornerRadius(r.px(16));
             if (chip.selected) {
-                pill.setColor(0xFFB2DFDB);
+                // The accent at about a third of its strength.
+                pill.setColor((r.accent & 0x00FFFFFF) | 0x55000000);
             } else {
                 pill.setColor(0x00000000);
                 pill.setStroke(r.px(1), MUTED);
@@ -219,6 +248,33 @@ final class Extras {
         } else if (node instanceof Badge) {
             long count = ((Badge) node).count;
             setText((TextView) view, count > 99 ? "99+" : Long.toString(count));
+        } else if (node instanceof Opacity) {
+            view.setAlpha(((Opacity) node).percent / 100f);
+        } else if (node instanceof Rotate) {
+            view.setRotation(((Rotate) node).degrees);
+        } else if (node instanceof Scale) {
+            view.setScaleX(((Scale) node).percent / 100f);
+            view.setScaleY(((Scale) node).percent / 100f);
+        } else if (node instanceof Gradient) {
+            Gradient gradient = (Gradient) node;
+            view.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[] {r.argb(gradient.from), r.argb(gradient.to)}));
+        } else if (node instanceof Disabled) {
+            view.setAlpha(0.38f);
+        } else if (node instanceof Animated) {
+            // Changes made to this subtree during the rest of this render are animated.
+            if (view.isLaidOut()) {
+                android.transition.TransitionManager.beginDelayedTransition((ViewGroup) view);
+            }
+        } else if (node instanceof WebView) {
+            LoadedWebView web = (LoadedWebView) view;
+            String url = ((WebView) node).url;
+            if (!url.equals(web.loaded)) {
+                web.loaded = url;
+                web.loadUrl(url);
+            }
+        } else if (node instanceof Theme || node instanceof Swipeable || node instanceof LongPress) {
+            return true;
         } else if (node instanceof Image) {
             ((AssetImage) view).show(((Image) node).name);
             ((AssetImage) view).clearColorFilter();
@@ -310,9 +366,71 @@ final class Extras {
         for (int i = 0; i < count; i++) {
             TextView segment = (TextView) bar.getChildAt(i);
             boolean active = i == selected;
-            segment.setTextColor(active ? ACCENT : MUTED);
+            segment.setTextColor(active ? r.accent : MUTED);
             segment.setTypeface(Typeface.defaultFromStyle(active ? Typeface.BOLD : Typeface.NORMAL));
             segment.setSelected(active);
+        }
+    }
+
+    /** A web view that remembers which address it was asked to show, so that a re-render does not reload it. */
+    private static final class LoadedWebView extends android.webkit.WebView {
+        String loaded;
+
+        LoadedWebView(android.content.Context context) {
+            super(context);
+        }
+    }
+
+    /** Keeps every touch away from its children. */
+    private static final class BlockedFrame extends FrameLayout {
+        BlockedFrame(android.content.Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(android.view.MotionEvent event) {
+            return true;
+        }
+
+        @Override
+        public boolean onTouchEvent(android.view.MotionEvent event) {
+            return true;
+        }
+    }
+
+    /** Watches for a horizontal flick across its children without taking their taps away. */
+    private static final class SwipeFrame extends FrameLayout {
+        private final android.view.GestureDetector detector;
+
+        SwipeFrame(final Renderer r) {
+            super(r.activity);
+            final int minDistance = r.px(48);
+            detector = new android.view.GestureDetector(r.activity,
+                    new android.view.GestureDetector.SimpleOnGestureListener() {
+                        @Override
+                        public boolean onFling(android.view.MotionEvent down, android.view.MotionEvent up,
+                                float velocityX, float velocityY) {
+                            if (down == null || Math.abs(velocityX) <= Math.abs(velocityY)) {
+                                return false;
+                            }
+                            float distance = up.getX() - down.getX();
+                            if (Math.abs(distance) < minDistance) {
+                                return false;
+                            }
+                            Swipeable node = (Swipeable) getTag();
+                            (distance < 0 ? node.onSwipeLeft : node.onSwipeRight).run();
+                            r.activity.rerender();
+                            return true;
+                        }
+                    });
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+            detector.onTouchEvent(event);
+            super.dispatchTouchEvent(event);
+            // Claim the gesture so that the rest of it keeps arriving even when no child wants it.
+            return true;
         }
     }
 
