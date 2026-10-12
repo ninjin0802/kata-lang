@@ -207,6 +207,32 @@ class AlignBottom implements Ui {
   <li><code>Scroll</code> の中では高さに、<code>HorizontalScroll</code> の中では幅に上限がない。その方向に「いっぱいに広がる」部品は、<code>child</code> の大きさに合わせる。</li>
 </ul>
 
+<h3 id="layout-rules">大きさの決まり方</h3>
+<p>各部品の幅と高さは、「中身に合わせる」「親が与える範囲いっぱい」「固定（dp）」のいずれかになる。部品は、自分の大きさを決め、子に「どう広がるか」を渡す。表の「受け継ぐ」は、親から渡された値をそのまま使うことを表す。「引き継いで広げる」は、自分のその方向が「中身に合わせる」なら子も「中身に合わせる」、それ以外なら子は「いっぱい」になることを表す。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>自分の幅</th><th>自分の高さ</th><th>子の幅</th><th>子の高さ</th></tr>
+  <tr><td><code>Width</code></td><td>固定</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Height</code></td><td>受け継ぐ</td><td>固定</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
+  <tr><td><code>FillWidth</code></td><td>いっぱい</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>FillHeight</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
+  <tr><td><code>Center</code></td><td>いっぱい</td><td>いっぱい</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
+  <tr><td><code>CenterHorizontal</code>、<code>AlignEnd</code></td><td>いっぱい</td><td>受け継ぐ</td><td>中身に合わせる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
+  <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Space</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Column</code>、<code>Row</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
+  <tr><td><code>Text</code>、<code>Button</code> などの末端の部品</td><td>受け継ぐ</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
+</table>
+</div>
+<ul>
+  <li>ルートの部品は、幅も高さも「中身に合わせる」から始まる。</li>
+  <li>例：<code>Width { dp: 120, child: Height { dp: 48, child: Text { ... } } }</code> の <code>Text</code> は 120dp × 48dp になる。</li>
+  <li>例：<code>Column</code> の子はそのままでは中身の幅になる。横いっぱいにしたい子は <code>FillWidth</code> で包む。</li>
+</ul>
+
 <h2 id="text-field">入力欄</h2>
 <pre><code>class Greeter implements Screen {
   var name: String = "";
