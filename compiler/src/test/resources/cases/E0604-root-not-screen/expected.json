@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0604",
+      "message": "app root must be a Screen",
+      "file": "src/app/main.kata",
+      "line": 19,
+      "column": 9,
+      "endLine": 19,
+      "endColumn": 13,
+      "expected": "Screen",
+      "found": "P",
+      "fix": null
+    }
+  ]
+}

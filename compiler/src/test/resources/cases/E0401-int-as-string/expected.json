@@ -1,0 +1,24 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0401",
+      "message": "type mismatch",
+      "file": "src/app/main.kata",
+      "line": 11,
+      "column": 25,
+      "endLine": 11,
+      "endColumn": 35,
+      "expected": "String",
+      "found": "Int",
+      "fix": {
+        "line": 11,
+        "column": 25,
+        "endLine": 11,
+        "endColumn": 35,
+        "replacement": "self.count.toString()"
+      }
+    }
+  ]
+}

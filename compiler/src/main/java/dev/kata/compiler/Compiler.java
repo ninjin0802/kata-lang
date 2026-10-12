@@ -1,5 +1,7 @@
 package dev.kata.compiler;
 
+import dev.kata.compiler.check.CheckedProgram;
+import dev.kata.compiler.check.Checker;
 import dev.kata.compiler.diag.Diagnostic;
 import dev.kata.compiler.diag.Result;
 import dev.kata.compiler.syntax.Ast;
@@ -12,7 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /** Entry points for `kata check` and `kata build`. */
@@ -31,7 +35,7 @@ public final class Compiler {
 
     public static Result check(Path project) throws UsageError {
         List<Diagnostic> diagnostics = new ArrayList<>();
-        parse(readSources(project), diagnostics);
+        analyze(readSources(project), diagnostics);
         return new Result(diagnostics, null);
     }
 
@@ -45,10 +49,20 @@ public final class Compiler {
                 files.add(Parser.parse(source.path(), tokens, diagnostics));
             }
         }
-        if (diagnostics.isEmpty() && files.stream().noneMatch(file -> file.app() != null)) {
-            diagnostics.add(Diagnostic.of("E0602", "no app declaration in project", null, null));
-        }
         return files;
+    }
+
+    /** Runs every phase up to checking. The program is null when lexing or parsing reported anything. */
+    static CheckedProgram analyze(List<Source> sources, List<Diagnostic> diagnostics) {
+        List<Ast.File> files = parse(sources, diagnostics);
+        if (!diagnostics.isEmpty()) {
+            return null;
+        }
+        Map<String, String> texts = new LinkedHashMap<>();
+        for (Source source : sources) {
+            texts.put(source.path(), source.text());
+        }
+        return Checker.check(files, texts, diagnostics);
     }
 
     static List<Source> readSources(Path project) throws UsageError {

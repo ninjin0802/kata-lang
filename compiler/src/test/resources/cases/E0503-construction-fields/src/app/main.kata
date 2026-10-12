@@ -1,0 +1,36 @@
+module app.main;
+
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+class P {
+  let x: Int;
+  let y: Int;
+  var z: Int = 0;
+}
+
+class A {
+  var count: Int = 0;
+
+  fn add(self, a: Int, b: Int) -> Int {
+    return a + b;
+  }
+
+  fn m(self) -> Unit {
+    let p: P = P { y: 2, x: 1 };
+    let q: P = P { x: 1, y: 2, z: 3 };
+  }
+}
+
+class Main implements Screen {
+  fn view(self) -> Ui {
+    return Text { text: "" };
+  }
+}
+
+app {
+  id: "dev.kata.test",
+  name: "Test",
+  root: Main {},
+}

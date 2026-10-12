@@ -1,0 +1,299 @@
+package dev.kata.compiler.check;
+
+import static dev.kata.compiler.check.CheckSupport.check;
+import static dev.kata.compiler.check.CheckSupport.checkFiles;
+import static dev.kata.compiler.check.CheckSupport.wrap;
+import static dev.kata.compiler.check.CheckSupport.wrapBody;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import dev.kata.compiler.diag.Diagnostic;
+import dev.kata.compiler.diag.Fix;
+import dev.kata.compiler.diag.Span;
+import dev.kata.compiler.syntax.Ast;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class BodyCheckerTest {
+    /** A class with members to exercise; its body starts on line 6 and `m`'s statements on line 30. */
+    private static String withMembers(String statements) {
+        return wrap("""
+                class P {
+                  let x: Int;
+                  let y: Int;
+                  var z: Int = 0;
+                }
+                class A {
+                  let fixed: Int = 1;
+                  var count: Int = 0;
+                  var name: String = "";
+                  fn add(self, a: Int, b: Int) -> Int {
+                    return a + b;
+                  }
+                  fn get(self) -> Int {
+                    return self.count;
+                  }
+                  fn bump(self) -> Unit {
+                    self.count = self.count + 1;
+                  }
+                  fn setCount(self, value: Int) -> Unit {
+                    self.count = value;
+                  }
+                  fn setName(self, value: String) -> Unit {
+                    self.name = value;
+                  }
+                  fn m(self, p: Int, other: P) -> Unit {
+                """ + statements + "\n  }\n}\n");
+    }
+
+    @Test
+    void counterExampleIsClean() {
+        String counter = dev.kata.compiler.syntax.ParserTestSources.COUNTER;
+        checkFiles(Map.of("src/app/counter.kata", counter)).assertClean();
+    }
+
+    @Test
+    void fixtureIsClean() {
+        check(withMembers("")).assertClean();
+    }
+
+    @Test
+    void recordsExpressionTypes() {
+        CheckSupport result = check(wrapBody("let x: Int = 1 + 2;"));
+        result.assertClean();
+        Ast.ClassDecl a = result.program.files().get(0).classes().get(0);
+        Ast.Let let = (Ast.Let) a.methods().get(0).body().stmts().get(0);
+        assertEquals(Type.INT, result.program.typeOf(let.value()));
+    }
+
+    // ---- names
+
+    @Test
+    void bareFieldNameIsE0304WithFix() {
+        Diagnostic d = check(withMembers("let n: Int = count;")).single("E0304");
+        assertEquals(new Span(30, 14, 30, 19), d.span());
+        assertEquals(new Fix(new Span(30, 14, 30, 19), "self.count"), d.fix());
+    }
+
+    @Test
+    void undefinedNameIsE0301() {
+        Diagnostic d = check(wrapBody("let x: Int = nope;")).single("E0301");
+        assertEquals(new Span(7, 14, 7, 18), d.span());
+    }
+
+    @Test
+    void shadowingIsE0303() {
+        Diagnostic d = check(wrapBody("let x: Int = 1;\nif (true) {\nlet x: Int = 2;\n}")).single("E0303");
+        assertEquals(new Span(9, 5, 9, 6), d.span());
+        check(withMembers("let p: Int = 1;")).single("E0303");
+        check(wrapBody("let xs: List<Int> = [];\nfor (xs: Int in xs) {\n}")).single("E0303");
+    }
+
+    @Test
+    void siblingBlocksMayReuseNames() {
+        check(wrapBody("if (true) {\nlet x: Int = 1;\n}\nif (true) {\nlet x: Int = 2;\n}")).assertClean();
+    }
+
+    @Test
+    void variableIsNotVisibleInItsOwnInitializer() {
+        check(wrapBody("let x: Int = x;")).single("E0301");
+    }
+
+    // ---- types
+
+    @Test
+    void intWhereStringExpectedIsE0401WithToStringFix() {
+        Diagnostic d = check(wrapBody("let n: Int = 1;\nlet s: String = n;")).single("E0401");
+        assertEquals(new Span(8, 17, 8, 18), d.span());
+        assertEquals("String", d.expected());
+        assertEquals("Int", d.found());
+        assertEquals(new Fix(new Span(8, 17, 8, 18), "n.toString()"), d.fix());
+    }
+
+    @Test
+    void toStringFixParenthesizesOperators() {
+        Diagnostic d = check(wrapBody("let s: String = 1 + 2;")).single("E0401");
+        assertEquals("(1 + 2).toString()", d.fix().replacement());
+    }
+
+    @Test
+    void plainMismatchHasNoFix() {
+        Diagnostic d = check(wrapBody("let n: Int = \"a\";")).single("E0401");
+        assertEquals(null, d.fix());
+    }
+
+    @Test
+    void classIsAssignableToItsInterfaceOnly() {
+        check(wrapBody("let u: Ui = Text { text: \"a\" };")).assertClean();
+        check(wrapBody("let t: Text = Text { text: \"a\" };\nlet s: Screen = t;")).single("E0401");
+        check(wrapBody("let ts: List<Text> = [];\nlet us: List<Ui> = ts;")).single("E0401");
+    }
+
+    @Test
+    void stringPlusIsE0402WithConcatFix() {
+        Diagnostic d = check(wrapBody("let s: String = \"a\" + \"b\";")).single("E0402");
+        assertEquals(new Fix(new Span(7, 17, 7, 26), "\"a\".concat(other: \"b\")"), d.fix());
+    }
+
+    @Test
+    void operandTypesAreChecked() {
+        check(wrapBody("let b: Bool = 1 == \"a\";")).single("E0402");
+        check(withMembers("let b: Bool = self == self;")).single("E0402");
+        check(wrapBody("let n: Int = -true;")).single("E0402");
+        check(wrapBody("let b: Bool = !1;")).single("E0402");
+        check(wrapBody("let b: Bool = 1 && true;")).single("E0402");
+        check(wrapBody("let n: Int = 1 + true;")).single("E0402");
+        check(wrapBody("let b: Bool = \"a\" < \"b\";")).single("E0402");
+    }
+
+    @Test
+    void validOperatorsAreAccepted() {
+        check(wrapBody("let a: Int = (1 + 2 + 3) * (4 - 5);\nlet b: Bool = (a < 1) || (a >= 2);\n"
+                + "let c: Bool = \"a\" == \"b\";\nlet d: Bool = true != false;\nlet e: Int = -(a % 2);\n"
+                + "let f: Bool = !b;")).assertClean();
+    }
+
+    @Test
+    void conditionsMustBeBool() {
+        check(wrapBody("if (1) {\n}")).single("E0403");
+        check(wrapBody("while (\"x\") {\n}")).single("E0403");
+    }
+
+    // ---- return
+
+    @Test
+    void everyPathMustReturn() {
+        check(wrap("class A {\n  fn m(self, c: Bool) -> Int {\n    if (c) {\n      return 1;\n    }\n  }\n}\n"))
+                .single("E0404");
+        check(wrap("class A {\n  fn m(self, c: Bool) -> Int {\n    while (c) {\n      return 1;\n    }\n  }\n}\n"))
+                .single("E0404");
+        check(wrap("class A {\n  fn m(self, c: Bool) -> Int {\n    if (c) {\n      return 1;\n    } else {\n"
+                + "      return 2;\n    }\n  }\n}\n")).assertClean();
+    }
+
+    @Test
+    void returnValueMustMatchReturnType() {
+        check(wrapBody("return 1;")).single("E0405");
+        check(wrap("class A {\n  fn m(self) -> Int {\n    return;\n  }\n}\n")).single("E0405");
+        check(wrapBody("if (true) {\nreturn;\n}")).assertClean();
+    }
+
+    @Test
+    void statementAfterReturnIsE0409() {
+        Diagnostic d = check(wrapBody("return;\nlet x: Int = 1;")).single("E0409");
+        assertEquals(new Span(8, 1, 8, 16), d.span());
+    }
+
+    // ---- lists
+
+    @Test
+    void listLiteralNeedsAnExpectedType() {
+        check(wrapBody("let n: Int = [1].size();")).single("E0406");
+    }
+
+    @Test
+    void listElementsMustBeAssignable() {
+        Diagnostic d = check(wrapBody("let xs: List<Ui> = [Text { text: \"a\" }, 1];")).single("E0401");
+        assertEquals("Ui", d.expected());
+        assertEquals("Int", d.found());
+    }
+
+    @Test
+    void builtinMethodsAreTyped() {
+        check(wrapBody("let s: String = \"a\".concat(other: \"b\");\nlet n: Int = s.length();\n"
+                + "let t: String = n.toString();\nlet xs: List<Int> = [1];\nlet m: Int = xs.size();\n"
+                + "let g: Int = xs.get(index: 0);\nlet ys: List<Int> = xs.append(item: 2);\n"
+                + "let e: List<Int> = [];")).assertClean();
+        check(wrapBody("let xs: List<Int> = [1];\nlet ys: List<Int> = xs.append(item: \"a\");")).single("E0401");
+    }
+
+    // ---- members
+
+    @Test
+    void unknownMemberIsE0501() {
+        check(withMembers("let n: Int = self.nope;")).single("E0501");
+        check(withMembers("let n: Int = self.nope();")).single("E0501");
+        check(wrapBody("let n: Int = 1;\nlet s: String = n.nope();")).single("E0501");
+    }
+
+    @Test
+    void callingAFieldIsE0508() {
+        check(withMembers("let n: Int = self.count();")).single("E0508");
+    }
+
+    @Test
+    void argumentsMustMatchParametersInOrder() {
+        check(withMembers("let n: Int = self.add(a: 1);")).single("E0502");
+        check(withMembers("let n: Int = self.add(a: 1, c: 2);")).single("E0502");
+        Diagnostic d = check(withMembers("let n: Int = self.add(b: 2, a: 1);")).single("E0502");
+        assertEquals("a, b", d.expected());
+        assertEquals("b, a", d.found());
+        assertEquals(new Fix(new Span(30, 22, 30, 34), "(a: 1, b: 2)"), d.fix());
+        check(withMembers("let n: Int = self.add(a: 1, b: \"x\");")).single("E0401");
+    }
+
+    @Test
+    void constructionMustSupplyUninitializedFieldsInOrder() {
+        check(withMembers("let q: P = P { x: 1, y: 2 };")).assertClean();
+        check(withMembers("let q: P = P { x: 1 };")).single("E0503");
+        check(withMembers("let q: P = P { x: 1, y: 2, z: 3 };")).single("E0503");
+        Diagnostic d = check(withMembers("let q: P = P { y: 2, x: 1 };")).single("E0503");
+        assertEquals("x, y", d.expected());
+        assertEquals(new Fix(new Span(30, 14, 30, 28), "{ x: 1, y: 2 }"), d.fix());
+        check(withMembers("let q: P = Int {};")).single("E0302");
+    }
+
+    @Test
+    void immutableThingsCannotBeAssigned() {
+        check(withMembers("self.fixed = 2;")).single("E0504");
+        check(withMembers("p = 2;")).single("E0504");
+        check(withMembers("let a: Int = 1;\na = 2;")).single("E0504");
+        check(withMembers("let xs: List<Int> = [];\nfor (i: Int in xs) {\ni = 2;\n}")).single("E0504");
+        check(withMembers("var a: Int = 1;\na = 2;\nself.count = a;")).assertClean();
+    }
+
+    @Test
+    void anotherObjectsFieldCannotBeAssigned() {
+        check(withMembers("other.z = 1;")).single("E0505");
+    }
+
+    @Test
+    void methodReferencesNeedActionOrHandlerShape() {
+        check(withMembers("let a: Action = self.bump;\nlet h: Handler<Int> = self.setCount;\n"
+                + "let g: Handler<String> = self.setName;")).assertClean();
+        check(withMembers("let a: Action = self.add;")).single("E0507");
+        check(withMembers("let a: Action = self.get;")).single("E0507");
+        Diagnostic d = check(withMembers("let h: Handler<String> = self.setCount;")).single("E0401");
+        assertEquals("Handler<String>", d.expected());
+        assertEquals("Handler<Int>", d.found());
+    }
+
+    @Test
+    void fieldInitializerCannotUseSelf() {
+        check(wrap("class A {\n  let x: Int = 1;\n  let y: Int = self.x;\n}\n")).single("E0509");
+    }
+
+    @Test
+    void expressionStatementMustBeUnitCall() {
+        check(withMembers("self.get();")).single("E0206");
+        check(withMembers("1;")).single("E0206");
+        check(withMembers("self.bump();")).assertClean();
+    }
+
+    // ---- loops
+
+    @Test
+    void forVariableTypeMustMatchElementType() {
+        Diagnostic d = check(wrapBody("let ints: List<Int> = [1, 2];\nfor (x: String in ints) {\n}")).single("E0401");
+        assertEquals("List<String>", d.expected());
+        assertEquals("List<Int>", d.found());
+        check(wrapBody("var total: Int = 0;\nfor (x: Int in [1, 2]) {\ntotal = total + x;\n}")).assertClean();
+        check(wrapBody("for (x: Int in 5) {\n}")).single("E0401");
+    }
+
+    // ---- app
+
+    @Test
+    void appRootMustBeAScreen() {
+        check(withMembers("").replace("root: Main {}", "root: P { x: 1, y: 2 }")).single("E0604");
+    }
+}

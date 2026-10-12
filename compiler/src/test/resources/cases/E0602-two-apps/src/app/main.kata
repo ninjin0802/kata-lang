@@ -1,0 +1,18 @@
+module app.main;
+
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+
+class Main implements Screen {
+  fn view(self) -> Ui {
+    return Text { text: "" };
+  }
+}
+
+app {
+  id: "dev.kata.test",
+  name: "Test",
+  root: Main {},
+}

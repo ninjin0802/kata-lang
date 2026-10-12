@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0206",
+      "message": "the result of this call must be used",
+      "file": "src/app/main.kata",
+      "line": 15,
+      "column": 5,
+      "endLine": 15,
+      "endColumn": 25,
+      "expected": "Unit",
+      "found": "Int",
+      "fix": null
+    }
+  ]
+}

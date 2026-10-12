@@ -1,0 +1,36 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0503",
+      "message": "'P' must be constructed with exactly: x, y",
+      "file": "src/app/main.kata",
+      "line": 21,
+      "column": 18,
+      "endLine": 21,
+      "endColumn": 32,
+      "expected": "x, y",
+      "found": "y, x",
+      "fix": {
+        "line": 21,
+        "column": 18,
+        "endLine": 21,
+        "endColumn": 32,
+        "replacement": "{ x: 1, y: 2 }"
+      }
+    },
+    {
+      "code": "E0503",
+      "message": "'P' must be constructed with exactly: x, y",
+      "file": "src/app/main.kata",
+      "line": 22,
+      "column": 18,
+      "endLine": 22,
+      "endColumn": 38,
+      "expected": "x, y",
+      "found": "x, y, z",
+      "fix": null
+    }
+  ]
+}

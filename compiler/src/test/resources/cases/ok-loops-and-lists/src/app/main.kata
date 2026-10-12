@@ -1,0 +1,38 @@
+module app.main;
+
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+class A {
+  var history: List<Int> = [];
+
+  fn record(self, value: Int) -> Unit {
+    self.history = self.history.append(item: value);
+  }
+
+  fn total(self) -> Int {
+    var sum: Int = 0;
+    for (value: Int in self.history) {
+      sum = sum + value;
+    }
+    var i: Int = 0;
+    while (i < self.history.size()) {
+      sum = sum + self.history.get(index: i);
+      i = i + 1;
+    }
+    return sum;
+  }
+}
+
+class Main implements Screen {
+  fn view(self) -> Ui {
+    return Text { text: "" };
+  }
+}
+
+app {
+  id: "dev.kata.test",
+  name: "Test",
+  root: Main {},
+}

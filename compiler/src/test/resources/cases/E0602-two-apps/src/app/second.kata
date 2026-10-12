@@ -1,0 +1,17 @@
+module app.second;
+
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+class Other implements Screen {
+  fn view(self) -> Ui {
+    return Text { text: "" };
+  }
+}
+
+app {
+  id: "dev.kata.second",
+  name: "Second",
+  root: Other {},
+}

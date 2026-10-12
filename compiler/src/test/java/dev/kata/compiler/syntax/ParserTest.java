@@ -15,43 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ParserTest {
-    static final String COUNTER = """
-            module app.counter;
-
-            import kata.ui.Button;
-            import kata.ui.Column;
-            import kata.ui.Screen;
-            import kata.ui.Text;
-            import kata.ui.Ui;
-
-            class Counter implements Screen {
-              var count: Int = 0;
-
-              fn view(self) -> Ui {
-                return Column {
-                  children: [
-                    Text { text: self.count.toString() },
-                    Button { label: "+1", onTap: self.increment },
-                    Button { label: "Reset", onTap: self.reset },
-                  ],
-                };
-              }
-
-              fn increment(self) -> Unit {
-                self.count = self.count + 1;
-              }
-
-              fn reset(self) -> Unit {
-                self.count = 0;
-              }
-            }
-
-            app {
-              id: "dev.kata.counter",
-              name: "Counter",
-              root: Counter {},
-            }
-            """;
+    static final String COUNTER = ParserTestSources.COUNTER;
 
     private final List<Diagnostic> diagnostics = new ArrayList<>();
 

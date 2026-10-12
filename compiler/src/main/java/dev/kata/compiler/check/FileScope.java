@@ -1,0 +1,146 @@
+package dev.kata.compiler.check;
+
+import dev.kata.compiler.diag.Diagnostic;
+import dev.kata.compiler.diag.Span;
+import dev.kata.compiler.syntax.Ast;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/** The type names visible in one file: core types, the file's classes, and its imports. */
+final class FileScope {
+    final Ast.File file;
+    final String module;
+    private final ClassTable table;
+    private final CheckedProgram program;
+    private final List<Diagnostic> out;
+    private final Set<String> localClasses = new HashSet<>();
+    private final Map<String, Ast.Import> imports = new LinkedHashMap<>();
+    private final Set<String> usedImports = new HashSet<>();
+    private final Set<String> reportedMissingImports = new HashSet<>();
+
+    FileScope(Ast.File file, ClassTable table, CheckedProgram program, List<Diagnostic> out) {
+        this.file = file;
+        this.module = file.module().name();
+        this.table = table;
+        this.program = program;
+        this.out = out;
+    }
+
+    void addImports() {
+        for (Ast.Import decl : file.imports()) {
+            if (!decl.module().name().equals(Builtins.UI_MODULE)) {
+                out.add(Diagnostic.of("E0307", "unknown module '" + decl.module().name()
+                        + "'; only kata.ui can be imported", file.path(), decl.span()));
+            } else if (!Builtins.uiNames().contains(decl.name())) {
+                out.add(Diagnostic.of("E0307", "kata.ui has no '" + decl.name() + "'", file.path(), decl.span()));
+            } else if (imports.containsKey(decl.name())) {
+                out.add(Diagnostic.of("E0303", "'" + decl.name() + "' is already imported", file.path(),
+                        decl.span()));
+            } else {
+                imports.put(decl.name(), decl);
+            }
+        }
+    }
+
+    /** Declares a class of this file. Returns false, with a diagnostic, when the name is taken. */
+    boolean addClass(Ast.ClassDecl decl) {
+        String name = decl.name();
+        if (Builtins.CORE_TYPES.contains(name) || imports.containsKey(name) || !localClasses.add(name)) {
+            out.add(Diagnostic.of("E0303", "'" + name + "' is already defined", file.path(), decl.nameSpan()));
+            return false;
+        }
+        return true;
+    }
+
+    String qualify(String className) {
+        return module + "." + className;
+    }
+
+    void reportUnusedImports() {
+        for (Ast.Import decl : imports.values()) {
+            if (!usedImports.contains(decl.name())) {
+                Span line = new Span(decl.span().line(), 1, decl.span().endLine() + 1, 1);
+                out.add(Diagnostic.of("E0306", "unused import '" + decl.name() + "'", file.path(), decl.span())
+                        .withFix(line, ""));
+            }
+        }
+    }
+
+    /** Resolves a written type. Unit is accepted only where allowUnit is set (a method's return type). */
+    Type resolve(Ast.TypeRef ref, boolean allowUnit) {
+        Type type = resolveUnrecorded(ref, allowUnit);
+        program.typeRefs.put(ref, type);
+        return type;
+    }
+
+    private Type resolveUnrecorded(Ast.TypeRef ref, boolean allowUnit) {
+        String name = ref.name();
+        int arity = name.equals("List") || name.equals("Handler") ? 1 : 0;
+        boolean known = Builtins.CORE_TYPES.contains(name) || localClasses.contains(name)
+                || Builtins.uiNames().contains(name);
+        if (known && ref.args().size() != arity) {
+            out.add(Diagnostic.of("E0408", "'" + name + "' takes " + arity + " type argument"
+                    + (arity == 1 ? "" : "s"), file.path(), ref.span())
+                    .withExpected(Integer.toString(arity), Integer.toString(ref.args().size())));
+            for (Ast.TypeRef arg : ref.args()) {
+                resolve(arg, false);
+            }
+            return Type.UNKNOWN;
+        }
+        switch (name) {
+            case "Int":
+                return Type.INT;
+            case "Bool":
+                return Type.BOOL;
+            case "String":
+                return Type.STRING;
+            case "Action":
+                return Type.ACTION;
+            case "Unit":
+                if (!allowUnit) {
+                    out.add(Diagnostic.of("E0407", "Unit can only be used as a return type", file.path(),
+                            ref.span()));
+                    return Type.UNKNOWN;
+                }
+                return Type.UNIT;
+            case "List":
+                return new Type.ListType(resolve(ref.args().get(0), false));
+            case "Handler":
+                return new Type.HandlerType(resolve(ref.args().get(0), false));
+            default:
+                return resolveNamed(name, ref.span());
+        }
+    }
+
+    /** Resolves a class or interface name used as a type or in a construction expression. */
+    Type resolveNamed(String name, Span span) {
+        if (localClasses.contains(name)) {
+            return new Type.ClassType(qualify(name));
+        }
+        if (Builtins.uiNames().contains(name)) {
+            if (imports.containsKey(name)) {
+                usedImports.add(name);
+            } else if (reportedMissingImports.add(name)) {
+                Span insertAt = importInsertionPoint();
+                out.add(Diagnostic.of("E0305", "'" + name + "' must be imported from kata.ui", file.path(), span)
+                        .withFix(insertAt, "import kata.ui." + name + ";\n"));
+            }
+            String qualified = Builtins.UI_MODULE + "." + name;
+            return Builtins.isUiInterface(name) ? new Type.InterfaceType(qualified) : new Type.ClassType(qualified);
+        }
+        out.add(Diagnostic.of("E0302", "unknown type '" + name + "'", file.path(), span));
+        return Type.UNKNOWN;
+    }
+
+    /** The start of the line after the last import (or after the module declaration). */
+    private Span importInsertionPoint() {
+        int line = file.module().span().endLine();
+        for (Ast.Import decl : file.imports()) {
+            line = Math.max(line, decl.span().endLine());
+        }
+        return new Span(line + 1, 1, line + 1, 1);
+    }
+}
