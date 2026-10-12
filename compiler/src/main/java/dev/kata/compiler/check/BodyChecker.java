@@ -64,7 +64,7 @@ final class BodyChecker {
             block(method.body());
             locals.pop();
             if (!returnType.equals(Type.UNIT) && !(returnType instanceof Type.Unknown)
-                    && !terminates(method.body())) {
+                    && !Flow.terminates(method.body())) {
                 out.add(Diagnostic.of("E0404", "not every path of '" + method.name() + "' ends with return", path,
                         method.nameSpan()).withExpected(returnType.display(), null));
             }
@@ -96,7 +96,7 @@ final class BodyChecker {
                 reported = true;
             }
             stmt(stmt);
-            ended = ended || terminates(stmt);
+            ended = ended || Flow.terminates(stmt);
         }
         locals.pop();
     }
@@ -237,20 +237,6 @@ final class BodyChecker {
             }
         }
         return null;
-    }
-
-    /** Spec 04 #return: the last statement is a return, or an if/else whose branches all end. */
-    private static boolean terminates(Ast.Stmt stmt) {
-        if (stmt instanceof Ast.Return) {
-            return true;
-        }
-        if (stmt instanceof Ast.Block block) {
-            return !block.stmts().isEmpty() && terminates(block.stmts().get(block.stmts().size() - 1));
-        }
-        if (stmt instanceof Ast.If branch) {
-            return branch.orElse() != null && terminates(branch.then()) && terminates(branch.orElse());
-        }
-        return false;
     }
 
     // ---- expressions
