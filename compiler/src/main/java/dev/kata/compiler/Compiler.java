@@ -2,6 +2,10 @@ package dev.kata.compiler;
 
 import dev.kata.compiler.diag.Diagnostic;
 import dev.kata.compiler.diag.Result;
+import dev.kata.compiler.syntax.Ast;
+import dev.kata.compiler.syntax.Lexer;
+import dev.kata.compiler.syntax.Parser;
+import dev.kata.compiler.syntax.Token;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,12 +30,25 @@ public final class Compiler {
     public record Source(String path, String text) {}
 
     public static Result check(Path project) throws UsageError {
-        List<Source> sources = readSources(project);
         List<Diagnostic> diagnostics = new ArrayList<>();
-        if (sources.isEmpty()) {
+        parse(readSources(project), diagnostics);
+        return new Result(diagnostics, null);
+    }
+
+    /** Lexes and parses every source. A file with lexical errors is not parsed, to avoid follow-on noise. */
+    static List<Ast.File> parse(List<Source> sources, List<Diagnostic> diagnostics) {
+        List<Ast.File> files = new ArrayList<>();
+        for (Source source : sources) {
+            int before = diagnostics.size();
+            List<Token> tokens = Lexer.lex(source.path(), source.text(), diagnostics);
+            if (diagnostics.size() == before) {
+                files.add(Parser.parse(source.path(), tokens, diagnostics));
+            }
+        }
+        if (diagnostics.isEmpty() && files.stream().noneMatch(file -> file.app() != null)) {
             diagnostics.add(Diagnostic.of("E0602", "no app declaration in project", null, null));
         }
-        return new Result(diagnostics, null);
+        return files;
     }
 
     static List<Source> readSources(Path project) throws UsageError {

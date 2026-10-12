@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0204",
+      "message": "operator '-' cannot be chained; add parentheses",
+      "file": "src/app/main.kata",
+      "line": 5,
+      "column": 18,
+      "endLine": 5,
+      "endColumn": 19,
+      "expected": null,
+      "found": null,
+      "fix": null
+    }
+  ]
+}

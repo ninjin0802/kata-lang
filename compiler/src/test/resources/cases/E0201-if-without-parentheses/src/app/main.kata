@@ -1,0 +1,9 @@
+module app.main;
+
+class A {
+  fn m(self, x: Bool) -> Unit {
+    if x {
+      return;
+    }
+  }
+}

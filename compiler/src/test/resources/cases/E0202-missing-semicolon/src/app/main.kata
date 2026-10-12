@@ -1,0 +1,8 @@
+module app.main;
+
+class A {
+  fn m(self) -> Unit {
+    let x: Int = 1
+    let y: Int = 2;
+  }
+}
