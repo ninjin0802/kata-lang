@@ -41,9 +41,24 @@ public abstract class KataActivity extends Activity {
         Device.install(new Device.Backend() {
             @Override
             public void openUrl(String url) {
+                // The address was already parsed and rewritten by Device.normalize; its scheme is checked
+                // once more as Android reads it, so the two parsers cannot disagree about what it is.
+                android.net.Uri uri = android.net.Uri.parse(url);
+                String scheme = uri.getScheme();
+                boolean web = "http".equals(scheme) || "https".equals(scheme);
+                if (!web && !"mailto".equals(scheme) && !"tel".equals(scheme)) {
+                    return;
+                }
+                android.content.Intent view = new android.content.Intent(
+                        web ? android.content.Intent.ACTION_VIEW
+                                : "tel".equals(scheme) ? android.content.Intent.ACTION_DIAL
+                                : android.content.Intent.ACTION_SENDTO, uri);
+                if (web) {
+                    // Only apps that declare themselves as handlers of links from other apps.
+                    view.addCategory(android.content.Intent.CATEGORY_BROWSABLE);
+                }
                 try {
-                    startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(url)));
+                    startActivity(view);
                 } catch (android.content.ActivityNotFoundException noAppForIt) {
                     // Nothing on the device can open it; there is nothing to do.
                 }
@@ -72,7 +87,9 @@ public abstract class KataActivity extends Activity {
                 if (clip == null || clip.getItemCount() == 0) {
                     return "";
                 }
-                CharSequence text = clip.getItemAt(0).coerceToText(KataActivity.this);
+                // Only text that was copied as text. A clip can instead hold a content: address, and
+                // turning that into text would make this app open it with its own permissions.
+                CharSequence text = clip.getItemAt(0).getText();
                 return text == null ? "" : text.toString();
             }
 

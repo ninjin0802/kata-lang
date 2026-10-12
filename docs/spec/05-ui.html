@@ -735,7 +735,9 @@ class Counter implements Screen {
 </table>
 </div>
 <ul>
-  <li><code>openUrl</code> が開くのは、<code>http://</code>、<code>https://</code>、<code>mailto:</code>、<code>tel:</code> で始まるアドレスだけ。それ以外は何もしない。外から受け取ったアドレスで、任意のアプリを起動したりファイルに届いたりしないようにするため。</li>
+  <li><code>openUrl</code> が開くのは、アドレスとして正しく読めて、種類が <code>http</code>、<code>https</code>（どちらも接続先の名前が必要）、<code>mailto</code>、<code>tel</code> のものだけ。それ以外は何もしない。外から受け取ったアドレスで、任意のアプリを起動したりファイルに届いたりしないようにするため。先頭の文字だけでは判定しない。</li>
+  <li><code>tel:</code> は電話アプリを番号入力済みで開くだけで、発信はしない。<code>mailto:</code> はメールの作成画面を開く。</li>
+  <li><code>clipboard()</code> が返すのは、文字列としてコピーされた内容だけ。画像やファイルへの参照がコピーされている場合は、空の文字列を返す。</li>
   <li>開けるアプリが端末にない場合も、何もしない。</li>
 </ul>
 

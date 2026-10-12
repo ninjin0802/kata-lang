@@ -70,16 +70,46 @@ public final class Device {
      * reach files through this app.
      */
     public static boolean canOpen(String url) {
-        String lower = url.toLowerCase(Locale.ROOT);
-        return lower.startsWith("https://") || lower.startsWith("http://") || lower.startsWith("mailto:")
-                || lower.startsWith("tel:");
+        return normalize(url) != null;
+    }
+
+    /**
+     * The address as it will be handed on, or null when it is refused. The address is parsed, its scheme
+     * checked, and then written out again from the parsed parts, so that what was checked is exactly
+     * what is used: a text that merely starts like a web address but parses as something else is refused.
+     */
+    public static String normalize(String url) {
+        java.net.URI uri;
+        try {
+            uri = new java.net.URI(url);
+        } catch (java.net.URISyntaxException e) {
+            return null;
+        }
+        if (uri.getScheme() == null) {
+            return null;
+        }
+        String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
+        if (scheme.equals("http") || scheme.equals("https")) {
+            if (uri.getHost() == null || uri.getHost().isEmpty()) {
+                return null;
+            }
+        } else if (scheme.equals("mailto") || scheme.equals("tel")) {
+            String rest = uri.getSchemeSpecificPart();
+            if (rest == null || rest.isEmpty()) {
+                return null;
+            }
+        } else {
+            return null;
+        }
+        return scheme + url.substring(uri.getScheme().length());
     }
 
     public Device() {}
 
     public void openUrl(String url) {
-        if (canOpen(url)) {
-            backend.openUrl(url);
+        String normalized = normalize(url);
+        if (normalized != null) {
+            backend.openUrl(normalized);
         }
     }
 
