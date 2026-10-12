@@ -37,6 +37,8 @@ app {
 }
 ```
 
+The syntax looks like Rust and Swift (`fn`, `let`/`var`, `Point { x: 1 }`, named arguments), the philosophy is closer to Go (few features, one way to do things), and it runs where Kotlin runs. It is not Kotlin-like: there is no type inference, no lambdas, and no implicit `this`.
+
 ## Status
 
 Experimental. It can build small single-screen apps (see `examples/`): a counter, a styling demo, a form with text input and a scrolling list, and a four-function calculator. It cannot yet do networking, storage, multiple screens, images, or call Android APIs directly. The language and its output formats may change without notice.
@@ -79,6 +81,12 @@ The same model built the same calculator from scratch, with the same requirement
 - kata's source was shorter, but the agent has to read the guide first, which Kotlin does not need. On a small app that fixed cost outweighs the saving.
 - This is one task with one or two runs per column. Treat it as an anecdote, not a result.
 
+## How this was made
+
+The language design, specification, compiler, runtime, tests and this README were written almost entirely by an AI agent (Claude), directed by a human. That is part of the experiment: a language for agents, built by one.
+
+This is a personal experiment, not a supported product. Issues and pull requests are welcome, but responses may be slow and there is no roadmap commitment.
+
 ## Layout
 
 ```
@@ -97,3 +105,7 @@ scripts/e2e.sh     on-device checks (needs one connected emulator or device)
 ./gradlew test      # everything that does not need a device
 scripts/e2e.sh      # builds the examples and checks them on a connected emulator or device
 ```
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
