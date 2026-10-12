@@ -16,13 +16,19 @@ public final class Http {
 
     private static final List<String> METHODS = Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE");
     private static final int TIMEOUT_MILLIS = 15000;
+    /** A reply is held in memory as one String, so a server must not be able to send without end. */
+    static final long MAX_RESPONSE_BYTES = 8L * 1024 * 1024;
 
     /**
      * @return the response body decoded as UTF-8
-     * @throws IOException for a bad address or method, a network failure, or a status outside 200-299
-     *     (message `HTTP <status>`)
+     * @throws IOException for a bad address or method, a network failure, a status outside 200-299
+     *     (message `HTTP <status>`), or a body larger than 8 MB
      */
     public static String send(String method, String url, String body) throws IOException {
+        return send(method, url, body, MAX_RESPONSE_BYTES);
+    }
+
+    static String send(String method, String url, String body, long maxResponseBytes) throws IOException {
         if (!METHODS.contains(method)) {
             throw new IOException("unsupported method: " + method);
         }
@@ -62,6 +68,9 @@ public final class Http {
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 byte[] chunk = new byte[8192];
                 for (int read = in.read(chunk); read >= 0; read = in.read(chunk)) {
+                    if (buffer.size() + (long) read > maxResponseBytes) {
+                        throw new IOException("response larger than " + maxResponseBytes + " bytes");
+                    }
                     buffer.write(chunk, 0, read);
                 }
                 return new String(buffer.toByteArray(), StandardCharsets.UTF_8);

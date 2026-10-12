@@ -242,7 +242,7 @@ return Stack { children: layers };
 - **Saving** (`import kata.sys.Store;`): `Store {}.getInt(key: "count", fallback: 0)` / `.setInt(key: "count", value: n)`; also `getString/setString`, `getFloat/setFloat`, `getBool/setBool`, `remove(key:)`. Values survive restarts. Read in a field initializer, write in the method that changes the state.
 - **Clock** (`import kata.sys.Clock;`): `Clock {}.now() -> Int` (ms since 1970), `.today() -> Date`, `.time() -> Time`.
 - **Timer**: `Timer { millis: Int, onTick: Action, child: Ui }` runs `onTick` every `millis` while it is part of the view.
-- **Network**: `Request { method: String, url: String, body: String, onResult: Handler<String>, onError: Handler<String>, child: Ui }` performs one HTTP exchange while it is part of the view (https only; method GET/POST/PUT/PATCH/DELETE). Show it while a `loading` field is true and clear that field in both callbacks. An error status arrives in `onError` as `"HTTP 404"`. There is no JSON parser; use the `String` methods.
+- **Network**: `Request { method: String, url: String, body: String, onResult: Handler<String>, onError: Handler<String>, child: Ui }` performs one HTTP exchange while it is part of the view (https only; method GET/POST/PUT/PATCH/DELETE). Show it while a `loading` field is true and clear that field in both callbacks. An error status arrives in `onError` as `"HTTP 404"`; a reply over 8 MB or slower than 15 s is also an error. There is no JSON parser; use the `String` methods.
 
 `app { id: "...", name: "...", root: <expr of a Screen> }` — exactly these three, in this order. `id` is lowercase words joined by periods (`dev.example.app`).
 

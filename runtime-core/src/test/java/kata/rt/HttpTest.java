@@ -26,6 +26,19 @@ class HttpTest {
             exchange.getResponseBody().write(reply);
             exchange.close();
         });
+        server.createContext("/big", exchange -> {
+            // No Content-Length: the size is only known by reading.
+            exchange.sendResponseHeaders(200, 0);
+            byte[] chunk = new byte[1024];
+            try {
+                for (int i = 0; i < 64; i++) {
+                    exchange.getResponseBody().write(chunk);
+                }
+            } catch (IOException closedByClient) {
+                // expected once the client gives up
+            }
+            exchange.close();
+        });
         server.createContext("/missing", exchange -> {
             exchange.sendResponseHeaders(404, -1);
             exchange.close();
@@ -47,6 +60,18 @@ class HttpTest {
     @Test
     void postSendsTheBody() throws IOException {
         assertEquals("POST:こんにちは:日本語", Http.send("POST", base + "/echo", "こんにちは"));
+    }
+
+    @Test
+    void responseLargerThanTheLimitIsRefused() {
+        IOException e = assertThrows(IOException.class, () -> Http.send("GET", base + "/big", "", 10_000));
+        assertEquals("response larger than 10000 bytes", e.getMessage());
+    }
+
+    @Test
+    void responseWithinTheLimitIsReturned() throws IOException {
+        assertEquals(64 * 1024, Http.send("GET", base + "/big", "", 64 * 1024).length());
+        assertEquals(8L * 1024 * 1024, Http.MAX_RESPONSE_BYTES);
     }
 
     @Test

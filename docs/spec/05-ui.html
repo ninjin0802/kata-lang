@@ -749,6 +749,7 @@ class Counter implements Screen {
   <li>結果が届く前に UI から外すと、その結果は捨てられる。</li>
   <li><code>method</code> は <code>GET</code>、<code>POST</code>、<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>。<code>body</code> が空でなければ本文として送る。</li>
   <li>応答の状態が 200 番台でない場合は、<code>HTTP 404</code> の形の説明で <code>onError</code> になる。</li>
+  <li>応答の本文が 8MB を超える場合は、読むのをやめて <code>onError</code> になる。本文は1つの文字列としてメモリに載るので、相手のサーバーが送り続けてもアプリのメモリを使い切らないようにするため。接続と読み取りは、それぞれ15秒で打ち切る。</li>
   <li>使えるのは <code>https://</code> のアドレス。<code>http://</code> は Android が既定で拒否するため <code>onError</code> になる。</li>
   <li><code>Request</code> を使うプログラムには、通信の権限が自動で付く。</li>
   <li>応答の本文は文字列で渡される。JSON を読み取る機能は M1 にないので、<code>String</code> のメソッドで取り出す。</li>
