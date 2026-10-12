@@ -125,6 +125,75 @@ class LayoutTest {
         assertEquals(WRAP, leaf.height);
     }
 
+    private static Column column(Ui... children) {
+        return new Column(KList.of(children));
+    }
+
+    private static Row row(Ui... children) {
+        return new Row(KList.of(children));
+    }
+
+    @Test
+    void fillPropagatesUpThroughWrappers() {
+        Spec outer = other(new FillHeight(new FillWidth(LEAF)), WRAP, WRAP);
+        assertEquals(FILL, outer.width);
+        assertEquals(FILL, outer.height);
+        Spec swapped = other(new FillWidth(new FillHeight(LEAF)), WRAP, WRAP);
+        assertEquals(FILL, swapped.width);
+        assertEquals(FILL, swapped.height);
+        Spec padding = other(new Padding(4, new FillWidth(LEAF)), WRAP, WRAP);
+        assertEquals(FILL, padding.width);
+        assertEquals(WRAP, padding.height);
+        assertEquals(FILL, padding.childWidth);
+        Spec background = other(new Background(BLACK, new Center(LEAF)), WRAP, WRAP);
+        assertEquals(FILL, background.width);
+        assertEquals(FILL, background.height);
+    }
+
+    @Test
+    void fixedSizeStopsPropagation() {
+        assertEquals(Dim.fixed(10), other(new Width(10, new FillWidth(LEAF)), WRAP, WRAP).width);
+        assertEquals(WRAP, other(new Padding(1, new Width(10, new FillWidth(LEAF))), WRAP, WRAP).width);
+        assertEquals(WRAP, other(new Padding(1, new Space(10)), WRAP, WRAP).width);
+    }
+
+    @Test
+    void containersFillWhenAChildFills() {
+        assertEquals(WRAP, other(column(LEAF), WRAP, WRAP).width);
+        assertEquals(FILL, other(column(LEAF, new FillWidth(LEAF)), WRAP, WRAP).width);
+        assertEquals(WRAP, other(column(LEAF, new FillWidth(LEAF)), WRAP, WRAP).height);
+        assertEquals(FILL, other(row(new FillHeight(LEAF)), WRAP, WRAP).height);
+        assertEquals(FILL, other(column(row(LEAF, new AlignEnd(LEAF))), WRAP, WRAP).width);
+    }
+
+    @Test
+    void expandMakesItsContainerFillTheMainAxis() {
+        assertEquals(FILL, other(column(LEAF, new Expand(LEAF)), WRAP, WRAP).height);
+        assertEquals(WRAP, other(column(LEAF, new Expand(LEAF)), WRAP, WRAP).width);
+        assertEquals(FILL, other(row(new Expand(LEAF)), WRAP, WRAP).width);
+        assertEquals(WRAP, other(row(new Expand(LEAF)), WRAP, WRAP).height);
+        assertEquals(FILL, other(column(row(new Expand(LEAF))), WRAP, WRAP).width);
+        assertEquals(WRAP, other(new Padding(1, new Expand(LEAF)), WRAP, WRAP).height);
+    }
+
+    @Test
+    void scrollDoesNotFillAlongItsScrollAxis() {
+        Spec vertical = other(new Scroll(new FillHeight(new FillWidth(LEAF))), WRAP, WRAP);
+        assertEquals(FILL, vertical.width);
+        assertEquals(WRAP, vertical.height);
+        Spec horizontal = other(new HorizontalScroll(new FillHeight(new FillWidth(LEAF))), WRAP, WRAP);
+        assertEquals(WRAP, horizontal.width);
+        assertEquals(FILL, horizontal.height);
+    }
+
+    @Test
+    void weightedExpandKeepsItsCrossAxisRule() {
+        Spec inColumn = Layout.spec(new Expand(new FillWidth(LEAF)), Parent.COLUMN, WRAP, WRAP);
+        assertTrue(inColumn.weighted);
+        assertEquals(FILL, inColumn.width);
+        assertEquals(Dim.fixed(0), inColumn.height);
+    }
+
     @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));

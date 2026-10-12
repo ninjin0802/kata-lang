@@ -227,10 +227,18 @@ class AlignBottom implements Ui {
   <tr><td><code>Text</code>、<code>Button</code> などの末端の部品</td><td>受け継ぐ</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
 </table>
 </div>
+<p id="layout-fill-up"><strong>広がる指定は外側へ伝わる。</strong>「受け継ぐ」と書いた方向について、受け継いだ値が「中身に合わせる」であっても、自分の中にその方向へ広がる部品があれば、その部品は「いっぱい」になる。</p>
+<ul>
+  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
+  <li>高さの方向へ広がる部品：<code>FillHeight</code>、<code>Center</code>、<code>CenterVertical</code>、<code>AlignBottom</code>、および <code>Column</code> の直接の子の <code>Expand</code>。</li>
+  <li>この伝わり方は、<code>Column</code> と <code>Row</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
+  <li>伝わりが止まる場所：大きさを固定する部品（幅なら <code>Width</code>、高さなら <code>Height</code>、両方なら <code>Space</code>）と、スクロールする方向（<code>Scroll</code> の高さ、<code>HorizontalScroll</code> の幅）。</li>
+</ul>
 <ul>
   <li>ルートの部品は、幅も高さも「中身に合わせる」から始まる。</li>
   <li>例：<code>Width { dp: 120, child: Height { dp: 48, child: Text { ... } } }</code> の <code>Text</code> は 120dp × 48dp になる。</li>
-  <li>例：<code>Column</code> の子はそのままでは中身の幅になる。横いっぱいにしたい子は <code>FillWidth</code> で包む。</li>
+  <li>例：<code>Column</code> の子はそのままでは中身の幅になる。横いっぱいにしたい子は <code>FillWidth</code> で包む。そうすると <code>Column</code> 自体も横いっぱいになる。</li>
+  <li>例：画面の残りをスクロールする一覧に使うには、<code>Column</code> の子として <code>Expand { child: Scroll { ... } }</code> を置く。<code>Column</code> は高さいっぱいになり、一覧が残りを占める。</li>
 </ul>
 
 <h2 id="text-field">入力欄</h2>

@@ -94,8 +94,9 @@ public final class Layout {
      * @param inheritedHeight the height the parent passes down
      */
     public static Spec spec(Ui node, Parent parent, Dim inheritedWidth, Dim inheritedHeight) {
-        Dim iw = inheritedWidth;
-        Dim ih = inheritedHeight;
+        // A component that would fit its content still fills when something inside it asks to fill.
+        Dim iw = inheritedWidth.isWrap() && fills(node, true) ? Dim.FILL : inheritedWidth;
+        Dim ih = inheritedHeight.isWrap() && fills(node, false) ? Dim.FILL : inheritedHeight;
         if (node instanceof Width) {
             return spec(Dim.fixed(((Width) node).dp), ih, Dim.FILL, pass(ih), Gravity.TOP_START);
         }
@@ -141,6 +142,32 @@ public final class Layout {
         }
         // Padding, PaddingEdges, Background, Scroll, HorizontalScroll and leaves.
         return spec(iw, ih, pass(iw), pass(ih), Gravity.TOP_START);
+    }
+
+    /**
+     * Whether the node asks for the full width (or height) offered to it, either itself or through a
+     * descendant. A fixed size and the scroll axis of a scroll container stop the request.
+     */
+    static boolean fills(Ui node, boolean widthAxis) {
+        if (widthAxis
+                ? node instanceof FillWidth || node instanceof CenterHorizontal || node instanceof AlignEnd
+                : node instanceof FillHeight || node instanceof CenterVertical || node instanceof AlignBottom) {
+            return true;
+        }
+        if (node instanceof Center) {
+            return true;
+        }
+        if (node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis
+                || node instanceof HorizontalScroll && widthAxis || node instanceof Scroll && !widthAxis) {
+            return false;
+        }
+        boolean mainAxis = node instanceof Row && widthAxis || node instanceof Column && !widthAxis;
+        for (Ui child : UiNodes.children(node)) {
+            if (mainAxis && child instanceof Expand || fills(child, widthAxis)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Spec spec(Dim width, Dim height, Dim childWidth, Dim childHeight, Gravity gravity) {
