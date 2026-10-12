@@ -1,0 +1,76 @@
+module app.styled;
+
+import kata.ui.AlignBottom;
+import kata.ui.AlignEnd;
+import kata.ui.Background;
+import kata.ui.Center;
+import kata.ui.CenterHorizontal;
+import kata.ui.CenterVertical;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.FillWidth;
+import kata.ui.Height;
+import kata.ui.Padding;
+import kata.ui.PaddingEdges;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Space;
+import kata.ui.StyledButton;
+import kata.ui.StyledText;
+import kata.ui.Text;
+import kata.ui.Ui;
+import kata.ui.Width;
+
+// Every appearance and layout component once, each marked by a text that scripts/e2e.py looks for.
+class Styled implements Screen {
+  var taps: Int = 0;
+
+  fn view(self) -> Ui {
+    let ink: Color = Color { red: 20, green: 20, blue: 20, alpha: 255 };
+    let amber: Color = Color { red: 255, green: 193, blue: 7, alpha: 255 };
+    let teal: Color = Color { red: 0, green: 150, blue: 136, alpha: 255 };
+    return Column {
+      children: [
+        Background {
+          color: amber,
+          child: Width { dp: 120, child: Height { dp: 48, child: Text { text: "sized" } } },
+        },
+        Background { color: teal, child: Padding { all: 16, child: Text { text: "padded" } } },
+        PaddingEdges { left: 8, top: 4, right: 2, bottom: 1, child: Text { text: "edges" } },
+        FillWidth { child: Text { text: "fill" } },
+        AlignEnd { child: Text { text: "end" } },
+        CenterHorizontal { child: Text { text: "middle" } },
+        Row {
+          children: [
+            Text { text: "left" },
+            Space { dp: 24 },
+            Text { text: "afterSpace" },
+            Expand { child: Text { text: "expand" } },
+            Text { text: "right" },
+          ],
+        },
+        StyledText { text: "big", size: 32, color: teal },
+        StyledButton {
+          label: "styled ".concat(other: self.taps.toString()),
+          onTap: self.tap,
+          textColor: amber,
+          background: ink,
+        },
+        Expand { child: Center { child: Text { text: "center" } } },
+        Height { dp: 40, child: AlignBottom { child: Text { text: "bottom" } } },
+        Height { dp: 40, child: CenterVertical { child: Text { text: "vcenter" } } },
+      ],
+    };
+  }
+
+  fn tap(self) -> Unit {
+    self.taps = self.taps + 1;
+  }
+}
+
+app {
+  id: "dev.kata.styled",
+  name: "Styled",
+  root: Styled {},
+}

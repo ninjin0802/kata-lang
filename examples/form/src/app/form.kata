@@ -1,0 +1,67 @@
+module app.form;
+
+import kata.ui.Button;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.FillWidth;
+import kata.ui.Screen;
+import kata.ui.Scroll;
+import kata.ui.Text;
+import kata.ui.TextField;
+import kata.ui.Ui;
+
+// Text input and a list longer than the screen.
+class Form implements Screen {
+  var name: String = "";
+  var code: String = "";
+  var taps: Int = 0;
+
+  fn view(self) -> Ui {
+    return Column {
+      children: [
+        FillWidth { child: TextField { value: self.name, hint: "Name", onChange: self.setName } },
+        Text { text: "Hello, ".concat(other: self.name) },
+        FillWidth { child: TextField { value: self.code, hint: "Code", onChange: self.setCode } },
+        Button { label: "Taps: ".concat(other: self.taps.toString()), onTap: self.tap },
+        Expand {
+          child: FillWidth { child: Scroll { child: Column { children: self.rows(count: 50) } } },
+        },
+      ],
+    };
+  }
+
+  fn rows(self, count: Int) -> List<Ui> {
+    var numbers: List<Int> = [];
+    var i: Int = 1;
+    while (i <= count) {
+      numbers = numbers.append(item: i);
+      i = i + 1;
+    }
+    var rows: List<Ui> = [];
+    for (number: Int in numbers) {
+      rows = rows.append(item: Text { text: "Row ".concat(other: number.toString()) });
+    }
+    return rows;
+  }
+
+  fn setName(self, value: String) -> Unit {
+    self.name = value;
+  }
+
+  // Accepts at most three characters; a longer input is not stored, so the field shows the old value.
+  fn setCode(self, value: String) -> Unit {
+    if (value.length() <= 3) {
+      self.code = value;
+    }
+  }
+
+  fn tap(self) -> Unit {
+    self.taps = self.taps + 1;
+  }
+}
+
+app {
+  id: "dev.kata.form",
+  name: "Form",
+  root: Form {},
+}
