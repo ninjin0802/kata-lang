@@ -140,7 +140,10 @@ public final class Layout {
         if (node instanceof Divider) {
             return spec(iw, Dim.fixed(1), Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
-        if (node instanceof Column || node instanceof Row) {
+        if (node instanceof Grid) {
+            return spec(iw, ih, Dim.FILL, Dim.WRAP, Gravity.TOP_START);
+        }
+        if (node instanceof Column || node instanceof Row || node instanceof Stack) {
             return spec(iw, ih, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
         }
         // Padding, PaddingEdges, Background, Tappable, Rounded, Scroll, HorizontalScroll and leaves.
@@ -160,7 +163,8 @@ public final class Layout {
         if (node instanceof Center) {
             return true;
         }
-        if (widthAxis && (node instanceof Slider || node instanceof Progress || node instanceof Divider)) {
+        if (widthAxis && (node instanceof Slider || node instanceof Progress || node instanceof Divider
+                || node instanceof Grid)) {
             return true;
         }
         if (node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis

@@ -16,6 +16,12 @@ public final class UiNodes {
         if (node instanceof Row) {
             return toList(((Row) node).children);
         }
+        if (node instanceof Stack) {
+            return toList(((Stack) node).children);
+        }
+        if (node instanceof Grid) {
+            return toList(((Grid) node).children);
+        }
         Ui child = child(node);
         return child == null ? Collections.<Ui>emptyList() : Collections.singletonList(child);
     }
@@ -72,6 +78,12 @@ public final class UiNodes {
         }
         if (node instanceof Rounded) {
             return ((Rounded) node).child;
+        }
+        if (node instanceof Border) {
+            return ((Border) node).child;
+        }
+        if (node instanceof Card) {
+            return ((Card) node).child;
         }
         return null;
     }

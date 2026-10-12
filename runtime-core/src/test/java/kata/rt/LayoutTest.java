@@ -219,6 +219,29 @@ class LayoutTest {
     }
 
     @Test
+    void gridFillsTheWidthAndItsCellsFillTheirColumn() {
+        Spec grid = other(new Grid(2, KList.of(new Object[] {LEAF, LEAF})), WRAP, WRAP);
+        assertSpec(grid, FILL, WRAP, FILL, WRAP, Gravity.TOP_START);
+        assertEquals(Parent.OTHER, Layout.parentKind(new Grid(2, KList.of(new Object[0]))));
+    }
+
+    @Test
+    void stackChildrenKeepTheirOwnSize() {
+        Ui plain = new Stack(KList.of(new Object[] {LEAF, LEAF}));
+        assertSpec(other(plain, WRAP, WRAP), WRAP, WRAP, WRAP, WRAP, Gravity.TOP_START);
+        Ui filling = new Stack(KList.of(new Object[] {LEAF, new Center(LEAF)}));
+        assertSpec(other(filling, WRAP, WRAP), FILL, FILL, WRAP, WRAP, Gravity.TOP_START);
+    }
+
+    @Test
+    void borderAndCardPassSizesThrough() {
+        for (Ui node : new Ui[] {new Border(1, BLACK, 0, LEAF), new Card(LEAF)}) {
+            assertSpec(other(node, WRAP, WRAP), WRAP, WRAP, WRAP, WRAP, Gravity.TOP_START);
+            assertSpec(other(node, FILL, WRAP), FILL, WRAP, FILL, WRAP, Gravity.TOP_START);
+        }
+    }
+
+    @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));
         assertEquals(Parent.ROW, Layout.parentKind(new Row(KList.of(new Object[0]))));

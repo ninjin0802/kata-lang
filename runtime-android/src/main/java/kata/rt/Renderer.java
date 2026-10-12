@@ -164,6 +164,69 @@ final class Renderer implements Host<View> {
             line.setBackgroundColor(0x1F000000);
             return line;
         }
+        if (node instanceof Grid) {
+            return new android.widget.GridLayout(activity);
+        }
+        if (node instanceof Rating) {
+            android.widget.RatingBar stars = new android.widget.RatingBar(activity);
+            stars.setStepSize(1f);
+            stars.setOnRatingBarChangeListener(new android.widget.RatingBar.OnRatingBarChangeListener() {
+                @Override
+                public void onRatingChanged(android.widget.RatingBar view, float rating, boolean fromUser) {
+                    Rating node = (Rating) view.getTag();
+                    // Reported only when it differs from what the Screen holds.
+                    if (fromUser && (long) rating != node.value) {
+                        node.onChange.run(Long.valueOf((long) rating));
+                        activity.rerender();
+                    }
+                }
+            });
+            return stars;
+        }
+        if (node instanceof RadioGroup) {
+            android.widget.RadioGroup group = new android.widget.RadioGroup(activity);
+            group.setOnCheckedChangeListener(new android.widget.RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(android.widget.RadioGroup view, int checkedId) {
+                    RadioGroup node = (RadioGroup) view.getTag();
+                    long index = checkedId - 1;
+                    if (!binding && checkedId > 0 && index != node.selected) {
+                        node.onChange.run(Long.valueOf(index));
+                        activity.rerender();
+                    }
+                }
+            });
+            return group;
+        }
+        if (node instanceof Dropdown) {
+            android.widget.Spinner spinner = new android.widget.Spinner(activity);
+            spinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                    // Android also calls this for selections the renderer made, some time later;
+                    // only a position that differs from the Screen's value is a change by the user.
+                    Dropdown node = (Dropdown) parent.getTag();
+                    if (position != node.selected) {
+                        node.onChange.run(Long.valueOf(position));
+                        activity.rerender();
+                    }
+                }
+
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+            return spinner;
+        }
+        if (node instanceof Card) {
+            FrameLayout card = new FrameLayout(activity);
+            android.graphics.drawable.GradientDrawable surface = new android.graphics.drawable.GradientDrawable();
+            surface.setColor(0xFFFFFFFF);
+            surface.setCornerRadius(px(12));
+            card.setBackground(surface);
+            card.setElevation(px(2));
+            card.setClipToOutline(true);
+            return card;
+        }
         if (node instanceof Tappable) {
             FrameLayout frame = new FrameLayout(activity);
             frame.setOnClickListener(new View.OnClickListener() {
@@ -184,7 +247,7 @@ final class Renderer implements Host<View> {
         if (node instanceof Space) {
             return new View(activity);
         }
-        if (UiNodes.child(node) != null) {
+        if (UiNodes.child(node) != null || node instanceof Stack) {
             return new FrameLayout(activity);
         }
         throw new IllegalStateException("unknown ui component: " + node.getClass().getName());
@@ -293,6 +356,35 @@ final class Renderer implements Host<View> {
             } finally {
                 binding = false;
             }
+        } else if (node instanceof Grid) {
+            android.widget.GridLayout grid = (android.widget.GridLayout) view;
+            int columns = (int) Math.min(1000, ((Grid) node).columns);
+            if (grid.getColumnCount() != columns) {
+                grid.setColumnCount(columns);
+            }
+        } else if (node instanceof Rating) {
+            android.widget.RatingBar stars = (android.widget.RatingBar) view;
+            Rating rating = (Rating) node;
+            if (stars.getNumStars() != (int) rating.max) {
+                stars.setNumStars((int) Math.min(100, rating.max));
+            }
+            if ((long) stars.getRating() != rating.value) {
+                stars.setRating(rating.value);
+            }
+        } else if (node instanceof RadioGroup) {
+            bindRadioGroup((android.widget.RadioGroup) view, (RadioGroup) node);
+        } else if (node instanceof Dropdown) {
+            bindDropdown((android.widget.Spinner) view, (Dropdown) node);
+        } else if (node instanceof Border) {
+            Border border = (Border) node;
+            android.graphics.drawable.GradientDrawable line = new android.graphics.drawable.GradientDrawable();
+            line.setColor(0x00000000);
+            line.setStroke(px(border.width), argb(border.color));
+            line.setCornerRadius(px(border.radius));
+            view.setBackground(line);
+            // The child sits inside the line rather than under it.
+            int inset = px(border.width);
+            view.setPadding(inset, inset, inset, inset);
         } else if (node instanceof Rounded) {
             Rounded rounded = (Rounded) node;
             android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
@@ -308,6 +400,58 @@ final class Renderer implements Host<View> {
             view.setPadding(px(edges.left), px(edges.top), px(edges.right), px(edges.bottom));
         } else if (node instanceof Background) {
             view.setBackgroundColor(argb(((Background) node).color));
+        }
+    }
+
+    /** Rebuilds the buttons only when the options changed, then checks the selected one. */
+    private void bindRadioGroup(android.widget.RadioGroup group, RadioGroup node) {
+        binding = true;
+        try {
+            int count = (int) node.options.size();
+            boolean same = group.getChildCount() == count;
+            for (int i = 0; same && i < count; i++) {
+                same = ((String) node.options.get(i)).contentEquals(((TextView) group.getChildAt(i)).getText());
+            }
+            if (!same) {
+                group.clearCheck();
+                group.removeAllViews();
+                for (int i = 0; i < count; i++) {
+                    android.widget.RadioButton button = new android.widget.RadioButton(activity);
+                    button.setId(i + 1);
+                    button.setText((String) node.options.get(i));
+                    group.addView(button);
+                }
+            }
+            int wanted = (int) node.selected + 1;
+            if (node.selected < 0) {
+                group.clearCheck();
+            } else if (group.getCheckedRadioButtonId() != wanted) {
+                group.check(wanted);
+            }
+        } finally {
+            binding = false;
+        }
+    }
+
+    private void bindDropdown(android.widget.Spinner spinner, Dropdown node) {
+        int count = (int) node.options.size();
+        android.widget.SpinnerAdapter current = spinner.getAdapter();
+        boolean same = current != null && current.getCount() == count;
+        for (int i = 0; same && i < count; i++) {
+            same = node.options.get(i).equals(current.getItem(i));
+        }
+        if (!same) {
+            java.util.ArrayList<String> items = new java.util.ArrayList<String>(count);
+            for (int i = 0; i < count; i++) {
+                items.add((String) node.options.get(i));
+            }
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<String>(activity,
+                    android.R.layout.simple_spinner_item, items);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinner.setAdapter(adapter);
+        }
+        if (spinner.getSelectedItemPosition() != (int) node.selected) {
+            spinner.setSelection((int) node.selected);
         }
     }
 
@@ -334,7 +478,18 @@ final class Renderer implements Host<View> {
         int width = size(spec.width);
         int height = size(spec.height);
         ViewGroup.LayoutParams old = view.getLayoutParams();
-        if (view.getParent() instanceof LinearLayout) {
+        if (view.getParent() instanceof android.widget.GridLayout) {
+            // Every cell takes an equal share of the width; the grid flows cells into rows itself.
+            // A freshly added cell has the grid's default params (content width); ours have width 0.
+            if (!(old instanceof android.widget.GridLayout.LayoutParams) || old.width != 0) {
+                android.widget.GridLayout.LayoutParams cell = new android.widget.GridLayout.LayoutParams(
+                        android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED),
+                        android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f));
+                cell.width = 0;
+                cell.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                view.setLayoutParams(cell);
+            }
+        } else if (view.getParent() instanceof LinearLayout) {
             float weight = spec.weighted ? 1f : 0f;
             boolean same = old instanceof LinearLayout.LayoutParams && old.width == width && old.height == height
                     && ((LinearLayout.LayoutParams) old).weight == weight;

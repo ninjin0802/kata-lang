@@ -16,6 +16,8 @@ class UiNodesTest {
         KList children = KList.of(new Object[] {A, B});
         assertEquals(List.of(A, B), UiNodes.children(new Column(children)));
         assertEquals(List.of(A, B), UiNodes.children(new Row(children)));
+        assertEquals(List.of(A, B), UiNodes.children(new Stack(children)));
+        assertEquals(List.of(A, B), UiNodes.children(new Grid(2, children)));
     }
 
     @Test
@@ -24,7 +26,7 @@ class UiNodesTest {
                 new PaddingEdges(1, 2, 3, 4, A), new Background(BLACK, A), new Width(1, A), new Height(1, A),
                 new FillWidth(A), new FillHeight(A), new Expand(A), new Center(A), new CenterHorizontal(A),
                 new CenterVertical(A), new AlignEnd(A), new AlignBottom(A), new Tappable(() -> { }, A),
-                new Rounded(4, BLACK, A));
+                new Rounded(4, BLACK, A), new Border(1, BLACK, 0, A), new Card(A));
         for (Ui wrapper : wrappers) {
             List<Ui> children = UiNodes.children(wrapper);
             assertEquals(1, children.size(), wrapper.getClass().getSimpleName());
@@ -38,7 +40,9 @@ class UiNodesTest {
                 new StyledText("t", 12, BLACK), new StyledButton("b", () -> { }, BLACK, BLACK), new Space(4),
                 new Checkbox("c", true, value -> { }), new Switch("s", false, value -> { }),
                 new Slider(1, 10, value -> { }), new Progress(1, 10), new Loading(), new Divider(),
-                new TextArea("v", "h", 3, value -> { }));
+                new TextArea("v", "h", 3, value -> { }),
+                new RadioGroup(KList.of(new Object[] {"a"}), 0, value -> { }),
+                new Dropdown(KList.of(new Object[] {"a"}), 0, value -> { }), new Rating(1, 5, value -> { }));
         for (Ui leaf : leaves) {
             assertEquals(List.of(), UiNodes.children(leaf), leaf.getClass().getSimpleName());
         }

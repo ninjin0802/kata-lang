@@ -83,6 +83,9 @@
 <h3 id="device-controls">入力部品の確認</h3>
 <p><code>examples/controls/</code> に<a href="05-ui.html#controls">入力部品</a>と <code>Divider</code>、<code>Loading</code>、<code>Tappable</code>、<code>Rounded</code> を1つずつ置く。<code>scripts/e2e.sh</code> は、チェックボックスとスイッチの切り替え、つまみの移動、複数行の入力がそれぞれ隣の表示に反映されること、<code>Slider</code>・<code>Progress</code>・<code>Divider</code> が幅いっぱいであること、<code>Tappable</code> が押せること、<code>Rounded</code> の角が塗られていないことを確かめる。</p>
 
+<h3 id="device-widgets">選択と配置の部品の確認</h3>
+<p><code>examples/widgets/</code> に <code>RadioGroup</code>、<code>Dropdown</code>、<code>Rating</code>、<code>Grid</code>、<code>Stack</code>、<code>Border</code>、<code>Card</code> を置く。<code>scripts/e2e.sh</code> は、選択が隣の表示に反映されること、<code>Dropdown</code> が選ぶ前に <code>onChange</code> を実行しないこと、<code>Grid</code> の列が等幅で折り返すこと、<code>Stack</code> の子が重なること、<code>Border</code> の線が引かれることを確かめる。</p>
+
 <h2 id="commands">実行方法</h2>
 <div class="table-wrap">
 <table>

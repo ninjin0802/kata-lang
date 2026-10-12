@@ -158,6 +158,8 @@ Components (all in `kata.ui`; fields in this order, all required):
 | Component | Fields |
 |---|---|
 | `Column`, `Row` | `children: List<Ui>` — stacked top-to-bottom / left-to-right |
+| `Grid` | `columns: Int, children: List<Ui>` — equal-width columns, filled row by row, full width |
+| `Stack` | `children: List<Ui>` — on top of each other, later ones in front |
 | `Text` | `text: String` |
 | `Button` | `label: String, onTap: Action` |
 | `TextField` | `value: String, hint: String, onChange: Handler<String>` — single line; store the new text in `onChange` or the field reverts |
@@ -165,6 +167,9 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Checkbox` | `label: String, checked: Bool, onChange: Handler<Bool>` |
 | `Switch` | `label: String, on: Bool, onChange: Handler<Bool>` |
 | `Slider` | `value: Int, max: Int, onChange: Handler<Int>` — 0..`max`, `max` ≥ 1, full width; `onChange` fires continuously while dragging |
+| `RadioGroup` | `options: List<String>, selected: Int, onChange: Handler<Int>` — `selected` is an index, -1 = none |
+| `Dropdown` | `options: List<String>, selected: Int, onChange: Handler<Int>` — at least one option; `selected` is an index |
+| `Rating` | `value: Int, max: Int, onChange: Handler<Int>` — stars |
 | `Progress` | `value: Int, max: Int` — horizontal bar, full width |
 | `Loading` | (no fields: `Loading {}`) — spinner |
 | `Divider` | (no fields: `Divider {}`) — 1dp line, full width |
@@ -176,6 +181,8 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Padding` | `all: Int, child: Ui` (dp) |
 | `PaddingEdges` | `left: Int, top: Int, right: Int, bottom: Int, child: Ui` (dp) |
 | `Background` | `color: Color, child: Ui` |
+| `Border` | `width: Int, color: Color, radius: Int, child: Ui` — a line around the child (dp) |
+| `Card` | `child: Ui` — raised white surface with rounded corners |
 | `Rounded` | `radius: Int, color: Color, child: Ui` — background with rounded corners (dp); clips the child |
 | `Width`, `Height` | `dp: Int, child: Ui` — fixed size |
 | `FillWidth`, `FillHeight` | `child: Ui` — take all the space offered on that axis |
@@ -183,7 +190,7 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Space` | `dp: Int` — an empty square, for gaps |
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 
-Input controls (`TextField`, `TextArea`, `Checkbox`, `Switch`, `Slider`) do not keep their own value: pass the current value from a field and store the new one in `onChange`, or the control snaps back.
+Input controls (`TextField`, `TextArea`, `Checkbox`, `Switch`, `Slider`, `RadioGroup`, `Dropdown`, `Rating`) do not keep their own value: pass the current value from a field and store the new one in `onChange`, or the control snaps back.
 
 Layout: a component is as big as its content unless told otherwise. A request to fill travels outward: a `Row` containing an `Expand`, or a `Column` containing a `FillWidth`/`AlignEnd`/`CenterHorizontal`, itself becomes full width (same for height). So equal-width buttons across the screen are simply `Row { children: [Expand {...}, Expand {...}] }`. Sizes cannot be negative and colors must be in range, or the app crashes.
 

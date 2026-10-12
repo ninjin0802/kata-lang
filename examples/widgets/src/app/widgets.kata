@@ -1,0 +1,70 @@
+module app.widgets;
+
+import kata.ui.Background;
+import kata.ui.Border;
+import kata.ui.Card;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Dropdown;
+import kata.ui.Grid;
+import kata.ui.Height;
+import kata.ui.Padding;
+import kata.ui.RadioGroup;
+import kata.ui.Rating;
+import kata.ui.Screen;
+import kata.ui.Stack;
+import kata.ui.Text;
+import kata.ui.Ui;
+import kata.ui.Width;
+
+// Choice controls and the container components, each marked by a text that scripts/e2e.py looks for.
+class Widgets implements Screen {
+  var choice: Int = 0;
+  var size: Int = 0;
+  var stars: Int = 2;
+
+  fn view(self) -> Ui {
+    let teal: Color = Color { red: 0, green: 150, blue: 136, alpha: 255 };
+    let amber: Color = Color { red: 255, green: 193, blue: 7, alpha: 255 };
+    return Column {
+      children: [
+        RadioGroup { options: ["Alpha", "Beta", "Gamma"], selected: self.choice, onChange: self.setChoice },
+        Text { text: "choice=".concat(other: self.choice.toString()) },
+        Dropdown { options: ["Small", "Medium", "Large"], selected: self.size, onChange: self.setSize },
+        Text { text: "size=".concat(other: self.size.toString()) },
+        Rating { value: self.stars, max: 5, onChange: self.setStars },
+        Text { text: "stars=".concat(other: self.stars.toString()) },
+        Grid {
+          columns: 2,
+          children: [Text { text: "cell1" }, Text { text: "cell2" }, Text { text: "cell3" }],
+        },
+        Stack {
+          children: [
+            Background { color: amber, child: Width { dp: 120, child: Height { dp: 40, child: Text { text: "" } } } },
+            Text { text: "over" },
+          ],
+        },
+        Border { width: 2, color: teal, radius: 8, child: Padding { all: 8, child: Text { text: "bordered" } } },
+        Padding { all: 8, child: Card { child: Padding { all: 16, child: Text { text: "card" } } } },
+      ],
+    };
+  }
+
+  fn setChoice(self, value: Int) -> Unit {
+    self.choice = value;
+  }
+
+  fn setSize(self, value: Int) -> Unit {
+    self.size = value;
+  }
+
+  fn setStars(self, value: Int) -> Unit {
+    self.stars = value;
+  }
+}
+
+app {
+  id: "dev.kata.widgets",
+  name: "Widgets",
+  root: Widgets {},
+}

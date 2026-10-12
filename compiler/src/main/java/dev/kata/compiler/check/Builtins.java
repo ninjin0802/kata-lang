@@ -60,6 +60,13 @@ public final class Builtins {
         ui("TextArea", field("value", Type.STRING), field("hint", Type.STRING), field("lines", Type.INT), field("onChange", new Type.HandlerType(Type.STRING)));
         ui("Tappable", field("onTap", Type.ACTION), field("child", UI_TYPE));
         ui("Rounded", field("radius", Type.INT), field("color", COLOR_TYPE), field("child", UI_TYPE));
+        ui("RadioGroup", field("options", new Type.ListType(Type.STRING)), field("selected", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("Dropdown", field("options", new Type.ListType(Type.STRING)), field("selected", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("Rating", field("value", Type.INT), field("max", Type.INT), field("onChange", new Type.HandlerType(Type.INT)));
+        ui("Border", field("width", Type.INT), field("color", COLOR_TYPE), field("radius", Type.INT), field("child", UI_TYPE));
+        ui("Card", field("child", UI_TYPE));
+        ui("Grid", field("columns", Type.INT), field("children", new Type.ListType(UI_TYPE)));
+        ui("Stack", field("children", new Type.ListType(UI_TYPE)));
     }
 
     /** Classes that are values passed to components rather than components themselves. */

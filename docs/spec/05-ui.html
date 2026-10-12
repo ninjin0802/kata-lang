@@ -179,6 +179,44 @@ class Rounded implements Ui {
   let radius: Int;
   let color: Color;
   let child: Ui;
+}
+
+class RadioGroup implements Ui {
+  let options: List&lt;String&gt;;
+  let selected: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class Dropdown implements Ui {
+  let options: List&lt;String&gt;;
+  let selected: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class Rating implements Ui {
+  let value: Int;
+  let max: Int;
+  let onChange: Handler&lt;Int&gt;;
+}
+
+class Border implements Ui {
+  let width: Int;
+  let color: Color;
+  let radius: Int;
+  let child: Ui;
+}
+
+class Card implements Ui {
+  let child: Ui;
+}
+
+class Grid implements Ui {
+  let columns: Int;
+  let children: List&lt;Ui&gt;;
+}
+
+class Stack implements Ui {
+  let children: List&lt;Ui&gt;;
 }</code></pre>
 
 <h2 id="components">UI 部品</h2>
@@ -193,6 +231,11 @@ class Rounded implements Ui {
   <tr><td><code>TextArea</code></td><td>複数行の入力欄。<code>lines</code> 行分の高さで表示する。内容の扱いは <code>TextField</code> と同じ。</td><td><code>EditText</code></td></tr>
   <tr><td><code>Checkbox</code></td><td><code>label</code> つきのチェックボックス。<a href="#controls">入力部品</a>を参照。</td><td><code>CheckBox</code></td></tr>
   <tr><td><code>Switch</code></td><td><code>label</code> つきのオン・オフのスイッチ。</td><td><code>android.widget.Switch</code></td></tr>
+  <tr><td><code>RadioGroup</code></td><td><code>options</code> を縦に並べ、1つだけ選べるようにする。<code>selected</code> は選ばれている項目の番号（0始まり）で、-1 は未選択。</td><td><code>RadioGroup</code></td></tr>
+  <tr><td><code>Dropdown</code></td><td>選ばれている項目を表示し、押すと <code>options</code> の一覧を開く。<code>selected</code> は項目の番号（0始まり）。</td><td><code>Spinner</code></td></tr>
+  <tr><td><code>Rating</code></td><td><code>max</code> 個の星のうち <code>value</code> 個を塗って表示し、押して選べる。</td><td><code>RatingBar</code></td></tr>
+  <tr><td><code>Grid</code></td><td><code>children</code> を <code>columns</code> 列の等幅の列に、左上から順に並べる。幅いっぱいに広がる。</td><td><code>GridLayout</code></td></tr>
+  <tr><td><code>Stack</code></td><td><code>children</code> を同じ場所に重ねる。後に書いたものが手前になる。</td><td><code>FrameLayout</code></td></tr>
   <tr><td><code>Slider</code></td><td>0 から <code>max</code> までの値を選ぶ横向きのつまみ。幅いっぱいに広がる。</td><td><code>SeekBar</code></td></tr>
   <tr><td><code>Progress</code></td><td><code>max</code> に対する <code>value</code> の割合を示す横棒。幅いっぱいに広がる。</td><td>横向きの <code>ProgressBar</code></td></tr>
   <tr><td><code>Loading</code></td><td>終わる時期の分からない処理中を示す、回転する表示。</td><td><code>ProgressBar</code></td></tr>
@@ -231,6 +274,8 @@ class Rounded implements Ui {
   <tr><td><code>PaddingEdges</code></td><td><code>child</code> の左、上、右、下に、それぞれ指定した余白（単位は dp）を取る。</td></tr>
   <tr><td><code>Background</code></td><td><code>child</code> の後ろを <code>color</code> で塗る。塗る範囲は <code>child</code> の大きさと同じ。</td></tr>
   <tr><td><code>Rounded</code></td><td><code>child</code> の後ろを、角を <code>radius</code>（単位は dp）で丸めた <code>color</code> で塗り、<code>child</code> もその形で切り抜く。</td></tr>
+  <tr><td><code>Border</code></td><td><code>child</code> の周りに、太さ <code>width</code>、角の丸み <code>radius</code>（どちらも単位は dp）の線を引く。<code>child</code> は線の内側に置かれる。</td></tr>
+  <tr><td><code>Card</code></td><td><code>child</code> の後ろに、角を丸めて影を付けた白い面を置く。</td></tr>
   <tr><td><code>Width</code> / <code>Height</code></td><td><code>child</code> の幅または高さを <code>dp</code>（単位は dp）に固定する。</td></tr>
   <tr><td><code>FillWidth</code> / <code>FillHeight</code></td><td><code>child</code> の幅または高さを、親が与える範囲いっぱいに広げる。</td></tr>
 </table>
@@ -273,7 +318,9 @@ class Rounded implements Ui {
   <tr><td><code>Center</code></td><td>いっぱい</td><td>いっぱい</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
   <tr><td><code>CenterHorizontal</code>、<code>AlignEnd</code></td><td>いっぱい</td><td>受け継ぐ</td><td>中身に合わせる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>CenterVertical</code>、<code>AlignBottom</code></td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td><td>中身に合わせる</td></tr>
-  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Tappable</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
+  <tr><td><code>Grid</code></td><td>いっぱい</td><td>受け継ぐ</td><td>列の幅いっぱい</td><td>中身に合わせる</td></tr>
+  <tr><td><code>Stack</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>中身に合わせる</td><td>中身に合わせる</td></tr>
+  <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Space</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
@@ -285,9 +332,9 @@ class Rounded implements Ui {
 </div>
 <p id="layout-fill-up"><strong>広がる指定は外側へ伝わる。</strong>「受け継ぐ」と書いた方向について、受け継いだ値が「中身に合わせる」であっても、自分の中にその方向へ広がる部品があれば、その部品は「いっぱい」になる。</p>
 <ul>
-  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
+  <li>幅の方向へ広がる部品：<code>FillWidth</code>、<code>Center</code>、<code>CenterHorizontal</code>、<code>AlignEnd</code>、<code>Slider</code>、<code>Progress</code>、<code>Divider</code>、<code>Grid</code>、および <code>Row</code> の直接の子の <code>Expand</code>。</li>
   <li>高さの方向へ広がる部品：<code>FillHeight</code>、<code>Center</code>、<code>CenterVertical</code>、<code>AlignBottom</code>、および <code>Column</code> の直接の子の <code>Expand</code>。</li>
-  <li>この伝わり方は、<code>Column</code> と <code>Row</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
+  <li>この伝わり方は、<code>Column</code>、<code>Row</code>、<code>Stack</code> も通り抜ける。子の1つが横に広がる <code>Column</code> は、それ自体が横いっぱいになる。</li>
   <li>伝わりが止まる場所：大きさを固定する部品（幅なら <code>Width</code>、高さなら <code>Height</code>、両方なら <code>Space</code>）と、スクロールする方向（<code>Scroll</code> の高さ、<code>HorizontalScroll</code> の幅）。</li>
 </ul>
 <ul>
@@ -324,13 +371,14 @@ class Rounded implements Ui {
 </ul>
 
 <h2 id="controls">入力部品</h2>
-<p><code>Checkbox</code>、<code>Switch</code>、<code>Slider</code>、<code>TextArea</code> は、<code>TextField</code> と同じ考え方で動く。</p>
+<p><code>Checkbox</code>、<code>Switch</code>、<code>Slider</code>、<code>TextArea</code>、<code>RadioGroup</code>、<code>Dropdown</code>、<code>Rating</code> は、<code>TextField</code> と同じ考え方で動く。</p>
 <ul>
   <li>値（チェックの有無、オン・オフ、つまみの位置、文字列）は <code>Screen</code> のフィールドに持ち、部品に渡す。部品そのものは値を保持する場所ではない。</li>
   <li>利用者が操作すると、新しい値を引数にして <code>onChange</code> を実行し、<code>view</code> を呼び直す。</li>
   <li><code>onChange</code> の中で値を保存しないと、次の再描画で表示が元に戻る。この戻しでは <code>onChange</code> を実行しない。</li>
   <li><code>Slider</code> の <code>onChange</code> は、つまみを動かしている間、値が変わるたびに実行される。</li>
-  <li><code>Slider</code> と <code>Progress</code> は、<code>max</code> が 1 以上で、<code>value</code> が 0 から <code>max</code> の範囲でなければならない。<code>TextArea</code> の <code>lines</code> は 1 以上。違反は描画するときにパニックになる。</li>
+  <li><code>Slider</code> と <code>Progress</code> は、<code>max</code> が 1 以上で、<code>value</code> が 0 から <code>max</code> の範囲でなければならない。<code>Rating</code> も同じ。<code>TextArea</code> の <code>lines</code> は 1 以上。<code>RadioGroup</code> の <code>selected</code> は -1 から項目数-1、<code>Dropdown</code> は項目が1つ以上で <code>selected</code> が 0 から項目数-1。<code>Grid</code> の <code>columns</code> は 1 以上。違反は描画するときにパニックになる。</li>
+  <li><code>RadioGroup</code>、<code>Dropdown</code>、<code>Rating</code> の <code>onChange</code> は、利用者が今の値と違うものを選んだときだけ実行される。</li>
 </ul>
 
 <h2 id="screen">Screen</h2>

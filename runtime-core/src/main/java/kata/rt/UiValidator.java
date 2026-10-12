@@ -38,6 +38,29 @@ public final class UiValidator {
             if (((TextArea) root).lines < 1) {
                 throw new IllegalArgumentException("TextArea.lines out of range: " + ((TextArea) root).lines);
             }
+        } else if (root instanceof RadioGroup) {
+            RadioGroup group = (RadioGroup) root;
+            if (group.selected < -1 || group.selected >= group.options.size()) {
+                throw new IllegalArgumentException("RadioGroup.selected out of range: " + group.selected);
+            }
+        } else if (root instanceof Dropdown) {
+            Dropdown dropdown = (Dropdown) root;
+            if (dropdown.options.size() < 1) {
+                throw new IllegalArgumentException("Dropdown.options out of range: " + dropdown.options.size());
+            }
+            if (dropdown.selected < 0 || dropdown.selected >= dropdown.options.size()) {
+                throw new IllegalArgumentException("Dropdown.selected out of range: " + dropdown.selected);
+            }
+        } else if (root instanceof Rating) {
+            range("Rating", ((Rating) root).value, ((Rating) root).max);
+        } else if (root instanceof Grid) {
+            if (((Grid) root).columns < 1) {
+                throw new IllegalArgumentException("Grid.columns out of range: " + ((Grid) root).columns);
+            }
+        } else if (root instanceof Border) {
+            nonNegative("Border.width", ((Border) root).width);
+            nonNegative("Border.radius", ((Border) root).radius);
+            color(((Border) root).color);
         } else if (root instanceof Rounded) {
             nonNegative("Rounded.radius", ((Rounded) root).radius);
             color(((Rounded) root).color);

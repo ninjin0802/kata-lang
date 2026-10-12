@@ -65,6 +65,29 @@ class UiValidatorTest {
     }
 
     @Test
+    void choicesAndContainersAreChecked() {
+        Handler ignore = value -> { };
+        KList two = KList.of(new Object[] {"a", "b"});
+        KList none = KList.of(new Object[0]);
+        assertInvalid("RadioGroup.selected out of range: 2", new RadioGroup(two, 2, ignore));
+        assertInvalid("RadioGroup.selected out of range: -2", new RadioGroup(two, -2, ignore));
+        assertInvalid("Dropdown.options out of range: 0", new Dropdown(none, 0, ignore));
+        assertInvalid("Dropdown.selected out of range: -1", new Dropdown(two, -1, ignore));
+        assertInvalid("Dropdown.selected out of range: 2", new Dropdown(two, 2, ignore));
+        assertInvalid("Rating.max out of range: 0", new Rating(0, 0, ignore));
+        assertInvalid("Rating.value out of range: 6", new Rating(6, 5, ignore));
+        assertInvalid("Grid.columns out of range: 0", new Grid(0, none));
+        assertInvalid("Border.width out of range: -1", new Border(-1, BLACK, 0, LEAF));
+        assertInvalid("Border.radius out of range: -1", new Border(1, BLACK, -1, LEAF));
+        assertInvalid("Width.dp out of range: -9", new Stack(KList.of(new Object[] {LEAF, new Width(-9, LEAF)})));
+        assertInvalid("Width.dp out of range: -9", new Card(new Grid(2, KList.of(new Object[] {new Width(-9, LEAF)}))));
+        assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
+            new RadioGroup(two, -1, ignore), new RadioGroup(none, -1, ignore), new Dropdown(two, 1, ignore),
+            new Rating(0, 1, ignore), new Grid(1, none), new Border(0, BLACK, 0, LEAF),
+        }))));
+    }
+
+    @Test
     void zeroIsAllowed() {
         assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
             new StyledText("t", 0, BLACK), new Padding(0, LEAF), new PaddingEdges(0, 0, 0, 0, LEAF),

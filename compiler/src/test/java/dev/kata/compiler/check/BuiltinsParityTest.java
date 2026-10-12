@@ -19,7 +19,8 @@ class BuiltinsParityTest {
             "TextField", "Scroll", "HorizontalScroll", "Color", "StyledText", "StyledButton", "Padding",
             "PaddingEdges", "Background", "Width", "Height", "FillWidth", "FillHeight", "Expand", "Space", "Center",
             "CenterHorizontal", "CenterVertical", "AlignEnd", "AlignBottom", "Checkbox", "Switch", "Slider",
-            "Progress", "Loading", "Divider", "TextArea", "Tappable", "Rounded");
+            "Progress", "Loading", "Divider", "TextArea", "Tappable", "Rounded", "RadioGroup", "Dropdown", "Rating",
+            "Border", "Card", "Grid", "Stack");
 
     @Test
     void exportsExactlyTheNamesInTheSpec() {

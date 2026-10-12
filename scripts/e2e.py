@@ -430,8 +430,54 @@ def check_controls():
     adb("uninstall", app_id, check=False)
 
 
+def check_widgets():
+    app_id = "dev.kata.widgets"
+    install_and_launch(build("widgets"), app_id)
+    root = wait_for(lambda r: exists(r, text="card"), "the widgets example to appear")
+    screen_width, _ = screen_size()
+
+    # RadioGroup reports the index of the chosen option.
+    tap(find(root, text="Gamma"))
+    wait_for(lambda r: exists(r, text="choice=2"), "the radio group to choose Gamma")
+    tap(find(dump(), text="Beta"))
+    wait_for(lambda r: exists(r, text="choice=1"), "the radio group to choose Beta")
+
+    # Dropdown opens a menu and reports the chosen index; nothing is reported before a choice.
+    assert exists(dump(), text="size=0"), "the dropdown did not report its initial selection"
+    tap(find(dump(), text="Small"))
+    tap(find(wait_for(lambda r: exists(r, text="Large"), "the dropdown menu"), text="Large"))
+    wait_for(lambda r: exists(r, text="size=2"), "the dropdown to choose Large")
+
+    # Rating: tapping near the right end selects four or five stars.
+    stars = find(dump(), cls="android.widget.RatingBar")
+    adb("shell", "input", "tap", str(stars.left + int(stars.width * 0.85)), str(stars.center[1]))
+    wait_for(lambda r: exists(r, text="stars=4") or exists(r, text="stars=5"), "the rating to change")
+
+    # Grid: two equal columns, the third cell starts a new row.
+    root = dump()
+    cell1, cell2, cell3 = find(root, text="cell1"), find(root, text="cell2"), find(root, text="cell3")
+    near(cell1.left, 0, "first cell at the left edge")
+    near(cell2.left, screen_width // 2, "second cell starts at the middle", tolerance=2)
+    near(cell1.width, cell2.width, "cells have equal width", tolerance=2)
+    near(cell3.left, 0, "third cell wraps to a new row")
+    assert cell3.top >= cell1.bottom, "third cell is below the first row"
+
+    # Stack: the text is drawn over the box, from the same corner.
+    over = find(root, text="over")
+    assert has_bounds(root, over.left, over.top, over.left + px(120), over.top + px(40)), "Stack box under 'over'"
+    assert pixel(over.left + px(100), over.top + px(30)) == (255, 193, 7), "the box shows around the text"
+
+    # Border: a 2dp line around the padded text.
+    bordered = find(root, text="bordered")
+    left, top = bordered.left - px(8) - px(2), bordered.top - px(8) - px(2)
+    assert pixel(left + 1, bordered.center[1]) == (0, 150, 136), "Border line on the left edge"
+    assert pixel(left + px(2) + 2, bordered.center[1]) != (0, 150, 136), "inside of the border is not painted"
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "widgets": check_widgets,
     "controls": check_controls,
     "counter": check_counter,
     "styled": check_styled,
