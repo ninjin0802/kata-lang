@@ -1,0 +1,81 @@
+module app.main;
+
+import kata.ui.AlignBottom;
+import kata.ui.AlignEnd;
+import kata.ui.Background;
+import kata.ui.Button;
+import kata.ui.Center;
+import kata.ui.CenterHorizontal;
+import kata.ui.CenterVertical;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.FillHeight;
+import kata.ui.FillWidth;
+import kata.ui.Height;
+import kata.ui.HorizontalScroll;
+import kata.ui.Padding;
+import kata.ui.PaddingEdges;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.Scroll;
+import kata.ui.Space;
+import kata.ui.StyledButton;
+import kata.ui.StyledText;
+import kata.ui.Text;
+import kata.ui.TextField;
+import kata.ui.Ui;
+import kata.ui.Width;
+
+class Gallery implements Screen {
+  var name: String = "";
+  var taps: Int = 0;
+
+  fn view(self) -> Ui {
+    let ink: Color = Color { red: 20, green: 20, blue: 20, alpha: 255 };
+    let paper: Color = Color { red: 250, green: 240, blue: 220, alpha: 128 };
+    return Scroll {
+      child: Column {
+        children: [
+          TextField { value: self.name, hint: "Name", onChange: self.setName },
+          StyledText { text: self.name, size: 24, color: ink },
+          StyledButton { label: "Tap", onTap: self.tap, textColor: paper, background: ink },
+          Button { label: self.taps.toString(), onTap: self.tap },
+          Padding { all: 8, child: Text { text: "padded" } },
+          PaddingEdges { left: 1, top: 2, right: 3, bottom: 4, child: Text { text: "edges" } },
+          Background { color: paper, child: Text { text: "background" } },
+          Width { dp: 100, child: Height { dp: 40, child: Text { text: "sized" } } },
+          FillWidth { child: FillHeight { child: Text { text: "fill" } } },
+          Row {
+            children: [
+              Text { text: "left" },
+              Space { dp: 8 },
+              Expand { child: Text { text: "middle" } },
+              Text { text: "right" },
+            ],
+          },
+          Center { child: Text { text: "center" } },
+          CenterHorizontal { child: Text { text: "h" } },
+          CenterVertical { child: Text { text: "v" } },
+          AlignEnd { child: Text { text: "end" } },
+          AlignBottom { child: Text { text: "bottom" } },
+          HorizontalScroll { child: Row { children: [] } },
+        ],
+      },
+    };
+  }
+
+  fn setName(self, value: String) -> Unit {
+    self.name = value;
+  }
+
+  fn tap(self) -> Unit {
+    self.taps = self.taps + 1;
+  }
+}
+
+app {
+  id: "dev.kata.gallery",
+  name: "Gallery",
+  root: Gallery {},
+}

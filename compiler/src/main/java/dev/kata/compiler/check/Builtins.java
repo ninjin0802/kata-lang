@@ -23,6 +23,7 @@ public final class Builtins {
     public static final Set<String> CORE_TYPES = Set.of("Int", "Bool", "String", "Unit", "Action", "Handler", "List");
 
     private static final Type UI_TYPE = new Type.InterfaceType(UI);
+    private static final Type COLOR_TYPE = new Type.ClassType(UI_MODULE + ".Color");
     private static final Map<String, List<FieldInfo>> UI_CLASSES = new LinkedHashMap<>();
 
     static {
@@ -30,6 +31,26 @@ public final class Builtins {
         ui("Row", field("children", new Type.ListType(UI_TYPE)));
         ui("Text", field("text", Type.STRING));
         ui("Button", field("label", Type.STRING), field("onTap", Type.ACTION));
+        ui("TextField", field("value", Type.STRING), field("hint", Type.STRING), field("onChange", new Type.HandlerType(Type.STRING)));
+        ui("Scroll", field("child", UI_TYPE));
+        ui("HorizontalScroll", field("child", UI_TYPE));
+        ui("Color", field("red", Type.INT), field("green", Type.INT), field("blue", Type.INT), field("alpha", Type.INT));
+        ui("StyledText", field("text", Type.STRING), field("size", Type.INT), field("color", COLOR_TYPE));
+        ui("StyledButton", field("label", Type.STRING), field("onTap", Type.ACTION), field("textColor", COLOR_TYPE), field("background", COLOR_TYPE));
+        ui("Padding", field("all", Type.INT), field("child", UI_TYPE));
+        ui("PaddingEdges", field("left", Type.INT), field("top", Type.INT), field("right", Type.INT), field("bottom", Type.INT), field("child", UI_TYPE));
+        ui("Background", field("color", COLOR_TYPE), field("child", UI_TYPE));
+        ui("Width", field("dp", Type.INT), field("child", UI_TYPE));
+        ui("Height", field("dp", Type.INT), field("child", UI_TYPE));
+        ui("FillWidth", field("child", UI_TYPE));
+        ui("FillHeight", field("child", UI_TYPE));
+        ui("Expand", field("child", UI_TYPE));
+        ui("Space", field("dp", Type.INT));
+        ui("Center", field("child", UI_TYPE));
+        ui("CenterHorizontal", field("child", UI_TYPE));
+        ui("CenterVertical", field("child", UI_TYPE));
+        ui("AlignEnd", field("child", UI_TYPE));
+        ui("AlignBottom", field("child", UI_TYPE));
     }
 
     /** Classes that are values passed to components rather than components themselves. */
