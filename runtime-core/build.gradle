@@ -1,0 +1,12 @@
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+    options.compilerArgs << '-Xlint:-options'
+}
+
+compileTestJava {
+    options.release = 17
+}
+
+jar {
+    archiveFileName = 'kata-rt-core.jar'
+}

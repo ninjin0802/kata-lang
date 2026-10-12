@@ -1,0 +1,39 @@
+apply plugin: 'application'
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+dependencies {
+    implementation 'org.ow2.asm:asm:9.7.1'
+    testImplementation project(':runtime-core')
+}
+
+application {
+    applicationName = 'kata'
+    mainClass = 'dev.kata.compiler.cli.Main'
+}
+
+def runtimeJars = [project(':runtime-core').tasks.named('jar'), project(':runtime-android').tasks.named('jar')]
+
+distributions {
+    main {
+        contents {
+            into('runtime') {
+                from runtimeJars
+            }
+        }
+    }
+}
+
+// Tests that assemble an APK need a kata home containing runtime/*.jar.
+def testKataHome = layout.buildDirectory.dir('test-kata-home')
+def prepareTestKataHome = tasks.register('prepareTestKataHome', Copy) {
+    from runtimeJars
+    into testKataHome.map { it.dir('runtime') }
+}
+
+test {
+    dependsOn prepareTestKataHome
+    systemProperty 'kata.home', testKataHome.get().asFile.absolutePath
+}

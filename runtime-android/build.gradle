@@ -1,0 +1,21 @@
+def androidHome = System.getenv('ANDROID_HOME')
+def androidJar = "${androidHome}/platforms/android-35/android.jar"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-Xlint:-options'
+    options.bootstrapClasspath = files(androidJar)
+}
+
+dependencies {
+    compileOnly files(androidJar)
+    implementation project(':runtime-core')
+}
+
+jar {
+    archiveFileName = 'kata-rt-android.jar'
+}

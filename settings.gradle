@@ -1,0 +1,2 @@
+rootProject.name = 'kata'
+include 'compiler', 'runtime-core', 'runtime-android'
