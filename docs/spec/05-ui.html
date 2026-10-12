@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 UI とアプリモデル | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>05 UI とアプリモデル</span></nav>
+<main>
+
+<h1>05 UI とアプリモデル</h1>
+<p class="lead">kata から使える UI は、組み込みモジュール <code>kata.ui</code> の名前だけで構成する。</p>
+
+<h2 id="kata-ui">kata.ui の宣言</h2>
+<p><code>kata.ui</code> が提供する名前を kata の記法で示す。<code>interface</code> は M1 では利用者が書けないが、ここでは宣言の形を示すために使う。</p>
+<pre><code>interface Ui {}
+
+interface Screen {
+  fn view(self) -&gt; Ui;
+}
+
+class Column implements Ui {
+  let children: List&lt;Ui&gt;;
+}
+
+class Row implements Ui {
+  let children: List&lt;Ui&gt;;
+}
+
+class Text implements Ui {
+  let text: String;
+}
+
+class Button implements Ui {
+  let label: String;
+  let onTap: Action;
+}</code></pre>
+
+<h2 id="components">UI 部品</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>表示</th><th>Android での実体</th></tr>
+  <tr><td><code>Column</code></td><td><code>children</code> を上から下に並べる。</td><td>縦方向の <code>LinearLayout</code></td></tr>
+  <tr><td><code>Row</code></td><td><code>children</code> を左から右に並べる。</td><td>横方向の <code>LinearLayout</code></td></tr>
+  <tr><td><code>Text</code></td><td><code>text</code> を表示する。</td><td><code>TextView</code></td></tr>
+  <tr><td><code>Button</code></td><td><code>label</code> を表示し、押されたら <code>onTap</code> を実行する。</td><td><code>android.widget.Button</code></td></tr>
+</table>
+</div>
+<ul>
+  <li>UI 部品は値であり、作っただけでは画面に出ない。<code>Screen</code> の <code>view</code> が返したものが表示される。</li>
+  <li>M1 には、大きさ、余白、色、文字の大きさを指定する手段がない。見た目は Android の既定に従う。</li>
+  <li>利用者は <code>Ui</code> を実装するクラスを作れない（<code>E0506</code>）。画面の部品化は、<code>Ui</code> を返すメソッドで行う。</li>
+</ul>
+
+<h2 id="screen">Screen</h2>
+<ul>
+  <li>画面は <code>Screen</code> を実装したクラスで表す。状態はそのクラスの <code>var</code> フィールドに持つ。</li>
+  <li><code>view</code> は、現在のフィールドの値から表示すべき UI を組み立てて返す。</li>
+  <li><code>view</code> の中でフィールドを書き換えてはならない。M1 ではコンパイラはこれを検査しない。</li>
+</ul>
+
+<h2 id="render-loop">描画の流れ</h2>
+<ol>
+  <li>起動時に、<code>app</code> 宣言の <code>root</code> の式を1回評価して、ルートの <code>Screen</code> を作る。</li>
+  <li>ルートの <code>view</code> を呼び、返った UI を画面に表示する。</li>
+  <li>ボタンが押されると、その <code>onTap</code> の <code>Action</code> を実行する。</li>
+  <li>実行が終わったら、ルートの <code>view</code> を呼び直し、画面全体を作り直す。</li>
+</ol>
+<ul>
+  <li>すべてメインスレッドで順番に実行する。</li>
+  <li>M1 は毎回全体を作り直す。差分だけを更新する仕組みは持たない。</li>
+  <li>画面の回転などで Activity が作り直されると、ルートの <code>Screen</code> も作り直され、状態は初期値に戻る。</li>
+</ul>
+
+<h2 id="app-decl">app 宣言</h2>
+<pre><code>app {
+  id: "dev.kata.counter",
+  name: "Counter",
+  root: Counter {},
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <tr><th>項目</th><th>型</th><th>内容</th></tr>
+  <tr><td><code>id</code></td><td>文字列リテラル</td><td>アプリの ID。<code>[a-z][a-z0-9]*</code> をピリオドで2つ以上つないだ形。</td></tr>
+  <tr><td><code>name</code></td><td>文字列リテラル</td><td>ランチャーに表示する名前。空にはできない。</td></tr>
+  <tr><td><code>root</code></td><td><code>Screen</code> に代入できる式</td><td>最初に表示する画面。<code>self</code> は使えない。</td></tr>
+</table>
+</div>
+<ul>
+  <li>3つの項目を、この順番で、すべて書く（<code>E0603</code>）。<code>id</code> と <code>name</code> の形が不正な場合も <code>E0603</code>。</li>
+  <li><code>root</code> が <code>Screen</code> に代入できない場合は <code>E0604</code>。</li>
+  <li><code>app</code> 宣言はプロジェクト全体でちょうど1つ（<code>E0602</code>）。</li>
+</ul>
+
+<div class="pager"><a href="04-semantics.html">← 04 型と意味論</a><a href="06-codegen.html">06 コード生成 →</a></div>
+</main>
+</body>
+</html>

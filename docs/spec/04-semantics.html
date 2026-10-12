@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 型と意味論 | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>04 型と意味論</span></nav>
+<main>
+
+<h1>04 型と意味論</h1>
+<p class="lead">この章は M1 の型と検査規則を定める。括弧内の <code>E....</code> は、規則に違反したときの診断コード。</p>
+
+<h2 id="types">型</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>型</th><th>内容</th></tr>
+  <tr><td><code>Int</code></td><td>64ビットの符号付き整数。あふれた場合は折り返す。</td></tr>
+  <tr><td><code>Bool</code></td><td><code>true</code> または <code>false</code>。</td></tr>
+  <tr><td><code>String</code></td><td>不変の文字列。</td></tr>
+  <tr><td><code>Unit</code></td><td>値を返さないメソッドの戻り値の型。戻り値の型以外には書けない（<code>E0407</code>）。</td></tr>
+  <tr><td><code>Action</code></td><td>引数なしで <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。</td></tr>
+  <tr><td>クラス</td><td>利用者定義のクラスと、<a href="05-ui.html#components">組み込みの UI 部品</a>。</td></tr>
+  <tr><td>インターフェース</td><td>M1 では組み込みの <code>Ui</code> と <code>Screen</code> だけ。</td></tr>
+</table>
+</div>
+<ul>
+  <li><code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
+  <li>null は存在しない。すべての変数とフィールドは常に値を持つ。</li>
+  <li>型引数の数が合わない場合は <code>E0408</code>。</li>
+</ul>
+
+<h2 id="assignability">代入できる条件</h2>
+<p>型 <code>S</code> の値を型 <code>T</code> の場所に置けるのは、次のどちらかの場合だけ（それ以外は <code>E0401</code>）。</p>
+<ol>
+  <li><code>S</code> と <code>T</code> が同じ型である。</li>
+  <li><code>T</code> がインターフェースで、<code>S</code> がそれを <code>implements</code> しているクラスである。</li>
+</ol>
+<p>暗黙の型変換はない。<code>List&lt;Text&gt;</code> を <code>List&lt;Ui&gt;</code> の場所に置くことはできない。</p>
+
+<h2 id="classes">クラス</h2>
+<ul>
+  <li>継承はない。クラスは0個以上のインターフェースを実装できる。</li>
+  <li>1つのクラスの中で、フィールドとメソッドの名前は重複できない（<code>E0303</code>）。オーバーロードはない。</li>
+  <li>インスタンスは参照で扱う。代入や引数渡しで複製されない。</li>
+  <li><code>implements</code> したインターフェースのメソッドは、同じ名前、同じ引数、同じ戻り値の型ですべて定義する（<code>E0506</code>）。</li>
+</ul>
+
+<h3 id="fields">フィールド</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>書き方</th><th>値の決まり方</th></tr>
+  <tr><td><code>let name: String;</code></td><td>構築式で必ず渡す。</td></tr>
+  <tr><td><code>var count: Int = 0;</code></td><td>宣言に書いた式で決まる。構築式では渡せない。</td></tr>
+</table>
+</div>
+<ul>
+  <li>初期化の式の有無と <code>let</code> / <code>var</code> は独立に選べる。</li>
+  <li>初期化の式の中で <code>self</code> は使えない（<code>E0509</code>）。</li>
+  <li>フィールドはどこからでも読める（<code>obj.name</code>）。</li>
+</ul>
+
+<h3 id="mutability">可変性</h3>
+<ul>
+  <li><code>let</code> のフィールドは書き換えられない（<code>E0504</code>）。</li>
+  <li><code>var</code> のフィールドを書き換えられるのは、そのクラスのメソッドの中の <code>self.x = 式;</code> だけ。<code>other.x = 式;</code> は、同じクラスの別インスタンスであっても書けない（<code>E0505</code>）。</li>
+  <li>ローカル変数は、<code>let</code> なら書き換えられず、<code>var</code> なら書き換えられる。引数は書き換えられない（<code>E0504</code>）。</li>
+</ul>
+
+<h3 id="construct">構築式</h3>
+<pre><code>Button { label: "+1", onTap: self.increment }
+Counter {}</code></pre>
+<ul>
+  <li>初期化の式を持たないフィールドを、宣言された順番で、すべて渡す。</li>
+  <li>項目の不足、未知の項目、初期化の式を持つフィールドの指定、順番の違いは <code>E0503</code>。</li>
+  <li>初期化の式は、フィールドの宣言順に評価される。</li>
+</ul>
+
+<h3 id="methods">メソッド</h3>
+<ul>
+  <li>最初の引数は必ず <code>self</code>。クラスに属さない関数と、<code>self</code> を取らない関数は M1 にない。</li>
+  <li>戻り値の型は必ず書く。</li>
+  <li>再帰呼び出しができる。</li>
+</ul>
+
+<h2 id="self">self</h2>
+<ul>
+  <li>自分のフィールドとメソッドには必ず <code>self.</code> を付けてアクセスする。</li>
+  <li><code>self.</code> を付けずに書いた名前が、そのクラスのフィールドかメソッドの名前と一致する場合は <code>E0304</code>（修正案つき）。</li>
+</ul>
+
+<h2 id="scope">名前とスコープ</h2>
+<ul>
+  <li>ローカル変数は宣言した文の次から、そのブロックの終わりまで有効。</li>
+  <li>シャドーイングはできない。有効な引数やローカル変数と同じ名前で宣言すると <code>E0303</code>。並んだ別々のブロックで同じ名前を使うことはできる。</li>
+  <li>未定義の名前は <code>E0301</code>、未定義の型は <code>E0302</code>。</li>
+</ul>
+
+<h2 id="calls">メソッド呼び出しとメンバーアクセス</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>書き方</th><th>意味</th></tr>
+  <tr><td><code>obj.name</code>（<code>name</code> がフィールド）</td><td>フィールドの値。</td></tr>
+  <tr><td><code>obj.name</code>（<code>name</code> がメソッド）</td><td><a href="#method-ref">メソッド参照</a>。</td></tr>
+  <tr><td><code>obj.name(引数)</code></td><td>メソッド呼び出し。</td></tr>
+</table>
+</div>
+<ul>
+  <li>存在しないメンバーは <code>E0501</code>。フィールドに引数リストを付けた場合は <code>E0508</code>。</li>
+  <li>引数は、<code>self</code> を除いた全部を、宣言された順番で、名前付きで渡す。不足、未知の名前、順番の違いは <code>E0502</code>（正しい引数リストを修正案として返す）。</li>
+  <li>引数の式は、書かれた順番に評価される。</li>
+</ul>
+
+<h3 id="method-ref">メソッド参照</h3>
+<ul>
+  <li><code>obj.method</code> は、その時点の <code>obj</code> に結び付いた <code>Action</code> を作る。</li>
+  <li>参照できるのは、<code>self</code> 以外の引数を持たず、<code>Unit</code> を返すメソッドだけ（<code>E0507</code>）。</li>
+</ul>
+
+<h2 id="list-literal">リスト記法</h2>
+<ul>
+  <li><code>[a, b, c]</code> は <code>List&lt;T&gt;</code> を作る。<code>T</code> は、その式が置かれた場所の型から決まる。</li>
+  <li>各要素は <code>T</code> に代入できなければならない（<code>E0401</code>）。</li>
+  <li>置かれた場所の型が <code>List&lt;T&gt;</code> と決まらない位置には書けない（<code>E0406</code>）。メソッド呼び出しの対象（<code>[a].m()</code>）がこれに当たる。</li>
+</ul>
+<div class="note"><p>kata ではすべての宣言に型を書くので、変数の初期化、代入、引数、構築式の項目、<code>return</code> のどれに置いても、型は周囲から一意に決まる。</p></div>
+
+<h2 id="operators">演算子</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>演算子</th><th>オペランド</th><th>結果</th></tr>
+  <tr><td><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code></td><td><code>Int</code> と <code>Int</code></td><td><code>Int</code></td></tr>
+  <tr><td>単項 <code>-</code></td><td><code>Int</code></td><td><code>Int</code></td></tr>
+  <tr><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td><td><code>Int</code> と <code>Int</code></td><td><code>Bool</code></td></tr>
+  <tr><td><code>==</code> <code>!=</code></td><td>両辺が同じ型で、<code>Int</code>、<code>Bool</code>、<code>String</code> のいずれか</td><td><code>Bool</code></td></tr>
+  <tr><td><code>&amp;&amp;</code> <code>||</code></td><td><code>Bool</code> と <code>Bool</code></td><td><code>Bool</code></td></tr>
+  <tr><td><code>!</code></td><td><code>Bool</code></td><td><code>Bool</code></td></tr>
+</table>
+</div>
+<ul>
+  <li>オペランドの型が合わない場合は <code>E0402</code>。</li>
+  <li><code>+</code> で文字列は連結できない。<code>concat</code> を使う。</li>
+  <li><code>==</code> は値の比較。クラスのインスタンスとリストは比較できない。</li>
+  <li><code>/</code> は 0 の方向に切り捨てる。<code>%</code> の符号は割られる数に従う。0 で割るとパニックになる。</li>
+  <li><code>&amp;&amp;</code> と <code>||</code> は左から評価し、結果が決まった時点で残りを評価しない。</li>
+</ul>
+
+<h2 id="builtin-methods">組み込みメソッド</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>型</th><th>メソッド</th><th>内容</th></tr>
+  <tr><td><code>Int</code></td><td><code>toString() -&gt; String</code></td><td>10進数の文字列にする。</td></tr>
+  <tr><td><code>String</code></td><td><code>concat(other: String) -&gt; String</code></td><td>後ろに <code>other</code> をつないだ文字列を返す。</td></tr>
+</table>
+</div>
+
+<h2 id="statements">文の規則</h2>
+<ul>
+  <li><code>if</code> の条件は <code>Bool</code>（<code>E0403</code>）。</li>
+  <li>式だけの文に書けるのは、<code>Unit</code> を返すメソッド呼び出しだけ（<code>E0206</code>）。値を返す呼び出しの結果を捨てることはできない。</li>
+  <li>代入の左辺に書けるのは、<code>var</code> のローカル変数か <code>self.フィールド</code> だけ（<code>E0504</code>、<code>E0505</code>）。</li>
+</ul>
+
+<h3 id="return">return</h3>
+<ul>
+  <li>戻り値の型が <code>Unit</code> 以外のメソッドは、すべての経路が <code>return 式;</code> で終わらなければならない（<code>E0404</code>）。</li>
+  <li>戻り値の型が <code>Unit</code> のメソッドでは、<code>return;</code> で途中から抜けられる。末尾では書かなくてよい。値を付けることはできない（<code>E0405</code>）。</li>
+  <li><code>Unit</code> 以外のメソッドで値のない <code>return;</code> は書けない（<code>E0405</code>）。</li>
+  <li>経路が終わったと見なすのは、ブロックの最後の文が <code>return</code> である場合と、最後の文が <code>else</code> を持つ <code>if</code> で、すべての枝が終わっている場合。</li>
+  <li><code>return</code> の後ろに文を書くことはできない（<code>E0409</code>）。</li>
+</ul>
+
+<h2 id="modules">モジュールと import</h2>
+<ul>
+  <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。</li>
+  <li>import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
+  <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code> の名前だけ。それ以外は <code>E0307</code>。</li>
+  <li>import していない <code>kata.ui</code> の名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>
+  <li>使っていない import は <code>E0306</code>（削除を修正案として返す）。</li>
+  <li><span class="tag m1">M1</span> のプロジェクトは1モジュールで構成する。</li>
+</ul>
+
+<h2 id="panic">パニック</h2>
+<ul>
+  <li>M1 でパニックになるのは 0 による除算だけ。</li>
+  <li>パニックは捕まえられない。アプリは停止し、kata のファイル名と行番号を含むスタックトレースが logcat に出る。</li>
+</ul>
+
+<div class="pager"><a href="03-syntax.html">← 03 字句と文法</a><a href="05-ui.html">05 UI とアプリモデル →</a></div>
+</main>
+</body>
+</html>

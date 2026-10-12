@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 コマンドと診断 | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>07 コマンドと診断</span></nav>
+<main>
+
+<h1>07 コマンドと診断</h1>
+<p class="lead"><code>kata</code> コマンドの出力は、エージェントが読んでそのまま修正に使える形にする。</p>
+
+<h2 id="commands">コマンド</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>コマンド</th><th>内容</th></tr>
+  <tr><td><code>kata check &lt;プロジェクト&gt;</code></td><td>検査だけを行う。ファイルは書き出さない。Android SDK は不要。</td></tr>
+  <tr><td><code>kata build &lt;プロジェクト&gt;</code></td><td>検査し、通れば <code>build/app.apk</code> まで作る。</td></tr>
+</table>
+</div>
+<ul>
+  <li>結果は、標準出力に JSON を1つ出力する。人間向けの表示形式は持たない。</li>
+  <li>外部ツールの出力などの補足は標準エラーに出す。</li>
+</ul>
+
+<h3 id="exit-codes">終了コード</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>値</th><th>意味</th></tr>
+  <tr><td>0</td><td>成功。診断なし。</td></tr>
+  <tr><td>1</td><td>診断が1件以上ある。</td></tr>
+  <tr><td>2</td><td>コマンドの使い方の誤り（引数の不足、プロジェクトに <code>src/</code> がないなど）。JSON は出力せず、標準エラーに説明を出す。</td></tr>
+</table>
+</div>
+
+<h2 id="output">出力の形</h2>
+<pre><code>{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0401",
+      "message": "type mismatch",
+      "file": "src/app/counter.kata",
+      "line": 15,
+      "column": 22,
+      "endLine": 15,
+      "endColumn": 32,
+      "expected": "String",
+      "found": "Int",
+      "fix": {
+        "line": 15,
+        "column": 22,
+        "endLine": 15,
+        "endColumn": 32,
+        "replacement": "self.count.toString()"
+      }
+    }
+  ]
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td><code>ok</code></td><td>診断が0件なら <code>true</code>。</td></tr>
+  <tr><td><code>artifact</code></td><td><code>kata build</code> が成功したときの APK のパス（プロジェクトからの相対パス）。それ以外は <code>null</code>。</td></tr>
+  <tr><td><code>code</code></td><td>診断コード。意味は変えない。廃止したコードの番号は再利用しない。</td></tr>
+  <tr><td><code>message</code></td><td>英語の短い説明。同じコードでも状況に応じて変わる。</td></tr>
+  <tr><td><code>file</code></td><td>プロジェクトからの相対パス。ファイルに結び付かない診断では <code>null</code>。</td></tr>
+  <tr><td><code>line</code> <code>column</code> <code>endLine</code> <code>endColumn</code></td><td>範囲。行と列は1始まりで、列は Unicode のコードポイント単位。終わりの位置は範囲に含まない。<code>file</code> が <code>null</code> のときはすべて <code>null</code>。</td></tr>
+  <tr><td><code>expected</code> <code>found</code></td><td>期待したものと実際のもの。型の名前や、トークンの候補。該当しなければ <code>null</code>。</td></tr>
+  <tr><td><code>fix</code></td><td>機械的に決まる修正。範囲を <code>replacement</code> で置き換える。決まらなければ <code>null</code>。</td></tr>
+</table>
+</div>
+<ul>
+  <li>診断は、ファイルのパス、行、列の順に並べる。</li>
+  <li><code>fix</code> は、適用すればその診断が解消することを保証する。他の診断が残ることはある。</li>
+</ul>
+
+<h2 id="phases">診断を返す範囲</h2>
+<ol>
+  <li>全ファイルの字句解析と構文解析を行う。構文解析は、文とメンバーの区切り（<code>;</code> と <code>}</code>）で立て直して続け、見つかった診断をすべて集める。</li>
+  <li>ここまでで診断が1件でもあれば、それを返して終わる。</li>
+  <li>なければ検査を行い、見つかった診断をすべて返す。</li>
+  <li><code>kata build</code> は、診断が0件のときだけコード生成以降に進む。</li>
+</ol>
+
+<h2 id="codes">診断コード一覧</h2>
+
+<h3 id="codes-lexical">E01xx 字句</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0101"><code>E0101</code></td><td>使えない文字がある。</td><td>なし</td></tr>
+  <tr><td id="E0102"><code>E0102</code></td><td>文字列リテラルが閉じていない。</td><td>なし</td></tr>
+  <tr><td id="E0103"><code>E0103</code></td><td>使えないエスケープがある。</td><td>なし</td></tr>
+  <tr><td id="E0104"><code>E0104</code></td><td>整数リテラルが範囲外、または先頭に余分な 0 がある。</td><td>なし</td></tr>
+  <tr><td id="E0105"><code>E0105</code></td><td>M2 以降のために予約された語を使っている。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-syntax">E02xx 構文</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0201"><code>E0201</code></td><td>予期しないトークン。<code>expected</code> に候補を入れる。</td><td>なし</td></tr>
+  <tr><td id="E0202"><code>E0202</code></td><td><code>;</code> がない。</td><td><code>;</code> の挿入</td></tr>
+  <tr><td id="E0203"><code>E0203</code></td><td>種類の違う演算子を括弧なしで混ぜている。</td><td>なし</td></tr>
+  <tr><td id="E0204"><code>E0204</code></td><td>並べられない演算子を2回以上使っている。</td><td>なし</td></tr>
+  <tr><td id="E0205"><code>E0205</code></td><td>引数に名前がない。</td><td>なし</td></tr>
+  <tr><td id="E0206"><code>E0206</code></td><td>式だけの文が、<code>Unit</code> を返すメソッド呼び出しではない。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-names">E03xx 名前</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0301"><code>E0301</code></td><td>未定義の名前。</td><td>なし</td></tr>
+  <tr><td id="E0302"><code>E0302</code></td><td>未定義の型。</td><td>なし</td></tr>
+  <tr><td id="E0303"><code>E0303</code></td><td>名前の重複（クラス、メンバー、引数、ローカル変数。シャドーイングを含む）。</td><td>なし</td></tr>
+  <tr><td id="E0304"><code>E0304</code></td><td>フィールドまたはメソッドに <code>self.</code> が付いていない。</td><td><code>self.</code> の挿入</td></tr>
+  <tr><td id="E0305"><code>E0305</code></td><td><code>kata.ui</code> の名前を import せずに使っている。</td><td>import 文の挿入</td></tr>
+  <tr><td id="E0306"><code>E0306</code></td><td>使っていない import がある。</td><td>import 文の削除</td></tr>
+  <tr><td id="E0307"><code>E0307</code></td><td>import したモジュールまたは名前が存在しない。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-types">E04xx 型</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0401"><code>E0401</code></td><td>型が合わない。<code>expected</code> と <code>found</code> に型を入れる。</td><td><code>String</code> の場所に <code>Int</code> がある場合は <code>.toString()</code> の付加</td></tr>
+  <tr><td id="E0402"><code>E0402</code></td><td>演算子のオペランドの型が合わない。</td><td><code>String</code> 同士の <code>+</code> は <code>concat</code> への置き換え</td></tr>
+  <tr><td id="E0403"><code>E0403</code></td><td><code>if</code> の条件が <code>Bool</code> ではない。</td><td>なし</td></tr>
+  <tr><td id="E0404"><code>E0404</code></td><td><code>return</code> で終わらない経路がある。</td><td>なし</td></tr>
+  <tr><td id="E0405"><code>E0405</code></td><td><code>return</code> の値の有無が戻り値の型と合わない。</td><td>なし</td></tr>
+  <tr><td id="E0406"><code>E0406</code></td><td>リスト記法の型が周囲から決まらない。</td><td>なし</td></tr>
+  <tr><td id="E0407"><code>E0407</code></td><td><code>Unit</code> を戻り値の型以外に使っている。</td><td>なし</td></tr>
+  <tr><td id="E0408"><code>E0408</code></td><td>型引数の数が合わない。</td><td>なし</td></tr>
+  <tr><td id="E0409"><code>E0409</code></td><td><code>return</code> の後ろに文がある。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-members">E05xx クラスとメンバー</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0501"><code>E0501</code></td><td>その型に存在しないフィールドまたはメソッド。</td><td>なし</td></tr>
+  <tr><td id="E0502"><code>E0502</code></td><td>引数の不足、未知の名前、順番の違い。<code>expected</code> に正しい名前の並びを入れる。</td><td>順番だけが違う場合は並べ替えた引数リスト</td></tr>
+  <tr><td id="E0503"><code>E0503</code></td><td>構築式の項目の不足、未知の項目、初期化の式を持つフィールドの指定、順番の違い。<code>expected</code> に正しい名前の並びを入れる。</td><td>順番だけが違う場合は並べ替えた項目リスト</td></tr>
+  <tr><td id="E0504"><code>E0504</code></td><td>書き換えられないもの（<code>let</code>、引数）への代入。</td><td>なし</td></tr>
+  <tr><td id="E0505"><code>E0505</code></td><td><code>self</code> 以外のオブジェクトのフィールドへの代入。</td><td>なし</td></tr>
+  <tr><td id="E0506"><code>E0506</code></td><td>インターフェースを満たしていない、または実装できないインターフェースを指定している。</td><td>なし</td></tr>
+  <tr><td id="E0507"><code>E0507</code></td><td>メソッド参照の対象が、引数なしで <code>Unit</code> を返すメソッドではない。</td><td>なし</td></tr>
+  <tr><td id="E0508"><code>E0508</code></td><td>フィールドに引数リストを付けている。</td><td>なし</td></tr>
+  <tr><td id="E0509"><code>E0509</code></td><td>フィールドの初期化の式で <code>self</code> を使っている。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-project">E06xx プロジェクトと app 宣言</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th><th>fix</th></tr>
+  <tr><td id="E0601"><code>E0601</code></td><td><code>module</code> 宣言の名前がファイルの位置と合わない。</td><td>正しいモジュール名への置き換え</td></tr>
+  <tr><td id="E0602"><code>E0602</code></td><td><code>app</code> 宣言がない、または2つ以上ある。</td><td>なし</td></tr>
+  <tr><td id="E0603"><code>E0603</code></td><td><code>app</code> 宣言の項目の不足、未知の項目、順番の違い、<code>id</code> または <code>name</code> の形の誤り。</td><td>なし</td></tr>
+  <tr><td id="E0604"><code>E0604</code></td><td><code>root</code> が <code>Screen</code> に代入できない。</td><td>なし</td></tr>
+</table>
+</div>
+
+<h3 id="codes-env">E09xx 環境とツール</h3>
+<p><code>kata build</code> だけが返す。<code>file</code> は <code>null</code>。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>コード</th><th>内容</th></tr>
+  <tr><td id="E0901"><code>E0901</code></td><td><code>ANDROID_HOME</code> が未設定、またはその場所が存在しない。</td></tr>
+  <tr><td id="E0902"><code>E0902</code></td><td>必要な SDK の部品（<code>platforms/android-35</code>、<code>build-tools/35.0.0</code>）がない。</td></tr>
+  <tr><td id="E0903"><code>E0903</code></td><td>外部ツール（<code>d8</code>、<code>aapt2</code>、<code>zipalign</code>、<code>apksigner</code>、<code>keytool</code>）が失敗した。<code>message</code> にツール名と出力を入れる。</td></tr>
+  <tr><td id="E0999"><code>E0999</code></td><td>コンパイラ内部の誤り。検査を通ったプログラムでコード生成が失敗した場合を含む。コンパイラの不具合である。</td></tr>
+</table>
+</div>
+
+<div class="pager"><a href="06-codegen.html">← 06 コード生成</a><a href="08-testing.html">08 テスト →</a></div>
+</main>
+</body>
+</html>

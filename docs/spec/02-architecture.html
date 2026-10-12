@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 全体構成とビルド | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>02 全体構成とビルド</span></nav>
+<main>
+
+<h1>02 全体構成とビルド</h1>
+
+<h2 id="repo-layout">リポジトリ構成</h2>
+<pre><code>docs/spec/           この仕様書（SSOT）
+compiler/            コンパイラと kata コマンド
+runtime-core/        ランタイムのうち Android に依存しない部分
+runtime-android/     ランタイムのうち Android に依存する部分
+examples/counter/    M1 のサンプルアプリ
+scripts/             エミュレータでの確認スクリプト</code></pre>
+
+<h2 id="components">部品と依存</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>言語</th><th>役割</th><th>依存</th></tr>
+  <tr><td><code>compiler</code></td><td>Java 17</td><td>字句解析、構文解析、検査、バイトコード生成、APK の組み立て、<code>kata</code> コマンド</td><td>ASM</td></tr>
+  <tr><td><code>runtime-core</code></td><td>Java（Java 8 のクラスファイル）</td><td>UI の値を表すクラス、<code>KList</code>、<code>Action</code>、<code>Screen</code></td><td>なし</td></tr>
+  <tr><td><code>runtime-android</code></td><td>Java（Java 8 のクラスファイル）</td><td><code>KataActivity</code> と、UI の値を View に変換する <code>Renderer</code></td><td><code>runtime-core</code>、<code>android.jar</code></td></tr>
+</table>
+</div>
+<ul>
+  <li>コンパイラとランタイム自体のビルドとテストには Gradle wrapper を使う。</li>
+  <li><code>runtime-android</code> は AndroidX を使わない。<code>android.jar</code> にあるクラスだけを参照する。</li>
+  <li>ランタイムを2つに分けるのは、生成したコードを Android なしのデスクトップ JVM でテストできるようにするため。</li>
+</ul>
+
+<h2 id="boundaries">境界の決めごと</h2>
+<ul>
+  <li id="boundary-phases">コンパイラの段階は、字句解析 → 構文解析 → 検査 → コード生成の順に一方向に進む。各段階は前の段階の出力だけを入力にする。</li>
+  <li id="boundary-check">検査を通ったプログラムは、コード生成で失敗しない（原則 <a href="01-overview.html#p7">P7</a>）。コード生成で失敗した場合はコンパイラの不具合であり、<code>E0999</code> を返す。</li>
+  <li id="boundary-runtime">生成したコードが参照するランタイムのクラスは、<a href="06-codegen.html#runtime-classes">06 コード生成</a>に列挙したものに限る。</li>
+  <li id="boundary-backend">検査までの段階は JVM に依存しない。JVM に依存する処理はコード生成に閉じ込める。</li>
+</ul>
+
+<h2 id="project-layout">kata プロジェクトの構成</h2>
+<pre><code>&lt;プロジェクト&gt;/
+  src/                 ソースのルート
+    app/counter.kata   モジュール app.counter
+  build/               生成物（kata build が作る）
+    classes/           .class
+    app.apk            完成した APK</code></pre>
+<ul>
+  <li>設定ファイルは持たない。アプリの ID と名前は <a href="05-ui.html#app-decl"><code>app</code> 宣言</a>に書く。</li>
+  <li>モジュール名とファイルの位置は一致させる。<code>module app.counter;</code> は <code>src/app/counter.kata</code> に置く。</li>
+</ul>
+
+<h2 id="build-pipeline">kata build の流れ</h2>
+<ol>
+  <li><strong>検査</strong>：<code>src/</code> 以下の全 <code>.kata</code> を読み、診断が1件でもあればここで止まる。</li>
+  <li><strong>コード生成</strong>：<code>build/classes/</code> に <code>.class</code> を書き出す。<code>app</code> 宣言から <code>kata.gen.MainActivity</code> も生成する。</li>
+  <li><strong>マニフェスト生成</strong>：<code>app</code> 宣言の <code>id</code> と <code>name</code> から <code>build/AndroidManifest.xml</code> を作る。</li>
+  <li><strong>DEX 変換</strong>：<code>d8</code> で、生成した <code>.class</code> と2つのランタイムの jar を <code>classes.dex</code> にまとめる。</li>
+  <li><strong>パッケージ</strong>：<code>aapt2 link</code> でマニフェストを処理した APK を作り、<code>classes.dex</code> を追加する。</li>
+  <li><strong>整列と署名</strong>：<code>zipalign</code> の後、<code>apksigner</code> で debug 鍵による署名を行い、<code>build/app.apk</code> を出力する。</li>
+</ol>
+<p>アプリのビルドに Gradle と Android Gradle Plugin は使わない。Android SDK の build-tools を直接呼ぶ。</p>
+
+<h2 id="toolchain">固定するツールと値</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>項目</th><th>値</th></tr>
+  <tr><td>Android SDK の場所</td><td>環境変数 <code>ANDROID_HOME</code></td></tr>
+  <tr><td>プラットフォーム</td><td><code>platforms/android-35</code></td></tr>
+  <tr><td>build-tools</td><td><code>35.0.0</code></td></tr>
+  <tr><td><code>minSdkVersion</code></td><td>26</td></tr>
+  <tr><td><code>targetSdkVersion</code></td><td>35</td></tr>
+  <tr><td>生成するクラスファイルの版</td><td>Java 8（52）</td></tr>
+  <tr><td>debug 鍵</td><td><code>~/.android/debug.keystore</code>（別名 <code>androiddebugkey</code>、パスワード <code>android</code>）。なければ <code>keytool</code> で作る。</td></tr>
+</table>
+</div>
+
+<h2 id="manifest">生成するマニフェスト</h2>
+<ul>
+  <li><code>package</code> は <code>app</code> 宣言の <code>id</code>。</li>
+  <li><code>application</code> の <code>android:label</code> は <code>app</code> 宣言の <code>name</code>。テーマは <code>@android:style/Theme.Material.Light</code>。</li>
+  <li>Activity は <code>kata.gen.MainActivity</code> の1つだけ。<code>android:exported="true"</code> とし、<code>MAIN</code> / <code>LAUNCHER</code> の intent-filter を持つ。</li>
+</ul>
+
+<div class="pager"><a href="01-overview.html">← 01 概要と設計原則</a><a href="03-syntax.html">03 字句と文法 →</a></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 概要と設計原則 | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>01 概要と設計原則</span></nav>
+<main>
+
+<h1>01 概要と設計原則</h1>
+
+<h2 id="purpose">目的</h2>
+<p>コーディングの主役が AI エージェントになることを前提に、エージェント（Claude）が少ない手戻りで正しく書け、少ない文脈で正確に読める言語を作る。人間が読み書きする場面は想定しない。短さや書き心地よりも、明示性と規則の少なさを優先する。</p>
+<p>実行環境は Android（ART）。kata のソースは JVM バイトコードに直接コンパイルし、DEX に変換して APK にする。Kotlin には依存しない。</p>
+
+<h2 id="premise">前提となる制約</h2>
+<p>kata は新しい言語なので、エージェントの学習データに存在しない。この不利は次の3つで補う。</p>
+<ol>
+  <li>仕様を小さく保ち、必要な章を丸ごとコンテキストに載せられるようにする。</li>
+  <li>構文の見た目は既存の言語（Rust、Swift、Kotlin）に寄せ、意味論だけを厳格にする。</li>
+  <li>エラーは機械可読にし、何をどう直せばよいかをコンパイラが返す。</li>
+</ol>
+
+<h2 id="principles">設計原則</h2>
+<p>規則を足すか迷ったときは、この原則に照らして決める。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>ID</th><th>原則</th><th>具体的な規則</th></tr>
+  <tr><td id="p1">P1</td><td>書き方は1通り</td><td>オーバーロード、既定引数、暗黙の型変換、演算子の自作、シャドーイングを持たない。引数は名前付きで宣言順に書く。</td></tr>
+  <tr><td id="p2">P2</td><td>省略しない</td><td>型注釈、<code>return</code>、<code>self.</code>、import をすべて明示する。型推論はしない。</td></tr>
+  <tr><td id="p3">P3</td><td>読む範囲を閉じる</td><td>継承を持たない。フィールドを書き換えられるのはそのクラスのメソッドだけ。ファイルが使う外部の名前はファイル先頭の import にすべて現れる。</td></tr>
+  <tr><td id="p4">P4</td><td>暗黙の優先順位に頼らない</td><td>種類の違う演算子を混ぜるときは括弧を必須にする。</td></tr>
+  <tr><td id="p5">P5</td><td>null と例外を持たない</td><td>値がないことは <code>Option</code>、失敗は <code>Result</code> で表す（M2）。回復できない誤りはパニックとしてアプリを止める。</td></tr>
+  <tr><td id="p6">P6</td><td>通るか通らないかの二択</td><td>警告は存在しない。診断はすべてエラーで、未使用の import もエラーになる。</td></tr>
+  <tr><td id="p7">P7</td><td>エラーは検査の1か所で出す</td><td>検査を通ったプログラムはコード生成で失敗しない。</td></tr>
+</table>
+</div>
+
+<h2 id="paradigm">言語の性格</h2>
+<ul>
+  <li>継承のないクラスベースのオブジェクト指向言語。多態はインターフェースの実装で行い、再利用は委譲で行う。</li>
+  <li>フィールドは <code>let</code>（不変）と <code>var</code>（可変）を明示する。状態が変わる場所は、そのクラスのメソッド内の <code>self.x = ...</code> に限られる。</li>
+  <li>静的型付け。すべての宣言に型を書く。</li>
+</ul>
+
+<h2 id="m1-scope">M1 の範囲</h2>
+<p>M1 は、言語からエミュレータ上の画面までを最小限で貫く縦切りとする。ゴールは <a href="09-roadmap.html#m1-done">09 ロードマップ</a>の完了条件を満たすこと。</p>
+<h3>M1 に含めるもの</h3>
+<ul>
+  <li>型：<code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>List&lt;T&gt;</code>、利用者定義のクラス</li>
+  <li>クラス、<code>let</code> / <code>var</code> フィールド、メソッド、組み込みインターフェース <code>Screen</code> の実装</li>
+  <li><code>if</code> / <code>else</code>、算術、比較、論理演算、リスト記法、メソッド参照</li>
+  <li>UI 部品 <code>Column</code>、<code>Row</code>、<code>Text</code>、<code>Button</code></li>
+  <li><code>kata check</code> と <code>kata build</code>、JSON 形式の診断</li>
+</ul>
+<h3>M1 に含めないもの</h3>
+<ul>
+  <li><code>enum</code>、<code>match</code>、<code>Option</code>、<code>Result</code>、利用者定義のインターフェース、ジェネリクスの自作、ラムダ、ループ</li>
+  <li>複数モジュール（利用者のモジュール同士の import）</li>
+  <li>Java 連携、リソース（画像、多言語文字列）、リリース署名、複数画面、通信や保存などの副作用、増分ビルド</li>
+</ul>
+
+<h2 id="terms">用語</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>用語</th><th>意味</th></tr>
+  <tr><td>モジュール</td><td>1つの <code>.kata</code> ファイル。</td></tr>
+  <tr><td>プロジェクト</td><td><code>src/</code> を持つディレクトリ。<code>kata check</code> と <code>kata build</code> の対象。</td></tr>
+  <tr><td>診断</td><td>コンパイラが返すエラー1件。</td></tr>
+  <tr><td>パニック</td><td>回復できない実行時の誤り。アプリを停止させる。</td></tr>
+  <tr><td>ランタイム</td><td>APK に同梱する Java 製のライブラリ。UI 部品と描画ループを提供する。</td></tr>
+</table>
+</div>
+
+<div class="pager"><a href="index.html">← 目次</a><a href="02-architecture.html">02 全体構成とビルド →</a></div>
+</main>
+</body>
+</html>

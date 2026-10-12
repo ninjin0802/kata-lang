@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 テスト | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>08 テスト</span></nav>
+<main>
+
+<h1>08 テスト</h1>
+<p class="lead">仕様に書いた規則は、対応するテストを持つ。実装はテストを先に書いて進める。</p>
+
+<h2 id="kinds">テストの種類</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>種類</th><th>確かめること</th><th>実行環境</th></tr>
+  <tr><td>診断の照合テスト</td><td>kata のソースに対して、期待どおりの診断 JSON が返ること。</td><td>デスクトップの JVM</td></tr>
+  <tr><td>実行テスト</td><td>生成したクラスを読み込んで実行し、期待どおりの結果になること。</td><td>デスクトップの JVM（<code>runtime-core</code> を使う）</td></tr>
+  <tr><td>ランタイムの単体テスト</td><td><code>runtime-core</code> のクラスの振る舞い。</td><td>デスクトップの JVM</td></tr>
+  <tr><td>端末での確認</td><td>APK を入れて起動し、画面が操作に応じて変わること。</td><td>エミュレータ</td></tr>
+</table>
+</div>
+
+<h2 id="golden">診断の照合テスト</h2>
+<pre><code>compiler/src/test/resources/cases/
+  E0401-int-as-string/
+    src/app/main.kata     入力
+    expected.json         期待する出力（07 の出力の形）
+  ok-counter/
+    src/app/counter.kata
+    expected.json         {"ok": true, ...}</code></pre>
+<ul>
+  <li>ケース1つが、kata のプロジェクト1つに当たる。</li>
+  <li><a href="07-cli-diagnostics.html#codes">診断コード一覧</a>の E01xx から E06xx の各コードに、少なくとも1つのケースを置く。</li>
+  <li><code>fix</code> を返すコードには、その <code>fix</code> を適用した結果、その診断が消えることを確かめるテストも置く。</li>
+  <li>診断が出ないことを確かめる <code>ok-</code> のケースも置く。</li>
+</ul>
+
+<h2 id="exec">実行テスト</h2>
+<ul>
+  <li>kata のソースをメモリ上でコンパイルし、生成したクラスをクラスローダーで読み込んで、メソッドを呼んで結果を確かめる。</li>
+  <li>対象：算術と比較、<code>if</code> の分岐、フィールドの読み書き、構築式、メソッド呼び出し、メソッド参照、リスト記法、0 による除算のパニック。</li>
+  <li>カウンターのサンプルでは、<code>view</code> が返す UI の値の中身と、<code>increment</code> を実行した後に <code>view</code> の結果が変わることを確かめる。</li>
+  <li>スタックトレースに kata のファイル名と行番号が出ることを確かめる。</li>
+</ul>
+
+<h2 id="device">端末での確認</h2>
+<p><code>scripts/e2e.sh</code> が次を行う。接続中のエミュレータまたは実機が1台あることを前提にする。</p>
+<ol>
+  <li><code>kata build examples/counter</code> を実行する。</li>
+  <li><code>adb install -r</code> で APK を入れ、アプリを起動する。</li>
+  <li><code>uiautomator dump</code> で画面の構造を取り出し、<code>0</code> と表示されていることを確かめる。</li>
+  <li><code>+1</code> のボタンの位置を取り出して <code>adb shell input tap</code> で押し、表示が <code>1</code> に変わることを確かめる。</li>
+  <li><code>Reset</code> を押し、表示が <code>0</code> に戻ることを確かめる。</li>
+</ol>
+<p>このスクリプトは Gradle のテストには含めない。エミュレータが要るため、手元で明示的に実行する。</p>
+
+<h2 id="commands">実行方法</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>コマンド</th><th>内容</th></tr>
+  <tr><td><code>./gradlew test</code></td><td>エミュレータを使わないテストをすべて実行する。</td></tr>
+  <tr><td><code>./gradlew installDist</code></td><td><code>kata</code> コマンドとランタイムの jar を <code>build/install/kata/</code> に配置する。</td></tr>
+  <tr><td><code>scripts/e2e.sh</code></td><td>端末での確認を実行する。</td></tr>
+</table>
+</div>
+
+<div class="pager"><a href="07-cli-diagnostics.html">← 07 コマンドと診断</a><a href="09-roadmap.html">09 ロードマップ →</a></div>
+</main>
+</body>
+</html>

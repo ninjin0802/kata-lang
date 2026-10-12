@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 ロードマップ | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>09 ロードマップ</span></nav>
+<main>
+
+<h1>09 ロードマップ</h1>
+
+<h2 id="m1-done">M1 の完了条件</h2>
+<ol>
+  <li><a href="03-syntax.html#example">03 の例</a>と同じ内容の <code>examples/counter/src/app/counter.kata</code> が、<code>kata check</code> で診断0件になる。</li>
+  <li><code>kata build examples/counter</code> が <code>build/app.apk</code> を出力する。</li>
+  <li><code>scripts/e2e.sh</code> がエミュレータ上で成功する（表示が <code>0</code> → <code>1</code> → <code>0</code> と変わる）。</li>
+  <li><code>./gradlew test</code> が成功し、E01xx から E06xx の全診断コードに照合テストがある。</li>
+  <li>実装が 03 から 07 の M1 の規則と一致している。</li>
+</ol>
+
+<h2 id="m2">M2 以降の候補</h2>
+<p>順番は未確定。着手するときに、この仕様書に規則を書いてから実装する。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>候補</th><th>内容</th></tr>
+  <tr><td><code>enum</code> と <code>match</code></td><td>値つきの選択肢と、網羅を必須にした分岐。</td></tr>
+  <tr><td><code>Option</code> と <code>Result</code></td><td>値がないことと失敗の表現。リストの要素の取り出しなど、失敗しうる組み込みメソッドの前提になる。</td></tr>
+  <tr><td>利用者定義のインターフェース</td><td>多態を利用者のコードで使えるようにする。</td></tr>
+  <tr><td>複数モジュール</td><td>利用者のモジュール同士の import。</td></tr>
+  <tr><td>ラムダと利用者定義のジェネリクス</td><td>リストの変換や絞り込みに必要。</td></tr>
+  <tr><td>ループ</td><td><code>for</code> / <code>while</code>。</td></tr>
+  <tr><td><code>kata sig</code></td><td>モジュールの公開シグネチャだけを出力する。ファイル全体を読まずに使い方が分かるようにする。</td></tr>
+  <tr><td><code>kata fmt</code></td><td>ソースを正規の形に整える。</td></tr>
+  <tr><td>UI の拡充</td><td>入力欄、スクロール、大きさや余白の指定、差分だけの再描画、状態の保存。</td></tr>
+  <tr><td>副作用</td><td>通信、保存、時刻など。</td></tr>
+  <tr><td>Java 連携</td><td>明示的な宣言ファイルを通じて Android の API を呼ぶ。</td></tr>
+  <tr><td>複数画面</td><td>画面の遷移。</td></tr>
+</table>
+</div>
+
+<div class="pager"><a href="08-testing.html">← 08 テスト</a><a href="index.html">目次 →</a></div>
+</main>
+</body>
+</html>

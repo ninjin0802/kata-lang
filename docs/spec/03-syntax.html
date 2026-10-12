@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 字句と文法 | kata 仕様書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">kata 仕様書</a><span>03 字句と文法</span></nav>
+<main>
+
+<h1>03 字句と文法</h1>
+<p class="lead">この章は M1 の文法を定める。空白と改行に意味はない。</p>
+
+<h2 id="example">全体の例</h2>
+<pre><code>module app.counter;
+
+import kata.ui.Button;
+import kata.ui.Column;
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+class Counter implements Screen {
+  var count: Int = 0;
+
+  fn view(self) -&gt; Ui {
+    return Column {
+      children: [
+        Text { text: self.count.toString() },
+        Button { label: "+1", onTap: self.increment },
+        Button { label: "Reset", onTap: self.reset },
+      ],
+    };
+  }
+
+  fn increment(self) -&gt; Unit {
+    self.count = self.count + 1;
+  }
+
+  fn reset(self) -&gt; Unit {
+    self.count = 0;
+  }
+}
+
+app {
+  id: "dev.kata.counter",
+  name: "Counter",
+  root: Counter {},
+}</code></pre>
+
+<h2 id="source">ソースファイル</h2>
+<ul>
+  <li>拡張子は <code>.kata</code>、文字コードは UTF-8。</li>
+  <li>空白（スペース、タブ、改行）はトークンの区切りとしてだけ働く。</li>
+  <li>コメントは <code>//</code> から行末まで。ブロックコメントはない。</li>
+</ul>
+
+<h2 id="identifiers">識別子</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>種類</th><th>形</th><th>使う場所</th></tr>
+  <tr><td><code>LowerIdent</code></td><td><code>[a-z][A-Za-z0-9]*</code></td><td>変数、引数、フィールド、メソッド、モジュール名の各部分</td></tr>
+  <tr><td><code>UpperIdent</code></td><td><code>[A-Z][A-Za-z0-9]*</code></td><td>型（クラス、インターフェース、組み込み型）</td></tr>
+</table>
+</div>
+<p>先頭の文字の大小で種類が決まる。アンダースコアは使えない。</p>
+
+<h2 id="keywords">予約語</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>区分</th><th>語</th></tr>
+  <tr><td><span class="tag m1">M1</span> で使う</td><td><code>module</code> <code>import</code> <code>class</code> <code>implements</code> <code>let</code> <code>var</code> <code>fn</code> <code>self</code> <code>return</code> <code>if</code> <code>else</code> <code>true</code> <code>false</code> <code>app</code></td></tr>
+  <tr><td><span class="tag m2">M2</span> 以降のために予約</td><td><code>interface</code> <code>enum</code> <code>match</code> <code>while</code> <code>for</code> <code>in</code></td></tr>
+</table>
+</div>
+<p>予約語は識別子に使えない。M2 以降の予約語を書くと <code>E0105</code> になる。</p>
+
+<h2 id="literals">リテラル</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>種類</th><th>形</th><th>補足</th></tr>
+  <tr><td>整数</td><td><code>0</code> または <code>[1-9][0-9]*</code></td><td>範囲は 0 から 9223372036854775807。負の数は単項の <code>-</code> で書く。</td></tr>
+  <tr><td>文字列</td><td><code>"..."</code></td><td>エスケープは <code>\"</code> <code>\\</code> <code>\n</code> <code>\t</code> の4つ。改行をそのまま含めることはできない。式の埋め込みはない。</td></tr>
+  <tr><td>真偽値</td><td><code>true</code> <code>false</code></td><td></td></tr>
+</table>
+</div>
+
+<h2 id="symbols">記号</h2>
+<pre><code>{ } ( ) [ ] &lt; &gt; , ; : . = -&gt;
++ - * / %
+== != &lt; &lt;= &gt; &gt;=
+&amp;&amp; || !</code></pre>
+
+<h2 id="grammar">文法</h2>
+<p>記法：<code>[ x ]</code> は省略可、<code>{ x }</code> は0回以上の繰り返し、<code>|</code> は選択。</p>
+
+<h3 id="grammar-file">ファイル</h3>
+<pre><code>file        = moduleDecl { importDecl } { classDecl } [ appDecl ] EOF ;
+moduleDecl  = "module" modulePath ";" ;
+modulePath  = LowerIdent { "." LowerIdent } ;
+importDecl  = "import" modulePath "." UpperIdent ";" ;</code></pre>
+<p>宣言の順番は固定で、<code>module</code>、<code>import</code>、<code>class</code>、<code>app</code> の順に書く。</p>
+
+<h3 id="grammar-class">クラス</h3>
+<pre><code>classDecl   = "class" UpperIdent [ "implements" UpperIdent { "," UpperIdent } ]
+              "{" { fieldDecl } { methodDecl } "}" ;
+fieldDecl   = ( "let" | "var" ) LowerIdent ":" type [ "=" expr ] ";" ;
+methodDecl  = "fn" LowerIdent "(" "self" { "," param } [ "," ] ")" "-&gt;" type block ;
+param       = LowerIdent ":" type ;
+type        = UpperIdent [ "&lt;" type { "," type } "&gt;" ] ;</code></pre>
+<p>クラスの中では、フィールドをすべて書いてからメソッドを書く。</p>
+
+<h3 id="grammar-stmt">文</h3>
+<pre><code>block       = "{" { stmt } "}" ;
+stmt        = letStmt | varStmt | assignStmt | returnStmt | ifStmt | exprStmt ;
+letStmt     = "let" LowerIdent ":" type "=" expr ";" ;
+varStmt     = "var" LowerIdent ":" type "=" expr ";" ;
+assignStmt  = postfix "=" expr ";" ;
+returnStmt  = "return" [ expr ] ";" ;
+ifStmt      = "if" "(" expr ")" block [ "else" ( block | ifStmt ) ] ;
+exprStmt    = postfix ";" ;</code></pre>
+<ul>
+  <li><code>if</code> の条件は必ず括弧で囲む。<code>if</code> は文であり、値を返さない。</li>
+  <li>単純な文とフィールド宣言は必ず <code>;</code> で終える。<code>if</code> 文とブロックの後には付けない。</li>
+</ul>
+
+<h3 id="grammar-expr">式</h3>
+<pre><code>expr        = unary [ binOp unary { binOp unary } ] ;
+unary       = ( "-" | "!" ) unary | postfix ;
+postfix     = primary { "." LowerIdent [ args ] } ;
+args        = "(" [ arg { "," arg } [ "," ] ] ")" ;
+arg         = LowerIdent ":" expr ;
+primary     = IntLit | StringLit | "true" | "false" | "self" | LowerIdent
+            | construct | listLit | "(" expr ")" ;
+construct   = UpperIdent "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ;
+fieldInit   = LowerIdent ":" expr ;
+listLit     = "[" [ expr { "," expr } [ "," ] ] "]" ;
+binOp       = "+" | "-" | "*" | "/" | "%"
+            | "==" | "!=" | "&lt;" | "&lt;=" | "&gt;" | "&gt;="
+            | "&amp;&amp;" | "||" ;</code></pre>
+
+<h3 id="operator-rule">演算子の並べ方</h3>
+<p>演算子に優先順位はない。括弧のない1つの式に並べられるのは、次の場合だけ。</p>
+<ul>
+  <li><code>+</code>、<code>*</code>、<code>&amp;&amp;</code>、<code>||</code> は、同じ演算子だけを何個でも並べられる（<code>a + b + c</code>）。</li>
+  <li>それ以外の二項演算子は、1つの式に1回だけ使える（<code>a - b</code>、<code>a &lt; b</code>）。</li>
+</ul>
+<div class="table-wrap">
+<table>
+  <tr><th>書いたもの</th><th>結果</th><th>直し方</th></tr>
+  <tr><td><code>a + b * c</code></td><td><code>E0203</code></td><td><code>a + (b * c)</code></td></tr>
+  <tr><td><code>a - b - c</code></td><td><code>E0204</code></td><td><code>(a - b) - c</code></td></tr>
+  <tr><td><code>a &lt; b &amp;&amp; c &lt; d</code></td><td><code>E0203</code></td><td><code>(a &lt; b) &amp;&amp; (c &lt; d)</code></td></tr>
+</table>
+</div>
+<p>単項演算子は直後の <code>unary</code> にだけ掛かる。<code>-a + b</code> は <code>(-a) + b</code> を意味する。</p>
+
+<h3 id="grammar-app">app 宣言</h3>
+<pre><code>appDecl     = "app" "{" fieldInit { "," fieldInit } [ "," ] "}" ;</code></pre>
+<p>書ける項目と順番は <a href="05-ui.html#app-decl">05 UI とアプリモデル</a>で定める。</p>
+
+<h2 id="trailing-comma">末尾のカンマ</h2>
+<p>引数、構築式、リスト、<code>app</code> 宣言では、最後の要素の後のカンマを書いても書かなくてもよい。原則 <a href="01-overview.html#p1">P1</a> の唯一の例外とする。どちらも意味は同じで、禁止しても読みやすさは変わらず、往復が増えるだけだからである。</p>
+
+<h2 id="always-named">名前付きの規則</h2>
+<ul>
+  <li>メソッド呼び出しの引数は、すべて <code>名前: 式</code> の形で書く。位置だけで渡すことはできない（<code>E0205</code>）。</li>
+  <li>引数と構築式の項目は、宣言された順番で書く。順番の規則は <a href="04-semantics.html#calls">04 型と意味論</a>で定める。</li>
+</ul>
+
+<div class="pager"><a href="02-architecture.html">← 02 全体構成とビルド</a><a href="04-semantics.html">04 型と意味論 →</a></div>
+</main>
+</body>
+</html>
