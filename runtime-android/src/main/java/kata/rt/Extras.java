@@ -134,9 +134,23 @@ final class Extras {
         }
         if (node instanceof WebView) {
             LoadedWebView web = new LoadedWebView(activity);
-            web.getSettings().setJavaScriptEnabled(true);
-            // Links open inside the view instead of leaving the app.
-            web.setWebViewClient(new android.webkit.WebViewClient());
+            android.webkit.WebSettings settings = web.getSettings();
+            settings.setJavaScriptEnabled(true);
+            // A page gets the network and nothing else: no files, no content providers, no location.
+            settings.setAllowFileAccess(false);
+            settings.setAllowContentAccess(false);
+            settings.setAllowFileAccessFromFileURLs(false);
+            settings.setAllowUniversalAccessFromFileURLs(false);
+            settings.setGeolocationEnabled(false);
+            settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+            // Links open inside the view instead of leaving the app, and only to allowed addresses.
+            web.setWebViewClient(new android.webkit.WebViewClient() {
+                @Override
+                public boolean shouldOverrideUrlLoading(android.webkit.WebView view,
+                        android.webkit.WebResourceRequest request) {
+                    return !Web.allowed(request.getUrl().toString());
+                }
+            });
             return web;
         }
         if (node instanceof Image || node instanceof Icon) {
@@ -271,7 +285,7 @@ final class Extras {
             String url = ((WebView) node).url;
             if (!url.equals(web.loaded)) {
                 web.loaded = url;
-                web.loadUrl(url);
+                web.loadUrl(Web.allowed(url) ? url : "about:blank");
             }
         } else if (node instanceof Theme || node instanceof Swipeable || node instanceof LongPress) {
             return true;

@@ -214,7 +214,7 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Swipeable` | `onSwipeLeft: Action, onSwipeRight: Action, child: Ui` — horizontal flick |
 | `LongPress` | `onLongPress: Action, child: Ui` |
 | `Animated` | `child: Ui` — changes inside it animate instead of jumping |
-| `WebView` | `url: String` — full width, give it a height with `Expand`; adds the internet permission automatically |
+| `WebView` | `url: String` — only `http(s)://`, `data:` and `about:blank` load (anything else shows a blank page); full width, give it a height with `Expand`; adds the internet permission automatically |
 | `Space` | `dp: Int` — an empty square, for gaps |
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 

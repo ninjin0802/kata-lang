@@ -666,6 +666,7 @@ class LazyList implements Ui {
   <li><code>Rotate</code> と <code>Scale</code> は描き方だけを変える。部品が占める場所は変わらないので、周りの配置は動かない。</li>
   <li>部品は、自分の範囲の外に描かれた子（拡大や回転ではみ出した部分、影）を切り取らない。切り取るのは、スクロールする部品（<code>Scroll</code>、<code>HorizontalScroll</code>、<code>LazyList</code>）と <code>Rounded</code>、<code>Card</code> だけ。</li>
   <li><code>Opacity</code> の <code>percent</code> が 0 から 100 の範囲にない場合と、<code>Scale</code> の <code>percent</code> が負の場合は、描画するときにパニックになる。</li>
+  <li id="webview-limits"><code>WebView</code> が表示できるのは、<code>http://</code>、<code>https://</code>、<code>data:</code> で始まる <code>url</code> と <code>about:blank</code> だけ。それ以外（<code>file:</code>、<code>content:</code>、<code>javascript:</code> など）は空のページになり、ページ内のリンクからも移動できない。ページからは端末のファイル、他のアプリのデータ、位置情報に届かない。外から受け取ったアドレスを渡しても、端末の中身を読まれないようにするため。</li>
   <li><code>WebView</code> を使うプログラムには、ビルド時に通信の権限（<code>android.permission.INTERNET</code>）が自動で付く。権限を手で宣言する場所はない。</li>
 </ul>
 
