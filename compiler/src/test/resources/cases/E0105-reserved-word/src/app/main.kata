@@ -1,0 +1,7 @@
+module app.main;
+
+class A {
+  fn m(self) -> Unit {
+    match;
+  }
+}

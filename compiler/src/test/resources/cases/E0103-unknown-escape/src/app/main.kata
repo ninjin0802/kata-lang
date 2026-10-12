@@ -1,0 +1,5 @@
+module app.main;
+
+class A {
+  let name: String = "a\qb";
+}

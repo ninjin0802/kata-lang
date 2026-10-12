@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0102",
+      "message": "string literal is not terminated",
+      "file": "src/app/main.kata",
+      "line": 4,
+      "column": 22,
+      "endLine": 4,
+      "endColumn": 27,
+      "expected": null,
+      "found": null,
+      "fix": null
+    }
+  ]
+}

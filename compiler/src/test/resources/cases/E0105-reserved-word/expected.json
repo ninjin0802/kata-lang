@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "artifact": null,
+  "diagnostics": [
+    {
+      "code": "E0105",
+      "message": "'match' is reserved for a later version of kata",
+      "file": "src/app/main.kata",
+      "line": 5,
+      "column": 5,
+      "endLine": 5,
+      "endColumn": 10,
+      "expected": null,
+      "found": null,
+      "fix": null
+    }
+  ]
+}
