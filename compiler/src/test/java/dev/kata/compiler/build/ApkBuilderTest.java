@@ -89,6 +89,33 @@ class ApkBuilderTest {
     }
 
     @Test
+    void symlinksInsideAssetsAreNotPackaged(@TempDir Path tmp) throws Exception {
+        Path project = Files.createDirectories(tmp.resolve("project"));
+        Path secret = tmp.resolve("secret.txt");
+        Files.writeString(secret, "TOP-SECRET");
+        Path secretDir = Files.createDirectories(tmp.resolve("secret-dir"));
+        Files.writeString(secretDir.resolve("inner.txt"), "TOP-SECRET");
+        Path assets = Files.createDirectories(project.resolve("assets/sub"));
+        Files.writeString(project.resolve("assets/real.txt"), "public");
+        Files.writeString(assets.resolve("nested.txt"), "public");
+        Files.createSymbolicLink(project.resolve("assets/link.txt"), secret);
+        Files.createSymbolicLink(project.resolve("assets/linked-dir"), secretDir);
+
+        Path apk = build(project);
+        try (ZipFile zip = new ZipFile(apk.toFile())) {
+            assertNotNull(zip.getEntry("assets/real.txt"));
+            assertNotNull(zip.getEntry("assets/sub/nested.txt"));
+            List<String> names = zip.stream().map(java.util.zip.ZipEntry::getName).toList();
+            assertTrue(names.stream().noneMatch(name -> name.contains("link")), names.toString());
+            for (String name : names) {
+                String content = new String(zip.getInputStream(zip.getEntry(name)).readAllBytes(),
+                        java.nio.charset.StandardCharsets.ISO_8859_1);
+                assertTrue(!content.contains("TOP-SECRET"), name + " contains the linked file");
+            }
+        }
+    }
+
+    @Test
     void projectPathWithSpacesWorks(@TempDir Path tmp) throws Exception {
         Path project = Files.createDirectories(tmp.resolve("my project dir"));
         assertTrue(Files.exists(build(project)));

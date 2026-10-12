@@ -70,12 +70,13 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
   <li><strong>コード生成</strong>：<code>build/classes/</code> に <code>.class</code> を書き出す。<code>app</code> 宣言から <code>kata.gen.MainActivity</code> も生成する。</li>
   <li><strong>マニフェスト生成</strong>：<code>app</code> 宣言の <code>id</code> と <code>name</code> から <code>build/AndroidManifest.xml</code> を作る。</li>
   <li><strong>DEX 変換</strong>：<code>d8</code> で、生成した <code>.class</code> と2つのランタイムの jar を <code>classes.dex</code> にまとめる。</li>
-  <li><strong>パッケージ</strong>：<code>aapt2 link</code> でマニフェストと <code>assets/</code>（あれば。シンボリックリンクの場合は入れない）を処理した APK を作り、<code>classes.dex</code> を追加する。</li>
+  <li><strong>パッケージ</strong>：<code>aapt2 link</code> でマニフェストと <code>assets/</code>（あれば）を処理した APK を作り、<code>classes.dex</code> を追加する。</li>
   <li><strong>整列と署名</strong>：<code>zipalign</code> の後、<code>apksigner</code> で debug 鍵による署名を行い、<code>build/app.apk</code> を出力する。</li>
 </ol>
 <p>アプリのビルドに Gradle と Android Gradle Plugin は使わない。Android SDK の build-tools を直接呼ぶ。</p>
 <ul>
-  <li id="build-symlinks"><code>build/</code> と、その中で kata が書き換えるもの（<code>classes/</code>、<code>dex/</code>、<code>AndroidManifest.xml</code>、<code>base.apk</code>、<code>aligned.apk</code>、<code>app.apk</code>）がシンボリックリンクの場合、ビルドは何も削除も書き込みもせずに <code>E0903</code> で止まる。プロジェクトの外を書き換えないようにするため。</li>
+  <li id="build-symlinks"><code>build/</code> と、その中で kata が書き換えるもの（<code>classes/</code>、<code>dex/</code>、<code>assets/</code>、<code>AndroidManifest.xml</code>、<code>base.apk</code>、<code>aligned.apk</code>、<code>app.apk</code>）がシンボリックリンクの場合、ビルドは何も削除も書き込みもせずに <code>E0903</code> で止まる。プロジェクトの外を書き換えないようにするため。</li>
+  <li id="asset-symlinks"><code>assets/</code> の中身は、通常のファイルだけを <code>build/assets/</code> に写してから APK に入れる。<code>assets/</code> 自体や、その中のシンボリックリンク（ファイルもディレクトリも）は入れない。リンク先のファイルがプロジェクトの外から APK に入り込まないようにするため。</li>
   <li id="source-symlinks"><code>src/</code> 以下のシンボリックリンクになっている <code>.kata</code> ファイルは読まない。</li>
 </ul>
 

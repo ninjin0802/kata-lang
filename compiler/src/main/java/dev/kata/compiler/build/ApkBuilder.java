@@ -25,6 +25,7 @@ public final class ApkBuilder {
             refuseSymbolicLinks(build);
             deleteTree(build.resolve("classes"));
             deleteTree(build.resolve("dex"));
+            deleteTree(build.resolve("assets"));
             Path classesDir = Files.createDirectories(build.resolve("classes"));
             Path dexDir = Files.createDirectories(build.resolve("dex"));
 
@@ -54,11 +55,11 @@ public final class ApkBuilder {
                     "--target-sdk-version", Integer.toString(Sdk.TARGET_SDK),
                     "--version-code", "1",
                     "--version-name", "1.0"));
-            // The project's assets/ directory, if it is a real directory, is packaged as is.
-            Path assets = project.toAbsolutePath().normalize().resolve("assets");
-            if (Files.isDirectory(assets, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            Path stagedAssets = stageAssets(project.toAbsolutePath().normalize().resolve("assets"),
+                    build.resolve("assets"));
+            if (stagedAssets != null) {
                 link.add("-A");
-                link.add(assets.toString());
+                link.add(stagedAssets.toString());
             }
             run("aapt2", link);
 
@@ -99,7 +100,7 @@ public final class ApkBuilder {
      * may be symbolic links: a project could otherwise redirect those writes outside itself.
      */
     private static void refuseSymbolicLinks(Path build) throws ToolFailure {
-        List<Path> owned = List.of(build, build.resolve("classes"), build.resolve("dex"),
+        List<Path> owned = List.of(build, build.resolve("classes"), build.resolve("dex"), build.resolve("assets"),
                 build.resolve("AndroidManifest.xml"), build.resolve("base.apk"), build.resolve("aligned.apk"),
                 build.resolve("app.apk"));
         for (Path path : owned) {
@@ -107,6 +108,27 @@ public final class ApkBuilder {
                 throw new ToolFailure("E0903", "kata: " + path + " is a symbolic link; remove it and build again");
             }
         }
+    }
+
+    /**
+     * Copies the regular files of the project's assets/ into build/assets and returns that directory, or
+     * null when there is nothing to package. aapt2 follows symbolic links, so it is never pointed at the
+     * project's own directory: a link there would pull a file from outside the project into the APK.
+     */
+    private static Path stageAssets(Path assets, Path staged) throws IOException {
+        java.nio.file.LinkOption noFollow = java.nio.file.LinkOption.NOFOLLOW_LINKS;
+        if (!Files.isDirectory(assets, noFollow)) {
+            return null;
+        }
+        Files.createDirectories(staged);
+        try (Stream<Path> paths = Files.walk(assets)) {
+            for (Path file : paths.filter(p -> Files.isRegularFile(p, noFollow)).toList()) {
+                Path target = staged.resolve(assets.relativize(file).toString());
+                Files.createDirectories(target.getParent());
+                Files.copy(file, target, noFollow);
+            }
+        }
+        return staged;
     }
 
     static String manifest(AppInfo app) {
