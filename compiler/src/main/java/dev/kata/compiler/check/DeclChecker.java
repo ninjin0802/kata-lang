@@ -35,6 +35,46 @@ final class DeclChecker {
         return accepted;
     }
 
+    /** Registers the file's enum names. Must run before any type in the file is resolved. */
+    List<Ast.EnumDecl> declareEnumNames(FileScope scope) {
+        List<Ast.EnumDecl> accepted = new ArrayList<>();
+        for (Ast.EnumDecl decl : scope.file.enums()) {
+            if (scope.addEnum(decl)) {
+                accepted.add(decl);
+            }
+        }
+        return accepted;
+    }
+
+    /** Resolves the variants' field types and registers the EnumInfo. */
+    void declareVariants(FileScope scope, Ast.EnumDecl decl) {
+        String path = scope.file.path();
+        Set<String> variantNames = new HashSet<>();
+        List<ClassTable.VariantInfo> variants = new ArrayList<>();
+        for (Ast.VariantDecl variant : decl.variants()) {
+            Set<String> fieldNames = new HashSet<>();
+            List<FieldInfo> fields = new ArrayList<>();
+            for (Ast.Param field : variant.fields()) {
+                Type type = scope.resolve(field.type(), false);
+                if (!fieldNames.add(field.name())) {
+                    out.add(Diagnostic.of("E0303", "field '" + field.name() + "' is already defined", path,
+                            field.nameSpan()));
+                    continue;
+                }
+                fields.add(new FieldInfo(field.name(), type, false, false));
+            }
+            if (!variantNames.add(variant.name())) {
+                out.add(Diagnostic.of("E0303", "variant '" + variant.name() + "' is already defined", path,
+                        variant.nameSpan()));
+                continue;
+            }
+            variants.add(new ClassTable.VariantInfo(variant.name(), fields));
+        }
+        ClassTable.EnumInfo info = new ClassTable.EnumInfo(scope.qualify(decl.name()), variants);
+        table.add(info);
+        program.enumInfos.put(decl, info);
+    }
+
     /** Resolves member types and registers the ClassInfo. */
     void declareMembers(FileScope scope, Ast.ClassDecl decl) {
         String path = scope.file.path();

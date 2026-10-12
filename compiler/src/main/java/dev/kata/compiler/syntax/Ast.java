@@ -17,7 +17,12 @@ public final class Ast {
 
     /** module and app may be null when the file did not parse. */
     public record File(String path, ModulePath module, Span moduleDeclSpan, List<Import> imports,
-            List<ClassDecl> classes, AppDecl app) {}
+            List<ClassDecl> classes, List<EnumDecl> enums, AppDecl app) {}
+
+    public record EnumDecl(String name, Span nameSpan, List<VariantDecl> variants, Span span) {}
+
+    /** One alternative of an enum, with the fields it carries (possibly none). */
+    public record VariantDecl(String name, Span nameSpan, List<Param> fields, Span span) {}
 
     public record ClassDecl(String name, Span nameSpan, List<TypeRef> interfaces, List<FieldDecl> fields,
             List<MethodDecl> methods, Span span) {}
@@ -62,6 +67,12 @@ public final class Ast {
 
     public record ExprStmt(Expr expr, Span span) implements Stmt {}
 
+    public record Match(Expr subject, List<Arm> arms, Span keywordSpan, Span span) implements Stmt {}
+
+    /** `Enum.Variant { a, b } => { ... }`; bindings name the variant's fields. */
+    public record Arm(String enumName, Span enumSpan, String variant, Span variantSpan, List<Name> bindings,
+            Span patternSpan, Block body) {}
+
     public sealed interface Expr {
         Span span();
     }
@@ -85,6 +96,10 @@ public final class Ast {
 
     public record Construct(String type, Span typeSpan, List<Named> inits, Span initsSpan, Span span)
             implements Expr {}
+
+    /** `Enum.Variant` or `Enum.Variant { field: value }`; initsSpan is null when there are no braces. */
+    public record EnumConstruct(String enumName, Span enumSpan, String variant, Span variantSpan,
+            List<Named> inits, Span initsSpan, Span span) implements Expr {}
 
     public record ListLit(List<Expr> items, Span span) implements Expr {}
 

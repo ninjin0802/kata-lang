@@ -1,0 +1,191 @@
+module app.calculator;
+
+import kata.ui.AlignEnd;
+import kata.ui.Button;
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Expand;
+import kata.ui.Padding;
+import kata.ui.Row;
+import kata.ui.Screen;
+import kata.ui.StyledText;
+import kata.ui.Ui;
+
+// One key of the calculator. Its press method is what the button calls.
+class Key {
+  let calculator: Calculator;
+  let label: String;
+
+  fn press(self) -> Unit {
+    self.calculator.press(label: self.label);
+  }
+}
+
+// The operator waiting for its right operand.
+enum Op {
+  None,
+  Add,
+  Sub,
+  Mul,
+  Div,
+}
+
+// A four-function calculator.
+// entry is the number being typed (as text, so that what is shown is exactly what was typed);
+// stored is the left operand or the last result; op is the pending operator.
+class Calculator implements Screen {
+  var entry: String = "";
+  var stored: Float = 0.0;
+  var op: Op = Op.None;
+  var display: String = "0";
+  var failed: Bool = false;
+
+  fn view(self) -> Ui {
+    return Column {
+      children: [
+        Padding {
+          all: 16,
+          child: AlignEnd {
+            child: StyledText {
+              text: self.display,
+              size: 48,
+              color: Color { red: 20, green: 20, blue: 20, alpha: 255 },
+            },
+          },
+        },
+        self.row(a: "7", b: "8", c: "9", d: "÷"),
+        self.row(a: "4", b: "5", c: "6", d: "×"),
+        self.row(a: "1", b: "2", c: "3", d: "-"),
+        self.row(a: "C", b: "0", c: ".", d: "+"),
+        Row { children: [self.key(label: "=")] },
+      ],
+    };
+  }
+
+  fn row(self, a: String, b: String, c: String, d: String) -> Ui {
+    return Row {
+      children: [self.key(label: a), self.key(label: b), self.key(label: c), self.key(label: d)],
+    };
+  }
+
+  fn key(self, label: String) -> Ui {
+    return Expand {
+      child: Button { label: label, onTap: Key { calculator: self, label: label }.press },
+    };
+  }
+
+  fn press(self, label: String) -> Unit {
+    if (label == "C") {
+      self.clear();
+    } else if (self.failed) {
+      return;
+    } else if (label == "=") {
+      self.evaluate();
+    } else if (label == ".") {
+      self.point();
+    } else if (label == "+") {
+      self.operator(next: Op.Add);
+    } else if (label == "-") {
+      self.operator(next: Op.Sub);
+    } else if (label == "×") {
+      self.operator(next: Op.Mul);
+    } else if (label == "÷") {
+      self.operator(next: Op.Div);
+    } else {
+      self.digit(text: label);
+    }
+  }
+
+  fn clear(self) -> Unit {
+    self.entry = "";
+    self.stored = 0.0;
+    self.op = Op.None;
+    self.display = "0";
+    self.failed = false;
+  }
+
+  fn digit(self, text: String) -> Unit {
+    if (self.entry.length() >= 12) {
+      return;
+    }
+    if (self.entry == "0") {
+      self.entry = text;
+    } else {
+      self.entry = self.entry.concat(other: text);
+    }
+    self.display = self.entry;
+  }
+
+  fn point(self) -> Unit {
+    if (self.entry.contains(part: ".")) {
+      return;
+    }
+    if (self.entry == "") {
+      self.entry = "0";
+    }
+    self.entry = self.entry.concat(other: ".");
+    self.display = self.entry;
+  }
+
+  fn operator(self, next: Op) -> Unit {
+    self.fold();
+    if (!self.failed) {
+      self.op = next;
+    }
+  }
+
+  fn evaluate(self) -> Unit {
+    self.fold();
+    if (!self.failed) {
+      self.op = Op.None;
+    }
+  }
+
+  // Combines the typed number into stored using the pending operator, then shows the result.
+  fn fold(self) -> Unit {
+    if (self.entry == "") {
+      return;
+    }
+    let typed: Float = self.entry.toFloat();
+    self.entry = "";
+    match (self.op) {
+      Op.None => {
+        self.stored = typed;
+      }
+      Op.Add => {
+        self.stored = self.stored + typed;
+      }
+      Op.Sub => {
+        self.stored = self.stored - typed;
+      }
+      Op.Mul => {
+        self.stored = self.stored * typed;
+      }
+      Op.Div => {
+        if (typed == 0.0) {
+          self.failed = true;
+          self.display = "Error";
+          return;
+        }
+        self.stored = self.stored / typed;
+      }
+    }
+    self.display = self.format(value: self.stored);
+  }
+
+  // Rounds away floating-point noise (0.1 + 0.2) and drops ".0" from whole numbers.
+  fn format(self, value: Float) -> String {
+    let rounded: Float = value.round(decimals: 10);
+    let whole: Int = rounded.toInt();
+    if (whole.toFloat() == rounded) {
+      return whole.toString();
+    }
+    return rounded.toString();
+  }
+}
+
+app {
+  id: "dev.kata.calculator",
+  name: "Calculator",
+  root: Calculator {},
+}

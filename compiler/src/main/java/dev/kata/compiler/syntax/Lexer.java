@@ -16,9 +16,10 @@ public final class Lexer {
             Map.entry("fn", Kind.FN), Map.entry("self", Kind.SELF), Map.entry("return", Kind.RETURN),
             Map.entry("if", Kind.IF), Map.entry("else", Kind.ELSE), Map.entry("while", Kind.WHILE),
             Map.entry("for", Kind.FOR), Map.entry("in", Kind.IN), Map.entry("true", Kind.TRUE),
-            Map.entry("false", Kind.FALSE), Map.entry("app", Kind.APP));
+            Map.entry("false", Kind.FALSE), Map.entry("app", Kind.APP), Map.entry("enum", Kind.ENUM),
+            Map.entry("match", Kind.MATCH));
 
-    private static final Set<String> RESERVED_FOR_LATER = Set.of("interface", "enum", "match", "break", "continue");
+    private static final Set<String> RESERVED_FOR_LATER = Set.of("interface", "break", "continue");
 
     private final String file;
     private final int[] chars;
@@ -182,7 +183,7 @@ public final class Lexer {
         int next = peek(1);
         Kind two = switch (c) {
             case '-' -> next == '>' ? Kind.ARROW : null;
-            case '=' -> next == '=' ? Kind.EQ : null;
+            case '=' -> next == '=' ? Kind.EQ : next == '>' ? Kind.FAT_ARROW : null;
             case '!' -> next == '=' ? Kind.NE : null;
             case '<' -> next == '=' ? Kind.LE : null;
             case '>' -> next == '=' ? Kind.GE : null;

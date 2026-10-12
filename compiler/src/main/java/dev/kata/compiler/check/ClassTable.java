@@ -47,6 +47,15 @@ public final class ClassTable {
         }
     }
 
+    public record VariantInfo(String name, List<FieldInfo> fields) {}
+
+    public record EnumInfo(String qualifiedName, List<VariantInfo> variants) {
+        public VariantInfo variant(String name) {
+            return variants.stream().filter(v -> v.name().equals(name)).findFirst().orElse(null);
+        }
+    }
+
+    private final Map<String, EnumInfo> enums = new LinkedHashMap<>();
     private final Map<String, ClassInfo> classes = new LinkedHashMap<>();
     private final Map<String, InterfaceInfo> interfaces = new LinkedHashMap<>();
 
@@ -56,6 +65,14 @@ public final class ClassTable {
 
     public void add(InterfaceInfo info) {
         interfaces.put(info.qualifiedName(), info);
+    }
+
+    public void add(EnumInfo info) {
+        enums.put(info.qualifiedName(), info);
+    }
+
+    public EnumInfo lookupEnum(String qualifiedName) {
+        return enums.get(qualifiedName);
     }
 
     public ClassInfo lookup(String qualifiedName) {

@@ -84,7 +84,7 @@ app {
 - **`;` ends** simple statements and field declarations. `if`, `while`, `for` need parentheses and braces; `if` is a statement, not an expression.
 - **No operator precedence.** Only one kind of binary operator per unparenthesized expression. `+ * && ||` may repeat (`a + b + c`); every other operator appears once. Write `(a + b) * c`, `(a < b) && (c < d)`, `(a - b) - c`.
 - **No null, no exceptions, no inheritance, no overloading, no default arguments, no shadowing, no lambdas/closures, no implicit conversions.**
-- **File order is fixed**: `module`, then `import`s, then `class`es, then one `app` block. Inside a class: all fields, then all methods.
+- **File order is fixed**: `module`, then `import`s, then `class`es and `enum`s (in any order), then one `app` block. Inside a class: all fields, then all methods.
 - **Imports**: one name per line, only from `kata.ui` (components) and `kata.sys` (`Store`, `Clock`, `Json`); every such name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
 - **`return`**: non-`Unit` methods must end every path with `return expr;` (loops do not count as ending a path). In `Unit` methods use bare `return;` to exit early; nothing may follow a `return` in the same block.
 - A statement that is only an expression must be a call returning `Unit` (results cannot be discarded).

@@ -71,8 +71,8 @@ app {
 <div class="table-wrap">
 <table>
   <tr><th>区分</th><th>語</th></tr>
-  <tr><td><span class="tag m1">M1</span> で使う</td><td><code>module</code> <code>import</code> <code>class</code> <code>implements</code> <code>let</code> <code>var</code> <code>fn</code> <code>self</code> <code>return</code> <code>if</code> <code>else</code> <code>while</code> <code>for</code> <code>in</code> <code>true</code> <code>false</code> <code>app</code></td></tr>
-  <tr><td><span class="tag m2">M2</span> 以降のために予約</td><td><code>interface</code> <code>enum</code> <code>match</code> <code>break</code> <code>continue</code></td></tr>
+  <tr><td><span class="tag m1">M1</span> で使う</td><td><code>module</code> <code>import</code> <code>class</code> <code>implements</code> <code>let</code> <code>var</code> <code>fn</code> <code>self</code> <code>return</code> <code>if</code> <code>else</code> <code>while</code> <code>for</code> <code>in</code> <code>true</code> <code>false</code> <code>app</code> <code>enum</code> <code>match</code></td></tr>
+  <tr><td><span class="tag m2">M2</span> 以降のために予約</td><td><code>interface</code> <code>break</code> <code>continue</code></td></tr>
 </table>
 </div>
 <p>予約語は識別子に使えない。ただし <code>app</code> は、モジュール名の一部としてだけ使える（<code>module app.counter;</code>）。M2 以降の予約語を書くと <code>E0105</code> になる。</p>
@@ -89,7 +89,7 @@ app {
 </div>
 
 <h2 id="symbols">記号</h2>
-<pre><code>{ } ( ) [ ] &lt; &gt; , ; : . = -&gt;
+<pre><code>{ } ( ) [ ] &lt; &gt; , ; : . = -&gt; =&gt;
 + - * / %
 == != &lt; &lt;= &gt; &gt;=
 &amp;&amp; || !</code></pre>
@@ -99,11 +99,15 @@ app {
 <p>記法：<code>[ x ]</code> は省略可、<code>{ x }</code> は0回以上の繰り返し、<code>|</code> は選択。</p>
 
 <h3 id="grammar-file">ファイル</h3>
-<pre><code>file        = moduleDecl { importDecl } { classDecl } [ appDecl ] EOF ;
+<pre><code>file        = moduleDecl { importDecl } { classDecl | enumDecl } [ appDecl ] EOF ;
 moduleDecl  = "module" modulePath ";" ;
 modulePath  = LowerIdent { "." LowerIdent } ;
 importDecl  = "import" modulePath "." UpperIdent ";" ;</code></pre>
-<p>宣言の順番は固定で、<code>module</code>、<code>import</code>、<code>class</code>、<code>app</code> の順に書く。</p>
+<p>宣言の順番は固定で、<code>module</code>、<code>import</code>、<code>class</code> と <code>enum</code>（この2つは混ぜてよい）、<code>app</code> の順に書く。</p>
+
+<h3 id="grammar-enum">enum</h3>
+<pre><code>enumDecl    = "enum" UpperIdent "{" variant { "," variant } [ "," ] "}" ;
+variant     = UpperIdent [ "{" [ param { "," param } [ "," ] ] "}" ] ;</code></pre>
 
 <h3 id="grammar-class">クラス</h3>
 <pre><code>classDecl   = "class" UpperIdent [ "implements" UpperIdent { "," UpperIdent } ]
@@ -117,7 +121,7 @@ type        = UpperIdent [ "&lt;" type { "," type } "&gt;" ] ;</code></pre>
 <h3 id="grammar-stmt">文</h3>
 <pre><code>block       = "{" { stmt } "}" ;
 stmt        = letStmt | varStmt | assignStmt | returnStmt | ifStmt
-            | whileStmt | forStmt | exprStmt ;
+            | whileStmt | forStmt | matchStmt | exprStmt ;
 letStmt     = "let" LowerIdent ":" type "=" expr ";" ;
 varStmt     = "var" LowerIdent ":" type "=" expr ";" ;
 assignStmt  = postfix "=" expr ";" ;
@@ -125,6 +129,8 @@ returnStmt  = "return" [ expr ] ";" ;
 ifStmt      = "if" "(" expr ")" block [ "else" ( block | ifStmt ) ] ;
 whileStmt   = "while" "(" expr ")" block ;
 forStmt     = "for" "(" LowerIdent ":" type "in" expr ")" block ;
+matchStmt   = "match" "(" expr ")" "{" { arm } "}" ;
+arm         = UpperIdent "." UpperIdent [ "{" [ LowerIdent { "," LowerIdent } [ "," ] ] "}" ] "=&gt;" block ;
 exprStmt    = postfix ";" ;</code></pre>
 <ul>
   <li><code>if</code> と <code>while</code> の条件、<code>for</code> の見出しは必ず括弧で囲む。<code>if</code> は文であり、値を返さない。</li>
@@ -139,7 +145,8 @@ postfix     = primary { "." LowerIdent [ args ] } ;
 args        = "(" [ arg { "," arg } [ "," ] ] ")" ;
 arg         = LowerIdent ":" expr ;
 primary     = IntLit | FloatLit | StringLit | "true" | "false" | "self" | LowerIdent
-            | construct | listLit | "(" expr ")" ;
+            | construct | enumValue | listLit | "(" expr ")" ;
+enumValue   = UpperIdent "." UpperIdent [ "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ] ;
 construct   = UpperIdent "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ;
 fieldInit   = LowerIdent ":" expr ;
 listLit     = "[" [ expr { "," expr } [ "," ] ] "]" ;

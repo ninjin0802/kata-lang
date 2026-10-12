@@ -162,6 +162,54 @@ class ParserTest {
     }
 
     @Test
+    void parsesEnumDeclarationsConstructionAndMatch() {
+        Ast.File file = parse("""
+                module app.main;
+                enum Shape {
+                  Dot,
+                  Circle { radius: Int },
+                  Box { width: Int, height: Int, },
+                }
+                class A {
+                  fn area(self, shape: Shape) -> Int {
+                    let dot: Shape = Shape.Dot;
+                    let box: Shape = Shape.Box { width: 2, height: 3 };
+                    match (shape) {
+                      Shape.Dot => {
+                        return 0;
+                      }
+                      Shape.Circle { radius } => {
+                        return radius * radius * 3;
+                      }
+                      Shape.Box { width, height } => {
+                        return width * height;
+                      }
+                    }
+                  }
+                }
+                """);
+        assertClean();
+        Ast.EnumDecl shape = file.enums().get(0);
+        assertEquals("Shape", shape.name());
+        assertEquals(List.of("Dot", "Circle", "Box"), shape.variants().stream().map(Ast.VariantDecl::name).toList());
+        assertEquals(2, shape.variants().get(2).fields().size());
+        List<Ast.Stmt> stmts = file.classes().get(0).methods().get(0).body().stmts();
+        Ast.EnumConstruct dot = assertInstanceOf(Ast.EnumConstruct.class, ((Ast.Let) stmts.get(0)).value());
+        assertEquals("Dot", dot.variant());
+        assertEquals(0, dot.inits().size());
+        assertEquals(2, ((Ast.EnumConstruct) ((Ast.Let) stmts.get(1)).value()).inits().size());
+        Ast.Match match = assertInstanceOf(Ast.Match.class, stmts.get(2));
+        assertEquals(3, match.arms().size());
+        assertEquals(List.of("width", "height"), match.arms().get(2).bindings().stream().map(Ast.Name::name).toList());
+    }
+
+    @Test
+    void brokenMatchArmsAreReportedOnce() {
+        parseBody("match (x) {\nShape.Dot {\n}\n}");
+        assertEquals(List.of("E0201"), codes());
+    }
+
+    @Test
     void parsesLoops() {
         Ast.File file = parseBody("while (c) { }\nfor (x: Int in xs) { }");
         assertClean();

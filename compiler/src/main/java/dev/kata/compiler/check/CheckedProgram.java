@@ -16,6 +16,12 @@ public final class CheckedProgram {
     final Map<Ast.TypeRef, Type> typeRefs = new IdentityHashMap<>();
     final Map<Ast.ClassDecl, ClassInfo> classInfos = new IdentityHashMap<>();
     final Map<Ast.Construct, ClassInfo> constructs = new IdentityHashMap<>();
+    final Map<Ast.EnumDecl, ClassTable.EnumInfo> enumInfos = new IdentityHashMap<>();
+    /** The variant an EnumConstruct builds or an Arm matches, as "qualified.Enum$Variant" plus its info. */
+    final Map<Object, VariantRef> variants = new IdentityHashMap<>();
+
+    /** A resolved variant: the enum it belongs to and its declaration. */
+    public record VariantRef(String enumName, ClassTable.VariantInfo variant) {}
     AppInfo app;
     Ast.Expr rootExpr;
 
@@ -61,6 +67,18 @@ public final class CheckedProgram {
             }
         }
         return false;
+    }
+
+    public ClassTable.EnumInfo enumOf(Ast.EnumDecl decl) {
+        return enumInfos.get(decl);
+    }
+
+    public VariantRef variantOf(Ast.EnumConstruct construct) {
+        return variants.get(construct);
+    }
+
+    public VariantRef variantOf(Ast.Arm arm) {
+        return variants.get(arm);
     }
 
     public AppInfo app() {

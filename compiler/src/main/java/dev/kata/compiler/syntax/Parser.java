@@ -38,6 +38,7 @@ public final class Parser {
         Span moduleDeclSpan = null;
         List<Ast.Import> imports = new ArrayList<>();
         List<Ast.ClassDecl> classes = new ArrayList<>();
+        List<Ast.EnumDecl> enums = new ArrayList<>();
         Ast.AppDecl app = null;
         try {
             Token start = expect(Kind.MODULE);
@@ -64,20 +65,25 @@ public final class Parser {
                         throw unexpected("end of file");
                     }
                     classes.add(classDecl());
+                } else if (at(Kind.ENUM)) {
+                    if (app != null) {
+                        throw unexpected("end of file");
+                    }
+                    enums.add(enumDecl());
                 } else if (at(Kind.APP)) {
                     if (app != null) {
                         throw unexpected("end of file");
                     }
                     app = appDecl();
                 } else {
-                    throw unexpected(app == null ? "class or app" : "end of file");
+                    throw unexpected(app == null ? "class, enum or app" : "end of file");
                 }
             } catch (Bail bail) {
                 syncTopLevel();
                 ensureProgress(before);
             }
         }
-        return new Ast.File(file, module, moduleDeclSpan, imports, classes, app);
+        return new Ast.File(file, module, moduleDeclSpan, imports, classes, enums, app);
     }
 
     private Ast.ModulePath modulePath() {
@@ -146,6 +152,37 @@ public final class Parser {
         expect(Kind.RBRACE);
         return new Ast.ClassDecl(name.text(), name.span(), interfaces, fields, methods,
                 Span.between(start.span(), prev().span()));
+    }
+
+    private Ast.EnumDecl enumDecl() {
+        Token start = expect(Kind.ENUM);
+        Token name = expect(Kind.UPPER_IDENT);
+        expect(Kind.LBRACE);
+        List<Ast.VariantDecl> variants = new ArrayList<>();
+        do {
+            if (at(Kind.RBRACE) && !variants.isEmpty()) {
+                break;
+            }
+            Token variant = expect(Kind.UPPER_IDENT);
+            List<Ast.Param> fields = new ArrayList<>();
+            if (accept(Kind.LBRACE)) {
+                while (!at(Kind.RBRACE)) {
+                    Token field = expect(Kind.LOWER_IDENT);
+                    expect(Kind.COLON);
+                    Ast.TypeRef type = type();
+                    fields.add(new Ast.Param(field.text(), field.span(), type,
+                            Span.between(field.span(), prev().span())));
+                    if (!accept(Kind.COMMA)) {
+                        break;
+                    }
+                }
+                expect(Kind.RBRACE);
+            }
+            variants.add(new Ast.VariantDecl(variant.text(), variant.span(), fields,
+                    Span.between(variant.span(), prev().span())));
+        } while (accept(Kind.COMMA));
+        expect(Kind.RBRACE);
+        return new Ast.EnumDecl(name.text(), name.span(), variants, Span.between(start.span(), prev().span()));
     }
 
     private Ast.FieldDecl fieldDecl() {
@@ -258,6 +295,9 @@ public final class Parser {
             case IF -> {
                 return ifStmt();
             }
+            case MATCH -> {
+                return matchStmt();
+            }
             case WHILE -> {
                 next();
                 expect(Kind.LPAREN);
@@ -293,6 +333,60 @@ public final class Parser {
                 semicolon();
                 return new Ast.ExprStmt(first, Span.between(start.span(), prev().span()));
             }
+        }
+    }
+
+    private Ast.Match matchStmt() {
+        Token start = expect(Kind.MATCH);
+        expect(Kind.LPAREN);
+        Ast.Expr subject = expr();
+        expect(Kind.RPAREN);
+        expect(Kind.LBRACE);
+        List<Ast.Arm> arms = new ArrayList<>();
+        while (!at(Kind.RBRACE) && !at(Kind.EOF)) {
+            int before = pos;
+            try {
+                Token enumName = expect(Kind.UPPER_IDENT);
+                expect(Kind.DOT);
+                Token variant = expect(Kind.UPPER_IDENT);
+                List<Ast.Name> bindings = new ArrayList<>();
+                if (accept(Kind.LBRACE)) {
+                    while (!at(Kind.RBRACE)) {
+                        Token binding = expect(Kind.LOWER_IDENT);
+                        bindings.add(new Ast.Name(binding.text(), binding.span()));
+                        if (!accept(Kind.COMMA)) {
+                            break;
+                        }
+                    }
+                    expect(Kind.RBRACE);
+                }
+                Span pattern = Span.between(enumName.span(), prev().span());
+                expect(Kind.FAT_ARROW);
+                arms.add(new Ast.Arm(enumName.text(), enumName.span(), variant.text(), variant.span(), bindings,
+                        pattern, block()));
+            } catch (Bail bail) {
+                syncArm();
+                ensureProgress(before);
+            }
+        }
+        expect(Kind.RBRACE);
+        return new Ast.Match(subject, arms, start.span(), Span.between(start.span(), prev().span()));
+    }
+
+    /** Skips to the start of the next match arm or the `}` closing the match. */
+    private void syncArm() {
+        int depth = 0;
+        while (!at(Kind.EOF)) {
+            Kind kind = peek().kind();
+            if (depth == 0 && (kind == Kind.UPPER_IDENT || kind == Kind.RBRACE)) {
+                return;
+            }
+            if (kind == Kind.LBRACE) {
+                depth++;
+            } else if (kind == Kind.RBRACE) {
+                depth--;
+            }
+            next();
         }
     }
 
@@ -413,6 +507,20 @@ public final class Parser {
             }
             case UPPER_IDENT -> {
                 next();
+                if (at(Kind.DOT) && peekKind(1) == Kind.UPPER_IDENT) {
+                    next();
+                    Token variant = next();
+                    List<Ast.Named> inits = List.of();
+                    Span initsSpan = null;
+                    if (at(Kind.LBRACE)) {
+                        Token open = next();
+                        inits = namedList(Kind.RBRACE, false);
+                        expect(Kind.RBRACE);
+                        initsSpan = Span.between(open.span(), prev().span());
+                    }
+                    return new Ast.EnumConstruct(token.text(), token.span(), variant.text(), variant.span(), inits,
+                            initsSpan, Span.between(token.span(), prev().span()));
+                }
                 Token open = expect(Kind.LBRACE);
                 List<Ast.Named> inits = namedList(Kind.RBRACE, false);
                 expect(Kind.RBRACE);

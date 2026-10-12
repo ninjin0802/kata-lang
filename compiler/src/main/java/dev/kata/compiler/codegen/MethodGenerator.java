@@ -142,6 +142,8 @@ final class MethodGenerator {
             mv.visitLabel(end);
         } else if (stmt instanceof Ast.For loop) {
             forStmt(loop);
+        } else if (stmt instanceof Ast.Match match) {
+            matchStmt(match);
         } else if (stmt instanceof Ast.Block nested) {
             block(nested);
         } else {
@@ -165,6 +167,45 @@ final class MethodGenerator {
         mv.visitLabel(otherwise);
         stmt(branch.orElse());
         mv.visitLabel(end);
+    }
+
+    /** The subject is evaluated once, then tested against each arm's variant class in order. */
+    private void matchStmt(Ast.Match match) {
+        scopes.push(new HashMap<>());
+        Local subject = declare("<subject>", program.typeOf(match.subject()));
+        expr(match.subject());
+        store(subject);
+        Label end = new Label();
+        for (Ast.Arm arm : match.arms()) {
+            dev.kata.compiler.check.CheckedProgram.VariantRef ref = program.variantOf(arm);
+            String variant = Names.variant(ref.enumName(), ref.variant().name());
+            Label next = new Label();
+            mv.visitVarInsn(Opcodes.ALOAD, subject.slot());
+            mv.visitTypeInsn(Opcodes.INSTANCEOF, variant);
+            mv.visitJumpInsn(Opcodes.IFEQ, next);
+            scopes.push(new HashMap<>());
+            for (int i = 0; i < arm.bindings().size(); i++) {
+                Type type = ref.variant().fields().get(i).type();
+                mv.visitVarInsn(Opcodes.ALOAD, subject.slot());
+                mv.visitTypeInsn(Opcodes.CHECKCAST, variant);
+                mv.visitFieldInsn(Opcodes.GETFIELD, variant, ref.variant().fields().get(i).name(),
+                        Names.descriptor(type));
+                store(declare(arm.bindings().get(i).name(), type));
+            }
+            block(arm.body());
+            scopes.pop();
+            if (!Flow.terminates(arm.body())) {
+                mv.visitJumpInsn(Opcodes.GOTO, end);
+            }
+            mv.visitLabel(next);
+        }
+        // Not reachable: the checker requires every variant to have an arm.
+        mv.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalStateException");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/IllegalStateException", "<init>", "()V", false);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(end);
+        scopes.pop();
     }
 
     /** The list is evaluated once; an index walks from 0 to size. */
@@ -231,6 +272,17 @@ final class MethodGenerator {
                 expr(init.value());
             }
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, name, "<init>", Names.constructorDescriptor(info), false);
+        } else if (expr instanceof Ast.EnumConstruct construct) {
+            dev.kata.compiler.check.CheckedProgram.VariantRef ref = program.variantOf(construct);
+            String variant = Names.variant(ref.enumName(), ref.variant().name());
+            StringBuilder descriptor = new StringBuilder("(");
+            mv.visitTypeInsn(Opcodes.NEW, variant);
+            mv.visitInsn(Opcodes.DUP);
+            for (int i = 0; i < construct.inits().size(); i++) {
+                expr(construct.inits().get(i).value());
+                descriptor.append(Names.descriptor(ref.variant().fields().get(i).type()));
+            }
+            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, variant, "<init>", descriptor.append(")V").toString(), false);
         } else if (expr instanceof Ast.ListLit list) {
             pushInt(list.items().size());
             mv.visitTypeInsn(Opcodes.ANEWARRAY, Names.OBJECT);

@@ -21,13 +21,22 @@ class Key {
   }
 }
 
+// The operator waiting for its right operand.
+enum Op {
+  None,
+  Add,
+  Sub,
+  Mul,
+  Div,
+}
+
 // A four-function calculator.
 // entry is the number being typed (as text, so that what is shown is exactly what was typed);
-// stored is the left operand or the last result; op is the pending operator ("" when none).
+// stored is the left operand or the last result; op is the pending operator.
 class Calculator implements Screen {
   var entry: String = "";
   var stored: Float = 0.0;
-  var op: String = "";
+  var op: Op = Op.None;
   var display: String = "0";
   var failed: Bool = false;
 
@@ -74,8 +83,14 @@ class Calculator implements Screen {
       self.evaluate();
     } else if (label == ".") {
       self.point();
-    } else if ((label == "+") || (label == "-") || (label == "×") || (label == "÷")) {
-      self.operator(next: label);
+    } else if (label == "+") {
+      self.operator(next: Op.Add);
+    } else if (label == "-") {
+      self.operator(next: Op.Sub);
+    } else if (label == "×") {
+      self.operator(next: Op.Mul);
+    } else if (label == "÷") {
+      self.operator(next: Op.Div);
     } else {
       self.digit(text: label);
     }
@@ -84,7 +99,7 @@ class Calculator implements Screen {
   fn clear(self) -> Unit {
     self.entry = "";
     self.stored = 0.0;
-    self.op = "";
+    self.op = Op.None;
     self.display = "0";
     self.failed = false;
   }
@@ -112,7 +127,7 @@ class Calculator implements Screen {
     self.display = self.entry;
   }
 
-  fn operator(self, next: String) -> Unit {
+  fn operator(self, next: Op) -> Unit {
     self.fold();
     if (!self.failed) {
       self.op = next;
@@ -122,7 +137,7 @@ class Calculator implements Screen {
   fn evaluate(self) -> Unit {
     self.fold();
     if (!self.failed) {
-      self.op = "";
+      self.op = Op.None;
     }
   }
 
@@ -133,20 +148,27 @@ class Calculator implements Screen {
     }
     let typed: Float = self.entry.toFloat();
     self.entry = "";
-    if (self.op == "") {
-      self.stored = typed;
-    } else if (self.op == "+") {
-      self.stored = self.stored + typed;
-    } else if (self.op == "-") {
-      self.stored = self.stored - typed;
-    } else if (self.op == "×") {
-      self.stored = self.stored * typed;
-    } else if (typed == 0.0) {
-      self.failed = true;
-      self.display = "Error";
-      return;
-    } else {
-      self.stored = self.stored / typed;
+    match (self.op) {
+      Op.None => {
+        self.stored = typed;
+      }
+      Op.Add => {
+        self.stored = self.stored + typed;
+      }
+      Op.Sub => {
+        self.stored = self.stored - typed;
+      }
+      Op.Mul => {
+        self.stored = self.stored * typed;
+      }
+      Op.Div => {
+        if (typed == 0.0) {
+          self.failed = true;
+          self.display = "Error";
+          return;
+        }
+        self.stored = self.stored / typed;
+      }
     }
     self.display = self.format(value: self.stored);
   }

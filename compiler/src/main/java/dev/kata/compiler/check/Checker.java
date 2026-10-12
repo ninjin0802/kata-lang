@@ -29,14 +29,19 @@ public final class Checker {
 
         List<FileScope> scopes = new ArrayList<>();
         List<List<Ast.ClassDecl>> accepted = new ArrayList<>();
+        List<List<Ast.EnumDecl>> acceptedEnums = new ArrayList<>();
         for (Ast.File file : files) {
             FileScope scope = new FileScope(file, table, program, out);
             checkModuleName(file, out);
             scope.addImports();
             scopes.add(scope);
             accepted.add(decls.declareNames(scope));
+            acceptedEnums.add(decls.declareEnumNames(scope));
         }
         for (int i = 0; i < scopes.size(); i++) {
+            for (Ast.EnumDecl decl : acceptedEnums.get(i)) {
+                decls.declareVariants(scopes.get(i), decl);
+            }
             for (Ast.ClassDecl decl : accepted.get(i)) {
                 decls.declareMembers(scopes.get(i), decl);
             }

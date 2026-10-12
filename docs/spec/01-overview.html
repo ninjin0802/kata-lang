@@ -50,9 +50,9 @@
 <p>M1 は、言語からエミュレータ上の画面までを最小限で貫く縦切りとする。ゴールは <a href="09-roadmap.html#m1-done">09 ロードマップ</a>の完了条件を満たすこと。</p>
 <h3>M1 に含めるもの</h3>
 <ul>
-  <li>型：<code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler&lt;T&gt;</code>、<code>List&lt;T&gt;</code>、利用者定義のクラス</li>
+  <li>型：<code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler&lt;T&gt;</code>、<code>List&lt;T&gt;</code>、利用者定義のクラスと <code>enum</code></li>
   <li>クラス、<code>let</code> / <code>var</code> フィールド、メソッド、組み込みインターフェース <code>Screen</code> の実装</li>
-  <li><code>if</code> / <code>else</code>、<code>while</code>、<code>for</code>、算術、比較、論理演算、リスト記法、メソッド参照</li>
+  <li><code>if</code> / <code>else</code>、<code>while</code>、<code>for</code>、<code>match</code>、算術、比較、論理演算、リスト記法、メソッド参照</li>
   <li>リストと文字列の基本的な組み込みメソッド</li>
   <li>UI 部品：<code>Column</code>、<code>Row</code>、<code>Text</code>、<code>Button</code>、入力欄、スクロール、色・余白・大きさ・配置を指定する部品（<a href="05-ui.html">05</a>）</li>
   <li>変わった部分だけを更新する再描画</li>
@@ -61,7 +61,7 @@
 </ul>
 <h3>M1 に含めないもの</h3>
 <ul>
-  <li><code>enum</code>、<code>match</code>、<code>Option</code>、<code>Result</code>、利用者定義のインターフェース、ジェネリクスの自作、ラムダ、<code>break</code> / <code>continue</code></li>
+  <li><code>Option</code>、<code>Result</code>、利用者定義のインターフェース、ジェネリクスの自作、ラムダ、<code>break</code> / <code>continue</code></li>
   <li>複数モジュール（利用者のモジュール同士の import）</li>
   <li>Java 連携、リソース（画像、多言語文字列）、リリース署名、複数画面、通信や保存などの副作用、増分ビルド</li>
 </ul>

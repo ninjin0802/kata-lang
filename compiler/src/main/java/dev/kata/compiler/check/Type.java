@@ -51,6 +51,13 @@ public sealed interface Type {
         }
     }
 
+    record EnumType(String qualifiedName) implements Type {
+        @Override
+        public String display() {
+            return qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+        }
+    }
+
     record InterfaceType(String qualifiedName) implements Type {
         @Override
         public String display() {

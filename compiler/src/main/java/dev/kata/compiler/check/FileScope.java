@@ -17,6 +17,7 @@ final class FileScope {
     private final CheckedProgram program;
     private final List<Diagnostic> out;
     private final Set<String> localClasses = new HashSet<>();
+    private final Set<String> localEnums = new HashSet<>();
     private final Map<String, Ast.Import> imports = new LinkedHashMap<>();
     private final Set<String> usedImports = new HashSet<>();
     private final Set<String> reportedMissingImports = new HashSet<>();
@@ -50,11 +51,27 @@ final class FileScope {
     /** Declares a class of this file. Returns false, with a diagnostic, when the name is taken. */
     boolean addClass(Ast.ClassDecl decl) {
         String name = decl.name();
-        if (Builtins.CORE_TYPES.contains(name) || imports.containsKey(name) || !localClasses.add(name)) {
+        if (Builtins.CORE_TYPES.contains(name) || imports.containsKey(name) || localEnums.contains(name)
+                || !localClasses.add(name)) {
             out.add(Diagnostic.of("E0303", "'" + name + "' is already defined", file.path(), decl.nameSpan()));
             return false;
         }
         return true;
+    }
+
+    /** Declares an enum of this file. Returns false, with a diagnostic, when the name is taken. */
+    boolean addEnum(Ast.EnumDecl decl) {
+        String name = decl.name();
+        if (Builtins.CORE_TYPES.contains(name) || imports.containsKey(name) || localClasses.contains(name)
+                || !localEnums.add(name)) {
+            out.add(Diagnostic.of("E0303", "'" + name + "' is already defined", file.path(), decl.nameSpan()));
+            return false;
+        }
+        return true;
+    }
+
+    boolean isLocalEnum(String name) {
+        return localEnums.contains(name);
     }
 
     String qualify(String className) {
@@ -81,6 +98,7 @@ final class FileScope {
         String name = ref.name();
         int arity = name.equals("List") || name.equals("Handler") ? 1 : 0;
         boolean known = Builtins.CORE_TYPES.contains(name) || localClasses.contains(name)
+                || localEnums.contains(name)
                 || Builtins.moduleOf(name) != null;
         if (known && ref.args().size() != arity) {
             out.add(Diagnostic.of("E0408", "'" + name + "' takes " + arity + " type argument"
@@ -122,6 +140,9 @@ final class FileScope {
     Type resolveNamed(String name, Span span) {
         if (localClasses.contains(name)) {
             return new Type.ClassType(qualify(name));
+        }
+        if (localEnums.contains(name)) {
+            return new Type.EnumType(qualify(name));
         }
         String builtinModule = Builtins.moduleOf(name);
         if (builtinModule != null) {

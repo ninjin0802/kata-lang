@@ -17,6 +17,10 @@ public final class Flow {
         if (stmt instanceof Ast.If branch) {
             return branch.orElse() != null && terminates(branch.then()) && terminates(branch.orElse());
         }
+        if (stmt instanceof Ast.Match match) {
+            // A match is exhaustive, so it ends the method when every arm does.
+            return !match.arms().isEmpty() && match.arms().stream().allMatch(arm -> terminates(arm.body()));
+        }
         return false;
     }
 }

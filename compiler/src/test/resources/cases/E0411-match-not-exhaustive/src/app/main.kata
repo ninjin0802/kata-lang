@@ -1,0 +1,36 @@
+module app.main;
+
+import kata.ui.Screen;
+import kata.ui.Text;
+import kata.ui.Ui;
+
+enum Light {
+  Red,
+  Yellow,
+  Green,
+}
+
+class Main implements Screen {
+  var light: Light = Light.Red;
+
+  fn view(self) -> Ui {
+    return Text { text: self.label() };
+  }
+
+  fn label(self) -> String {
+    match (self.light) {
+      Light.Red => {
+        return "stop";
+      }
+      Light.Green => {
+        return "go";
+      }
+    }
+  }
+}
+
+app {
+  id: "dev.kata.test",
+  name: "Test",
+  root: Main {},
+}

@@ -26,6 +26,7 @@
   <tr><td><code>Handler&lt;T&gt;</code></td><td><code>T</code> の値を1つ受け取って <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td>クラス</td><td>利用者定義のクラスと、<a href="05-ui.html#components">組み込みの UI 部品</a>。</td></tr>
+  <tr><td>enum</td><td>利用者定義の、決まった選択肢のどれか1つを表す型（<a href="#enums">enum と match</a>）。</td></tr>
   <tr><td>インターフェース</td><td>M1 では組み込みの <code>Ui</code>、<code>Screen</code>、<code>Items</code> だけ。</td></tr>
 </table>
 </div>
@@ -87,6 +88,43 @@ Counter {}</code></pre>
   <li>最初の引数は必ず <code>self</code>。クラスに属さない関数と、<code>self</code> を取らない関数は M1 にない。</li>
   <li>戻り値の型は必ず書く。</li>
   <li>再帰呼び出しができる。</li>
+</ul>
+
+<h2 id="enums">enum と match</h2>
+<pre><code>enum Shape {
+  Dot,
+  Circle { radius: Int },
+  Box { width: Int, height: Int },
+}
+
+fn area(self, shape: Shape) -&gt; Int {
+  match (shape) {
+    Shape.Dot =&gt; {
+      return 0;
+    }
+    Shape.Circle { radius } =&gt; {
+      return radius * radius * 3;
+    }
+    Shape.Box { width, height } =&gt; {
+      return width * height;
+    }
+  }
+}</code></pre>
+<h3 id="enum-decl">enum</h3>
+<ul>
+  <li><code>enum</code> は、名前の付いた選択肢（バリアント）を1つ以上持つ。バリアントは、値を運ぶフィールドを持てる。</li>
+  <li>バリアントの名前は enum の中で、フィールドの名前はバリアントの中で、それぞれ重複できない（<code>E0303</code>）。フィールドの型に、その enum 自身を書いてもよい。</li>
+  <li>値は <code>Shape.Dot</code>、<code>Shape.Circle { radius: 2 }</code> の形で作る。フィールドは、宣言された順番で、名前付きで、すべて渡す（<code>E0503</code>）。存在しないバリアントは <code>E0501</code>、enum でない名前に <code>.Variant</code> を付けた場合は <code>E0302</code>。</li>
+  <li>enum の値は書き換えられない。代入できるのは、同じ enum 型の場所だけ。</li>
+  <li>enum の値は <code>==</code> で比べられない。どのバリアントかは <code>match</code> で調べる。</li>
+</ul>
+<h3 id="match">match</h3>
+<ul>
+  <li><code>match (式) { ... }</code> は文であり、式の値のバリアントに対応する枝を1つだけ実行する。式の型は enum でなければならない（<code>E0401</code>）。</li>
+  <li><strong>すべてのバリアントに、ちょうど1つずつ枝を書く。</strong>足りないバリアントがあれば <code>E0411</code>（<code>expected</code> に足りない名前が入る）、同じバリアントの枝が2つあれば <code>E0303</code>。「その他」をまとめる書き方はない。enum にバリアントを足すと、対応していない <code>match</code> がすべてコンパイルエラーになる。</li>
+  <li>枝の先頭は <code>Enum.Variant</code>。バリアントがフィールドを持つ場合は、<code>{ }</code> の中に、そのフィールドの名前を宣言された順番ですべて書く（<code>E0503</code>、正しい書き方を修正案として返す）。書いた名前は、その枝の中で使える書き換え不可のローカル変数になる。</li>
+  <li>枝の変数の名前が、すでにある引数やローカル変数と重なる場合は <code>E0303</code>。</li>
+  <li>すべての枝が <code>return</code> で終わる <code>match</code> は、<a href="#return">経路を終わらせる</a>。その後ろに文は書けない（<code>E0409</code>）。</li>
 </ul>
 
 <h2 id="self">self</h2>
@@ -224,7 +262,7 @@ while (i &lt; 3) {
   <li>戻り値の型が <code>Unit</code> 以外のメソッドは、すべての経路が <code>return 式;</code> で終わらなければならない（<code>E0404</code>）。</li>
   <li>戻り値の型が <code>Unit</code> のメソッドでは、<code>return;</code> で途中から抜けられる。末尾では書かなくてよい。値を付けることはできない（<code>E0405</code>）。</li>
   <li><code>Unit</code> 以外のメソッドで値のない <code>return;</code> は書けない（<code>E0405</code>）。</li>
-  <li>経路が終わったと見なすのは、ブロックの最後の文が <code>return</code> である場合と、最後の文が <code>else</code> を持つ <code>if</code> で、すべての枝が終わっている場合。<code>while</code> と <code>for</code> は、中身にかかわらず経路を終わらせない。</li>
+  <li>経路が終わったと見なすのは、ブロックの最後の文が <code>return</code> である場合と、最後の文が <code>else</code> を持つ <code>if</code> で、すべての枝が終わっている場合、および最後の文が <code>match</code> で、すべての枝が終わっている場合。<code>while</code> と <code>for</code> は、中身にかかわらず経路を終わらせない。</li>
   <li><code>return</code> の後ろに文を書くことはできない（<code>E0409</code>）。</li>
 </ul>
 

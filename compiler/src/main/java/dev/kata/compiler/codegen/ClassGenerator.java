@@ -26,11 +26,66 @@ public final class ClassGenerator {
                 ClassInfo info = program.classOf(decl);
                 classes.put(Names.internal(info.qualifiedName()), generateClass(program, decl, info, sourceFile));
             }
+            for (Ast.EnumDecl decl : file.enums()) {
+                generateEnum(classes, program.enumOf(decl), sourceFile);
+            }
             if (file.app() != null && program.rootExpr() != null) {
                 classes.put(Names.MAIN_ACTIVITY, AppGenerator.generate(program, sourceFile));
             }
         }
         return classes;
+    }
+
+    /** An enum is an abstract class; each variant is a final subclass holding its fields (spec 06 #enum-mapping). */
+    private static void generateEnum(Map<String, byte[]> classes, dev.kata.compiler.check.ClassTable.EnumInfo info,
+            String sourceFile) {
+        String base = Names.internal(info.qualifiedName());
+        ClassWriter writer = newWriter();
+        writer.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_SUPER, base, null,
+                Names.OBJECT, null);
+        writer.visitSource(sourceFile, null);
+        MethodVisitor init = writer.visitMethod(Opcodes.ACC_PROTECTED, "<init>", "()V", null, null);
+        init.visitCode();
+        init.visitVarInsn(Opcodes.ALOAD, 0);
+        init.visitMethodInsn(Opcodes.INVOKESPECIAL, Names.OBJECT, "<init>", "()V", false);
+        init.visitInsn(Opcodes.RETURN);
+        init.visitMaxs(0, 0);
+        init.visitEnd();
+        writer.visitEnd();
+        classes.put(base, writer.toByteArray());
+
+        for (dev.kata.compiler.check.ClassTable.VariantInfo variant : info.variants()) {
+            String name = Names.variant(info.qualifiedName(), variant.name());
+            ClassWriter variantWriter = newWriter();
+            variantWriter.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SUPER, name, null,
+                    base, null);
+            variantWriter.visitSource(sourceFile, null);
+            StringBuilder descriptor = new StringBuilder("(");
+            for (FieldInfo field : variant.fields()) {
+                variantWriter.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, field.name(),
+                        Names.descriptor(field.type()), null, null).visitEnd();
+                descriptor.append(Names.descriptor(field.type()));
+            }
+            MethodVisitor constructor = variantWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
+                    descriptor.append(")V").toString(), null, null);
+            constructor.visitCode();
+            constructor.visitVarInsn(Opcodes.ALOAD, 0);
+            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, base, "<init>", "()V", false);
+            int slot = 1;
+            for (FieldInfo field : variant.fields()) {
+                Type type = field.type();
+                constructor.visitVarInsn(Opcodes.ALOAD, 0);
+                constructor.visitVarInsn(type.equals(Type.INT) ? Opcodes.LLOAD : type.equals(Type.FLOAT) ? Opcodes.DLOAD
+                        : type.equals(Type.BOOL) ? Opcodes.ILOAD : Opcodes.ALOAD, slot);
+                constructor.visitFieldInsn(Opcodes.PUTFIELD, name, field.name(), Names.descriptor(type));
+                slot += type.equals(Type.INT) || type.equals(Type.FLOAT) ? 2 : 1;
+            }
+            constructor.visitInsn(Opcodes.RETURN);
+            constructor.visitMaxs(0, 0);
+            constructor.visitEnd();
+            variantWriter.visitEnd();
+            classes.put(name, variantWriter.toByteArray());
+        }
     }
 
     /** Frames are computed by ASM; kata never merges two different reference types, so Object is enough. */

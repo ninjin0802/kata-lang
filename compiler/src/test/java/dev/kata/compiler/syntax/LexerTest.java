@@ -45,6 +45,13 @@ class LexerTest {
     }
 
     @Test
+    void lexesEnumAndMatchTokens() {
+        assertEquals(List.of(Kind.ENUM, Kind.MATCH, Kind.FAT_ARROW, Kind.EQ, Kind.ASSIGN, Kind.GE, Kind.EOF),
+                kinds("enum match => == = >="));
+        assertTrue(diagnostics.isEmpty());
+    }
+
+    @Test
     void lexesLoopKeywords() {
         assertEquals(List.of(Kind.WHILE, Kind.FOR, Kind.IN, Kind.EOF), kinds("while for in"));
     }
@@ -125,7 +132,7 @@ class LexerTest {
 
     @Test
     void wordsReservedForLaterAreE0105() {
-        for (String word : List.of("match", "interface", "enum", "break", "continue")) {
+        for (String word : List.of("interface", "break", "continue")) {
             diagnostics.clear();
             lex(word);
             assertSingle("E0105", new Span(1, 1, 1, 1 + word.length()));

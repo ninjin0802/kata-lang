@@ -4,7 +4,7 @@
   "diagnostics": [
     {
       "code": "E0105",
-      "message": "'match' is reserved for a later version of kata",
+      "message": "'break' is reserved for a later version of kata",
       "file": "src/app/main.kata",
       "line": 5,
       "column": 5,

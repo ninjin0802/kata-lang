@@ -41,6 +41,11 @@ final class Names {
         return qualifiedName.replace('.', '/');
     }
 
+    /** The class of one variant: nested under its enum's class, e.g. app/main/Shape$Circle. */
+    static String variant(String enumQualifiedName, String variantName) {
+        return internal(enumQualifiedName) + "$" + variantName;
+    }
+
     /** The internal name of a reference type. */
     static String internal(Type type) {
         if (type.equals(Type.STRING)) {
@@ -60,6 +65,9 @@ final class Names {
         }
         if (type instanceof Type.InterfaceType interfaceType) {
             return internal(interfaceType.qualifiedName());
+        }
+        if (type instanceof Type.EnumType enumType) {
+            return internal(enumType.qualifiedName());
         }
         throw new IllegalStateException("not a reference type: " + type.display());
     }

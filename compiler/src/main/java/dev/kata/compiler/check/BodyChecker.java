@@ -34,6 +34,8 @@ final class BodyChecker {
     private Type returnType;
     private SelfMode selfMode;
     private final Deque<Map<String, Local>> locals = new ArrayDeque<>();
+    private final java.util.Set<Ast.Stmt> brokenMatches =
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
     private final java.util.Set<String> assets;
 
@@ -100,7 +102,8 @@ final class BodyChecker {
                 reported = true;
             }
             stmt(stmt);
-            ended = ended || Flow.terminates(stmt);
+            // A match that already has a diagnostic is not trusted to end the path: no follow-on E0409.
+            ended = ended || (Flow.terminates(stmt) && !brokenMatches.contains(stmt));
         }
         locals.pop();
     }
@@ -129,6 +132,8 @@ final class BodyChecker {
             block(loop.body());
         } else if (stmt instanceof Ast.For loop) {
             forStmt(loop);
+        } else if (stmt instanceof Ast.Match match) {
+            matchStmt(match);
         } else if (stmt instanceof Ast.Block nested) {
             block(nested);
         } else if (stmt instanceof Ast.ExprStmt exprStmt) {
@@ -302,6 +307,9 @@ final class BodyChecker {
         if (expr instanceof Ast.ListLit list) {
             return list(list, expected);
         }
+        if (expr instanceof Ast.EnumConstruct construct) {
+            return enumConstruct(construct);
+        }
         if (expr instanceof Ast.Unary unary) {
             return unary(unary);
         }
@@ -450,6 +458,110 @@ final class BodyChecker {
             checkAsset(construct);
         }
         return type;
+    }
+
+    private Type enumConstruct(Ast.EnumConstruct construct) {
+        ClassTable.EnumInfo info = scope.isLocalEnum(construct.enumName())
+                ? table.lookupEnum(scope.qualify(construct.enumName())) : null;
+        if (info == null) {
+            out.add(Diagnostic.of("E0302", "'" + construct.enumName() + "' is not an enum", path,
+                    construct.enumSpan()));
+            inferAll(construct.inits());
+            return Type.UNKNOWN;
+        }
+        Type type = new Type.EnumType(info.qualifiedName());
+        ClassTable.VariantInfo variant = info.variant(construct.variant());
+        if (variant == null) {
+            out.add(Diagnostic.of("E0501", "'" + construct.enumName() + "' has no variant '" + construct.variant()
+                    + "'", path, construct.variantSpan()).withExpected(variantNames(info), construct.variant()));
+            inferAll(construct.inits());
+            return type;
+        }
+        program.variants.put(construct, new CheckedProgram.VariantRef(info.qualifiedName(), variant));
+        List<String> names = variant.fields().stream().map(FieldInfo::name).toList();
+        List<Type> types = variant.fields().stream().map(FieldInfo::type).toList();
+        String label = "'" + construct.enumName() + "." + construct.variant() + "' must be constructed with exactly: ";
+        if (construct.initsSpan() == null) {
+            if (!names.isEmpty()) {
+                out.add(Diagnostic.of("E0503", label + String.join(", ", names), path, construct.variantSpan())
+                        .withExpected(String.join(", ", names), ""));
+            }
+        } else {
+            matchNamed(construct.inits(), names, types, construct.initsSpan(), "E0503", label,
+                    names.isEmpty() ? "{" : "{ ", names.isEmpty() ? "}" : " }");
+        }
+        return type;
+    }
+
+    private static String variantNames(ClassTable.EnumInfo info) {
+        return String.join(", ", info.variants().stream().map(ClassTable.VariantInfo::name).toList());
+    }
+
+    /** Spec 04 #match: every variant exactly once, each arm naming all of its variant's fields. */
+    private void matchStmt(Ast.Match match) {
+        Type subject = infer(match.subject(), null);
+        if (!(subject instanceof Type.EnumType enumType)) {
+            if (!(subject instanceof Type.Unknown)) {
+                out.add(Diagnostic.of("E0401", "match needs a value of an enum type", path, match.subject().span())
+                        .withExpected("an enum", subject.display()));
+            }
+            brokenMatches.add(match);
+            return;
+        }
+        ClassTable.EnumInfo info = table.lookupEnum(enumType.qualifiedName());
+        java.util.Set<String> handled = new HashSet<>();
+        boolean armErrors = false;
+        for (Ast.Arm arm : match.arms()) {
+            if (!scope.isLocalEnum(arm.enumName()) || !scope.qualify(arm.enumName()).equals(info.qualifiedName())) {
+                out.add(Diagnostic.of("E0401", "this match is over '" + subject.display() + "'", path, arm.enumSpan())
+                        .withExpected(subject.display(), arm.enumName()));
+                armErrors = true;
+                continue;
+            }
+            ClassTable.VariantInfo variant = info.variant(arm.variant());
+            if (variant == null) {
+                out.add(Diagnostic.of("E0501", "'" + arm.enumName() + "' has no variant '" + arm.variant() + "'",
+                        path, arm.variantSpan()).withExpected(variantNames(info), arm.variant()));
+                armErrors = true;
+                continue;
+            }
+            if (!handled.add(variant.name())) {
+                out.add(Diagnostic.of("E0303", "variant '" + variant.name() + "' is already handled by an earlier "
+                        + "arm", path, arm.patternSpan()));
+                armErrors = true;
+            }
+            List<String> names = variant.fields().stream().map(FieldInfo::name).toList();
+            List<String> given = arm.bindings().stream().map(Ast.Name::name).toList();
+            if (!given.equals(names)) {
+                String pattern = arm.enumName() + "." + arm.variant()
+                        + (names.isEmpty() ? "" : " { " + String.join(", ", names) + " }");
+                out.add(Diagnostic.of("E0503", "an arm for '" + arm.variant() + "' must name exactly its fields: "
+                        + (names.isEmpty() ? "none" : String.join(", ", names)), path, arm.patternSpan())
+                        .withExpected(String.join(", ", names), String.join(", ", given))
+                        .withFix(arm.patternSpan(), pattern));
+                armErrors = true;
+                continue;
+            }
+            program.variants.put(arm, new CheckedProgram.VariantRef(info.qualifiedName(), variant));
+            locals.push(new HashMap<>());
+            for (int i = 0; i < arm.bindings().size(); i++) {
+                Ast.Name binding = arm.bindings().get(i);
+                declare(binding.name(), binding.span(), new Local(variant.fields().get(i).type(), false));
+            }
+            block(arm.body());
+            locals.pop();
+        }
+        if (armErrors) {
+            brokenMatches.add(match);
+        } else {
+            List<String> missing = info.variants().stream().map(ClassTable.VariantInfo::name)
+                    .filter(name -> !handled.contains(name)).toList();
+            if (!missing.isEmpty()) {
+                out.add(Diagnostic.of("E0411", "match does not handle: " + String.join(", ", missing), path,
+                        match.keywordSpan()).withExpected(String.join(", ", missing), null));
+                brokenMatches.add(match);
+            }
+        }
     }
 
     /** A literal asset name must exist in assets/; a computed one can only be checked when the app runs. */

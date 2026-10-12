@@ -322,6 +322,75 @@ class BodyCheckerTest {
         check(wrapBody("for (x: Int in 5) {\n}")).single("E0401");
     }
 
+    // ---- enums
+
+    private static final String SHAPES = "enum Shape {\n  Dot,\n  Circle { radius: Int },\n  Box { width: Int, height: Int },\n}\n";
+
+    private static String shapeMethod(String body) {
+        return wrap(SHAPES + "class A {\n  fn m(self, shape: Shape) -> Int {\n" + body + "\n  }\n}\n");
+    }
+
+    @Test
+    void exhaustiveMatchIsCleanAndCountsAsReturning() {
+        check(shapeMethod("match (shape) {\nShape.Dot => {\nreturn 0;\n}\nShape.Circle { radius } => {\nreturn radius;\n}\n"
+                + "Shape.Box { width, height } => {\nreturn width * height;\n}\n}")).assertClean();
+    }
+
+    @Test
+    void missingVariantIsE0411() {
+        Diagnostic d = check(shapeMethod("match (shape) {\nShape.Dot => {\nreturn 0;\n}\n}\nreturn 1;")).single("E0411");
+        assertEquals("Circle, Box", d.expected());
+        assertEquals(new Span(12, 1, 12, 6), d.span());
+    }
+
+    @Test
+    void matchArmMistakesAreReported() {
+        String arms = "Shape.Circle { radius } => {\nreturn 1;\n}\nShape.Box { width, height } => {\nreturn 2;\n}\n}\nreturn 3;";
+        check(shapeMethod("match (shape) {\nShape.Dot => {\nreturn 0;\n}\nShape.Dot => {\nreturn 0;\n}\n" + arms)).single("E0303");
+        check(shapeMethod("match (shape) {\nShape.Nope => {\nreturn 0;\n}\nShape.Dot => {\nreturn 0;\n}\n" + arms)).single("E0501");
+        check(shapeMethod("match (shape) {\nShape.Dot { radius } => {\nreturn 0;\n}\n" + arms)).single("E0503");
+        assertEquals(java.util.List.of("E0503", "E0503"), check(shapeMethod("match (shape) {\nShape.Dot => {\nreturn 0;\n}\n"
+                + "Shape.Circle => {\nreturn 1;\n}\nShape.Box { height, width } => {\nreturn 2;\n}\n}\nreturn 3;")).codes());
+    }
+
+    @Test
+    void matchBindingsAreChecked() {
+        String rest = "Shape.Dot => {\nreturn 0;\n}\nShape.Box { width, height } => {\nreturn 2;\n}\n}\nreturn 3;";
+        // These two matches are complete, so nothing may follow them.
+        String exhaustive = rest.replace("\nreturn 3;", "");
+        check(shapeMethod("match (shape) {\nShape.Circle { size } => {\nreturn 1;\n}\n" + rest)).single("E0503");
+        check(shapeMethod("match (shape) {\nShape.Circle { shape } => {\nreturn 1;\n}\n" + rest)).single("E0503");
+        check(shapeMethod("let radius: Int = 1;\nmatch (shape) {\nShape.Circle { radius } => {\nreturn 1;\n}\n" + exhaustive)).single("E0303");
+        check(shapeMethod("match (shape) {\nShape.Circle { radius } => {\nradius = 2;\nreturn 1;\n}\n" + exhaustive)).single("E0504");
+    }
+
+    @Test
+    void matchNeedsAnEnumOfTheSameType() {
+        check(shapeMethod("match (1) {\nShape.Dot => {\nreturn 0;\n}\n}\nreturn 1;")).single("E0401");
+        check(wrap(SHAPES + "enum Other {\n  One,\n}\nclass A {\n  fn m(self, shape: Shape) -> Int {\nmatch (shape) {\n"
+                + "Other.One => {\nreturn 0;\n}\n}\nreturn 1;\n  }\n}\n")).single("E0401");
+    }
+
+    @Test
+    void enumConstructionIsChecked() {
+        check(shapeMethod("let a: Shape = Shape.Dot;\nlet b: Shape = Shape.Circle { radius: 2 };\nlet c: List<Shape> = [a, b];\nreturn 0;")).assertClean();
+        check(shapeMethod("let a: Shape = Shape.Nope;\nreturn 0;")).single("E0501");
+        check(shapeMethod("let a: Shape = Shape.Circle;\nreturn 0;")).single("E0503");
+        check(shapeMethod("let a: Shape = Shape.Circle { radius: \"x\" };\nreturn 0;")).single("E0401");
+        check(shapeMethod("let a: Shape = Shape.Dot { radius: 1 };\nreturn 0;")).single("E0503");
+        check(shapeMethod("let a: Int = Shape.Dot;\nreturn 0;")).single("E0401");
+        check(shapeMethod("let a: Shape = A.Dot;\nreturn 0;")).single("E0302");
+    }
+
+    @Test
+    void enumDeclarationsAreChecked() {
+        check(wrap("enum E {\n  A,\n  A,\n}\n")).single("E0303");
+        check(wrap("enum E {\n  A { x: Int, x: Int },\n}\n")).single("E0303");
+        check(wrap("enum E {\n  A { x: Nope },\n}\n")).single("E0302");
+        check(wrap("enum E {\n  A,\n}\nclass E {\n}\n")).single("E0303");
+        check(wrap("enum Tree {\n  Leaf,\n  Node { left: Tree, right: Tree },\n}\n")).assertClean();
+    }
+
     // ---- assets
 
     @Test

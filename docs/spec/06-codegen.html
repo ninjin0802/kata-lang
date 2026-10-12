@@ -41,6 +41,14 @@
   <li>各クラスに <code>SourceFile</code> を、各メソッドに行番号の表を出力する。スタックトレースに kata のファイル名と行番号が出るようにするため。</li>
 </ul>
 
+<h2 id="enum-mapping">enum</h2>
+<ul>
+  <li>enum は <code>public abstract</code> の JVM クラスになる。モジュール <code>a.b</code> の <code>enum E</code> は <code>a.b.E</code>。</li>
+  <li>バリアントは、そのクラスを継承した <code>public final</code> のクラスになる。名前は <code>a.b.E$Variant</code>。フィールドは <code>public final</code> で、宣言順に受け取るコンストラクタを1つ持つ。</li>
+  <li>値を作る式は、バリアントのクラスの <code>new</code>。</li>
+  <li><code>match</code> は、式を1回評価してローカル変数に置き、枝の順に <code>instanceof</code> で調べる。当たった枝では、<code>checkcast</code> してフィールドを読み、枝の変数に入れる。どの枝にも当たらない場合の <code>IllegalStateException</code> を末尾に置くが、検査を通ったプログラムでは実行されない。</li>
+</ul>
+
 <h2 id="expr-mapping">式と文</h2>
 <div class="table-wrap">
 <table>
