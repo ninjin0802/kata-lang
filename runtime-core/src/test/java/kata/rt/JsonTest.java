@@ -79,6 +79,19 @@ class JsonTest {
     }
 
     @Test
+    void aDocumentWithTooManyValuesIsRefusedBeforeItFillsMemory() {
+        // Each parsed value costs far more memory than its text; a few megabytes of "1," would
+        // otherwise become hundreds of megabytes of objects.
+        String many = "[" + "1,".repeat(Json.MAX_VALUES) + "1]";
+        assertFalse(Json.parse(many).isValid());
+        String nested = "{\"a\":" + "[".repeat(50) + "1,".repeat(Json.MAX_VALUES) + "1" + "]".repeat(50) + "}";
+        assertFalse(Json.parse(nested).isValid());
+        String fine = "[" + "1,".repeat(10_000) + "1]";
+        assertEquals(10_001L, Json.parse(fine).size());
+        assertEquals(200_000, Json.MAX_VALUES);
+    }
+
+    @Test
     void buildsAndPrints() {
         Json object = new Json().withString("name", "kata").withInt("stars", 3).withFloat("ratio", 0.25)
                 .withBool("ok", true).withNull("none")

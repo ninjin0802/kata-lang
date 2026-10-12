@@ -11,6 +11,11 @@ import java.util.Map;
  */
 public final class Json {
     private static final int MAX_DEPTH = 100;
+    /**
+     * The most values (objects, lists, strings, numbers, ...) one document may hold. A parsed value takes
+     * tens of bytes however short its text is, so the limit on the text alone does not bound the memory.
+     */
+    static final int MAX_VALUES = 200_000;
 
     /** A Map (object), List (list), String, Long, Double, Boolean, or null. */
     private final Object value;
@@ -273,6 +278,7 @@ public final class Json {
     private static final class Parser {
         private final String text;
         int pos;
+        private int values;
 
         Parser(String text) {
             this.text = text;
@@ -303,7 +309,7 @@ public final class Json {
         }
 
         Json value(int depth) {
-            if (depth > MAX_DEPTH) {
+            if (depth > MAX_DEPTH || ++values > MAX_VALUES) {
                 throw bad();
             }
             char c = peek();

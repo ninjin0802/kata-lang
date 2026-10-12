@@ -790,7 +790,7 @@ fn payload(self) -&gt; String {
 <ul>
   <li>読み取りは失敗しない。項目がない、型が違う、JSON として読めない、のどの場合もパニックにならず、null の値か <code>fallback</code> が返る。外から届いたデータでアプリが落ちないようにするため。</li>
   <li><code>get</code> と <code>at</code> は続けて書ける（<code>doc.get(key: "a").at(index: 0).get(key: "b")</code>）。途中がなくても null の値が返るだけである。</li>
-  <li>100段を超えて入れ子になった JSON は読めない（<code>isValid()</code> が <code>false</code>）。</li>
+  <li>100段を超えて入れ子になった JSON と、値（オブジェクト、リスト、文字列、数など）の合計が20万個を超える JSON は読めない（<code>isValid()</code> が <code>false</code>）。読み取った値は元の文字列よりずっと多くのメモリを使うので、届いたデータでアプリのメモリを使い切らないようにするため。</li>
   <li>リストやオブジェクトを <code>Store</code> に保存するときは、<code>toText()</code> で文字列にして <code>setString</code> で保存し、<code>getString</code> と <code>parseJson()</code> で戻す。</li>
 </ul>
 
