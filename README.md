@@ -45,7 +45,7 @@ Experimental. It can build small single-screen apps (see `examples/`): a counter
 
 ## What it is
 
-- **Explicit over short.** Every declaration is typed, every argument is named, `self.` is mandatory, and there is one way to write each thing: no overloading, default arguments, implicit conversions, shadowing, inheritance, null or exceptions.
+- **Explicit over short.** Every declaration is typed, every argument is named, `self.` is mandatory, and there is one way to write each thing: no overloading, default arguments, implicit conversions, shadowing, inheritance, null or exceptions. Enums with an exhaustive `match` make "forgot a case" a compile error.
 - **Local reasoning.** A field changes only inside its own class, and a file's imports list every outside name it uses.
 - **Diagnostics for machines.** `kata check` prints JSON with stable error codes, exact ranges, and a mechanical `fix` where one exists.
 - **No Kotlin, no Gradle in your app.** The compiler emits JVM bytecode directly and assembles the APK with the Android SDK build-tools. A counter app is a 25 KB APK.

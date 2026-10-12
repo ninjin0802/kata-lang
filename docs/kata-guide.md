@@ -139,6 +139,35 @@ let p: Point = Point { x: 1 };
 - Field and method names share one namespace per class.
 - Locals: `let` (fixed) or `var` (reassignable); parameters and `for` variables are fixed.
 
+## Enums and match
+
+```
+enum Shape {
+  Dot,
+  Circle { radius: Int },
+  Box { width: Int, height: Int },
+}
+
+let s: Shape = Shape.Circle { radius: 2 };   // fields named, in order, all of them; Shape.Dot has none
+
+match (s) {
+  Shape.Dot => {
+    return 0;
+  }
+  Shape.Circle { radius } => {
+    return radius * radius * 3;
+  }
+  Shape.Box { width, height } => {
+    return width * height;
+  }
+}
+```
+
+- Use an enum instead of strings or numbers for "one of these states"; the compiler then checks every use.
+- `match` is a statement and must have exactly one arm per variant — there is no "else" arm. A missing variant is a compile error that lists what is missing.
+- An arm for a variant with fields lists all of its field names, in declaration order (`Shape.Box { width, height }`); they become read-only locals in that arm and must not clash with existing locals.
+- Enum values cannot be compared with `==`; use `match`. A `match` whose arms all `return` ends the method, so nothing may follow it.
+
 ## Control flow
 
 ```
