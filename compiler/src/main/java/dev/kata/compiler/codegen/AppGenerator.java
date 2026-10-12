@@ -30,7 +30,8 @@ final class AppGenerator {
         Label label = new Label();
         create.visitLabel(label);
         create.visitLineNumber(program.rootExpr().span().line(), label);
-        new MethodGenerator(program, create, 1).expr(program.rootExpr());
+        new MethodGenerator(program, create, 1, Names.MAIN_ACTIVITY, new java.util.ArrayList<>())
+                .expr(program.rootExpr());
         create.visitInsn(Opcodes.ARETURN);
         create.visitMaxs(0, 0);
         create.visitEnd();

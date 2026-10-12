@@ -101,6 +101,9 @@ public final class Ast {
     public record EnumConstruct(String enumName, Span enumSpan, String variant, Span variantSpan,
             List<Named> inits, Span initsSpan, Span span) implements Expr {}
 
+    /** A function literal: `fn(x: Int) -> Bool { ... }`. */
+    public record Lambda(List<Param> params, TypeRef returnType, Block body, Span span) implements Expr {}
+
     public record ListLit(List<Expr> items, Span span) implements Expr {}
 
     public record Unary(UnaryOp op, Expr operand, Span span) implements Expr {}

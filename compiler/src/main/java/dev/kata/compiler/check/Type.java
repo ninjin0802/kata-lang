@@ -44,6 +44,14 @@ public sealed interface Type {
         }
     }
 
+    /** A function of one argument returning a value. */
+    record FnType(Type arg, Type result) implements Type {
+        @Override
+        public String display() {
+            return "Fn<" + arg.display() + ", " + result.display() + ">";
+        }
+    }
+
     record ClassType(String qualifiedName) implements Type {
         @Override
         public String display() {

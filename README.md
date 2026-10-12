@@ -37,7 +37,7 @@ app {
 }
 ```
 
-The syntax looks like Rust and Swift (`fn`, `let`/`var`, `Point { x: 1 }`, named arguments), the philosophy is closer to Go (few features, one way to do things), and it runs where Kotlin runs. It is not Kotlin-like: there is no type inference, no lambdas, and no implicit `this`.
+The syntax looks like Rust and Swift (`fn`, `let`/`var`, `Point { x: 1 }`, named arguments), the philosophy is closer to Go (few features, one way to do things), and it runs where Kotlin runs. It is not Kotlin-like: there is no type inference and no implicit `this`, and function literals spell out their types and may only capture names that cannot change.
 
 ## Status
 

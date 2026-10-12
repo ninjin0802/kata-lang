@@ -1,0 +1,26 @@
+module app.main;
+
+import kata.ui.Button;
+import kata.ui.Screen;
+import kata.ui.Ui;
+
+class Main implements Screen {
+  var count: Int = 0;
+
+  fn view(self) -> Ui {
+    var step: Int = 1;
+    step = step + 1;
+    return Button {
+      label: "Add",
+      onTap: fn() -> Unit {
+        self.count = self.count + step;
+      },
+    };
+  }
+}
+
+app {
+  id: "dev.kata.test",
+  name: "Test",
+  root: Main {},
+}

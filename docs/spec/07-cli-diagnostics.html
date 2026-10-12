@@ -143,6 +143,7 @@
   <tr><td id="E0407"><code>E0407</code></td><td><code>Unit</code> を戻り値の型以外に使っている。</td><td>なし</td></tr>
   <tr><td id="E0408"><code>E0408</code></td><td>型引数の数が合わない。</td><td>なし</td></tr>
   <tr><td id="E0411"><code>E0411</code></td><td><code>match</code> に、枝のないバリアントがある。<code>expected</code> に足りないバリアントの名前を入れる。</td><td>なし</td></tr>
+  <tr><td id="E0412"><code>E0412</code></td><td>関数リテラルの中で、外側の <code>var</code> の変数を使っている。</td><td>なし</td></tr>
   <tr><td id="E0409"><code>E0409</code></td><td><code>return</code> の後ろに文がある。</td><td>なし</td></tr>
 </table>
 </div>
@@ -157,7 +158,7 @@
   <tr><td id="E0504"><code>E0504</code></td><td>書き換えられないもの（<code>let</code>、引数）への代入。</td><td>なし</td></tr>
   <tr><td id="E0505"><code>E0505</code></td><td><code>self</code> 以外のオブジェクトのフィールドへの代入。</td><td>なし</td></tr>
   <tr><td id="E0506"><code>E0506</code></td><td>インターフェースを満たしていない、または実装できないインターフェースを指定している。</td><td>なし</td></tr>
-  <tr><td id="E0507"><code>E0507</code></td><td>メソッド参照の対象が、<code>self</code> 以外の引数が0個か1個で <code>Unit</code> を返すメソッドではない。</td><td>なし</td></tr>
+  <tr><td id="E0507"><code>E0507</code></td><td>メソッド参照の対象や関数リテラルの形が、<code>Action</code>、<code>Handler</code>、<code>Fn</code> のどれにも当たらない（引数が2個以上、引数なしで値を返す、組み込みメソッドの参照）。</td><td>なし</td></tr>
   <tr><td id="E0508"><code>E0508</code></td><td>フィールドに引数リストを付けている。</td><td>なし</td></tr>
   <tr><td id="E0509"><code>E0509</code></td><td>フィールドの初期化の式で <code>self</code> を使っている。</td><td>なし</td></tr>
 </table>

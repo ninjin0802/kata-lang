@@ -28,16 +28,6 @@ import kata.ui.Screen;
 import kata.ui.Text;
 import kata.ui.Ui;
 
-// A button that carries a value: callbacks take no arguments, so each button gets an object.
-class Step {
-  let tally: Tally;
-  let amount: Int;
-
-  fn press(self) -> Unit {
-    self.tally.add(amount: self.amount);
-  }
-}
-
 class Tally implements Screen {
   var total: Int = 0;
   var history: List<Int> = [];
@@ -54,7 +44,12 @@ class Tally implements Screen {
 
   fn step(self, amount: Int) -> Ui {
     return Expand {
-      child: Button { label: amount.toString(), onTap: Step { tally: self, amount: amount }.press },
+      child: Button {
+        label: amount.toString(),
+        onTap: fn() -> Unit {
+          self.add(amount: amount);
+        },
+      },
     };
   }
 
@@ -83,7 +78,7 @@ app {
 - **`self.` is mandatory** for own fields and methods; the first parameter of every method is `self`. There are no free functions and no static methods.
 - **`;` ends** simple statements and field declarations. `if`, `while`, `for` need parentheses and braces; `if` is a statement, not an expression.
 - **No operator precedence.** Only one kind of binary operator per unparenthesized expression. `+ * && ||` may repeat (`a + b + c`); every other operator appears once. Write `(a + b) * c`, `(a < b) && (c < d)`, `(a - b) - c`.
-- **No null, no exceptions, no inheritance, no overloading, no default arguments, no shadowing, no lambdas/closures, no implicit conversions.**
+- **No null, no exceptions, no inheritance, no overloading, no default arguments, no shadowing, no implicit conversions.**
 - **File order is fixed**: `module`, then `import`s, then `class`es and `enum`s (in any order), then one `app` block. Inside a class: all fields, then all methods.
 - **Imports**: one name per line, only from `kata.ui` (components) and `kata.sys` (`Store`, `Clock`, `Json`); every such name used must be imported and every import must be used. `Int Float Bool String Unit Action Handler List` need no import.
 - **`return`**: non-`Unit` methods must end every path with `return expr;` (loops do not count as ending a path). In `Unit` methods use bare `return;` to exit early; nothing may follow a `return` in the same block.
@@ -100,8 +95,9 @@ app {
 | `Bool` | `true`, `false` |
 | `String` | Literals `"..."` with `\" \\ \n \t`; any Unicode text is allowed inside. No interpolation. |
 | `List<T>` | Immutable. Literals `[a, b]`, `[]` — only where the type is known from context (a typed variable, argument, field or return). |
-| `Action` | A reference to a method `fn m(self) -> Unit`, written `obj.m` (no parentheses). |
-| `Handler<T>` | A reference to a method `fn m(self, x: T) -> Unit`, written `obj.m`. |
+| `Action` | A function taking nothing, returning `Unit`. Call with `a.run()`. |
+| `Handler<T>` | A function taking a `T`, returning `Unit`. Call with `h.run(arg: x)`. |
+| `Fn<A, R>` | A function taking an `A`, returning an `R` (not `Unit`). Call with `f.call(arg: x)`. |
 | `Unit` | Return type only. |
 | classes | Reference semantics. |
 
@@ -117,9 +113,27 @@ Built-in methods (these are all of them):
 | `Int` | `toString() -> String`, `toFloat() -> Float` |
 | `Float` | `toString() -> String` — a decimal that reads back as exactly the same number, never an exponent, always with a point (`3.0`, `0.1`; `0.1 + 0.2` prints `0.30000000000000004`, so `round` first when showing results); `toInt() -> Int` (truncates); `round(decimals: Int) -> Float` |
 | `String` | `concat(other: String) -> String`, `length() -> Int`, `contains(part: String) -> Bool`, `startsWith(prefix: String) -> Bool`, `endsWith(suffix: String) -> Bool`, `indexOf(part: String) -> Int` (-1 if absent), `substring(start: Int, end: Int) -> String` (end exclusive; out of range crashes), `split(separator: String) -> List<String>`, `trim() -> String`, `toUpper() -> String`, `toLower() -> String`, `replace(part: String, with: String) -> String`, `toInt() -> Int` and `toFloat() -> Float` (text that is not a number crashes the app) |
-| `List<T>` | `size() -> Int`, `get(index: Int) -> T` (out of range crashes), `append(item: T) -> List<T>`, `removeAt(index: Int) -> List<T>`, `set(index: Int, item: T) -> List<T>` — lists never change; each returns a new list |
+| `List<T>` | `size() -> Int`, `get(index: Int) -> T` (out of range crashes), `append(item: T) -> List<T>`, `removeAt(index: Int) -> List<T>`, `set(index: Int, item: T) -> List<T>`, `filter(keep: Fn<T, Bool>) -> List<T>`, `map(transform: Fn<T, R>) -> List<R>`, `any(test: Fn<T, Bool>) -> Bool`, `all(test: ...) -> Bool`, `count(test: ...) -> Int`, `indexWhere(test: ...) -> Int` (-1 if none), `sortedBy(key: Fn<T, Int>) -> List<T>` (ascending, stable) — lists never change; each returns a new list |
 
 Positions and lengths in strings count Unicode characters (code points).
+
+## Functions as values
+
+Two ways to make an `Action`, `Handler<T>` or `Fn<A, R>`; the shape (0 or 1 parameter, `Unit` or a value) decides which:
+
+```
+onTap: self.reset                       // a method reference: obj.method without parentheses
+onTap: fn() -> Unit {                   // a function literal: types and return are explicit
+  self.press(label: label);
+}
+let big: List<Int> = xs.filter(keep: fn(x: Int) -> Bool {
+  return x > limit;
+});
+```
+
+- A literal may use `self` and outer names that cannot change (`let` locals, parameters, `for`/`match` variables). Using an outer `var` is a compile error — copy it to a `let` first.
+- `return` inside a literal returns from the literal. Parameter names must not clash with outer names.
+- No other shapes exist (no two-parameter functions, no zero-parameter function returning a value).
 
 ## Classes
 
@@ -278,8 +292,8 @@ return Stack { children: layers };
 
 ## Passing a value to a button
 
-Callbacks carry no arguments and there are no closures. Give each button a small object that holds the value, and pass its method (see `Step` in the example):
+Capture it in a function literal:
 
 ```
-Button { label: label, onTap: Key { owner: self, label: label }.press }
+Button { label: label, onTap: fn() -> Unit { self.press(label: label); } }
 ```

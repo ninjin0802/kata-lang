@@ -145,7 +145,8 @@ postfix     = primary { "." LowerIdent [ args ] } ;
 args        = "(" [ arg { "," arg } [ "," ] ] ")" ;
 arg         = LowerIdent ":" expr ;
 primary     = IntLit | FloatLit | StringLit | "true" | "false" | "self" | LowerIdent
-            | construct | enumValue | listLit | "(" expr ")" ;
+            | construct | enumValue | listLit | funcLit | "(" expr ")" ;
+funcLit     = "fn" "(" [ param { "," param } [ "," ] ] ")" "-&gt;" type block ;
 enumValue   = UpperIdent "." UpperIdent [ "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ] ;
 construct   = UpperIdent "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ;
 fieldInit   = LowerIdent ":" expr ;

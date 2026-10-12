@@ -527,6 +527,25 @@ public final class Parser {
                 return new Ast.Construct(token.text(), token.span(), inits,
                         Span.between(open.span(), prev().span()), Span.between(token.span(), prev().span()));
             }
+            case FN -> {
+                next();
+                expect(Kind.LPAREN);
+                List<Ast.Param> params = new ArrayList<>();
+                while (!at(Kind.RPAREN)) {
+                    Token name = expect(Kind.LOWER_IDENT);
+                    expect(Kind.COLON);
+                    Ast.TypeRef type = type();
+                    params.add(new Ast.Param(name.text(), name.span(), type, Span.between(name.span(), prev().span())));
+                    if (!accept(Kind.COMMA)) {
+                        break;
+                    }
+                }
+                expect(Kind.RPAREN);
+                expect(Kind.ARROW);
+                Ast.TypeRef returnType = type();
+                Ast.Block body = block();
+                return new Ast.Lambda(params, returnType, body, Span.between(token.span(), prev().span()));
+            }
             case LBRACKET -> {
                 next();
                 List<Ast.Expr> items = new ArrayList<>();

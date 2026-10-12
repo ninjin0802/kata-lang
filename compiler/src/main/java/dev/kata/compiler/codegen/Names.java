@@ -17,6 +17,7 @@ final class Names {
     static final String FLOATS = "kata/rt/Floats";
     static final String ACTION = "kata/rt/Action";
     static final String HANDLER = "kata/rt/Handler";
+    static final String FN = "kata/rt/Fn";
     static final String SCREEN = "kata/rt/Screen";
     static final String KATA_ACTIVITY = "kata/rt/KataActivity";
     static final String MAIN_ACTIVITY = "kata/gen/MainActivity";
@@ -59,6 +60,9 @@ final class Names {
         }
         if (type instanceof Type.HandlerType) {
             return HANDLER;
+        }
+        if (type instanceof Type.FnType) {
+            return FN;
         }
         if (type instanceof Type.ClassType classType) {
             return internal(classType.qualifiedName());

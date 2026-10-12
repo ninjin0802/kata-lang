@@ -22,7 +22,7 @@ public final class Builtins {
     public static final String ITEMS = UI_MODULE + ".Items";
 
     /** Type names usable without an import. */
-    public static final Set<String> CORE_TYPES = Set.of("Int", "Float", "Bool", "String", "Unit", "Action", "Handler", "List");
+    public static final Set<String> CORE_TYPES = Set.of("Int", "Float", "Bool", "String", "Unit", "Action", "Handler", "Fn", "List");
 
     private static final Type UI_TYPE = new Type.InterfaceType(UI);
     private static final Type COLOR_TYPE = new Type.ClassType(UI_MODULE + ".Color");
@@ -257,10 +257,24 @@ public final class Builtins {
                     List.of(new ParamInfo("part", Type.STRING), new ParamInfo("with", Type.STRING)), Type.STRING));
             methods.add(new MethodInfo("concat", List.of(new ParamInfo("other", Type.STRING)), Type.STRING));
             methods.add(new MethodInfo("length", List.of(), Type.INT));
+        } else if (receiver.equals(Type.ACTION)) {
+            methods.add(new MethodInfo("run", List.of(), Type.UNIT));
+        } else if (receiver instanceof Type.HandlerType handler) {
+            methods.add(new MethodInfo("run", List.of(new ParamInfo("arg", handler.arg())), Type.UNIT));
+        } else if (receiver instanceof Type.FnType fn) {
+            methods.add(new MethodInfo("call", List.of(new ParamInfo("arg", fn.arg())), fn.result()));
         } else if (receiver instanceof Type.ListType list) {
             methods.add(new MethodInfo("size", List.of(), Type.INT));
             methods.add(new MethodInfo("get", List.of(new ParamInfo("index", Type.INT)), list.elem()));
             methods.add(new MethodInfo("append", List.of(new ParamInfo("item", list.elem())), list));
+            Type test = new Type.FnType(list.elem(), Type.BOOL);
+            methods.add(new MethodInfo("filter", List.of(new ParamInfo("keep", test)), list));
+            methods.add(new MethodInfo("any", List.of(new ParamInfo("test", test)), Type.BOOL));
+            methods.add(new MethodInfo("all", List.of(new ParamInfo("test", test)), Type.BOOL));
+            methods.add(new MethodInfo("count", List.of(new ParamInfo("test", test)), Type.INT));
+            methods.add(new MethodInfo("indexWhere", List.of(new ParamInfo("test", test)), Type.INT));
+            methods.add(new MethodInfo("sortedBy",
+                    List.of(new ParamInfo("key", new Type.FnType(list.elem(), Type.INT))), list));
             methods.add(new MethodInfo("removeAt", List.of(new ParamInfo("index", Type.INT)), list));
             methods.add(new MethodInfo("set",
                     List.of(new ParamInfo("index", Type.INT), new ParamInfo("item", list.elem())), list));

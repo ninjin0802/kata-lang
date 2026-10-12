@@ -391,6 +391,68 @@ class BodyCheckerTest {
         check(wrap("enum Tree {\n  Leaf,\n  Node { left: Tree, right: Tree },\n}\n")).assertClean();
     }
 
+    // ---- function literals
+
+    @Test
+    void functionLiteralsHaveTheTypeOfTheirShape() {
+        check(withMembers("let a: Action = fn() -> Unit {\nself.bump();\n};\n"
+                + "let h: Handler<Int> = fn(value: Int) -> Unit {\nself.setCount(value: value);\n};\n"
+                + "let f: Fn<Int, Bool> = fn(value: Int) -> Bool {\nreturn value > p;\n};\n"
+                + "let g: Fn<String, Int> = fn(text: String) -> Int {\nreturn text.length() + self.count;\n};")).assertClean();
+        Diagnostic d = check(withMembers("let f: Fn<Int, Bool> = fn(value: Int) -> Int {\nreturn value;\n};")).single("E0401");
+        assertEquals("Fn<Int, Bool>", d.expected());
+        assertEquals("Fn<Int, Int>", d.found());
+        check(withMembers("let f: Action = fn(a: Int, b: Int) -> Unit {\n};")).single("E0507");
+        check(withMembers("let f: Action = fn() -> Int {\nreturn 1;\n};")).single("E0507");
+    }
+
+    @Test
+    void functionLiteralBodiesAreChecked() {
+        check(withMembers("let f: Fn<Int, Bool> = fn(value: Int) -> Bool {\nif (value > 0) {\nreturn true;\n}\n};")).single("E0404");
+        check(withMembers("let f: Fn<Int, Bool> = fn(value: Int) -> Bool {\nreturn value;\n};")).single("E0401");
+        check(withMembers("let f: Fn<Int, Bool> = fn(p: Int) -> Bool {\nreturn true;\n};")).single("E0303");
+        check(withMembers("let f: Action = fn() -> Unit {\nreturn 1;\n};")).single("E0405");
+        check(withMembers("let f: Fn<Int, Unit> = fn(value: Int) -> Unit {\n};")).single("E0407");
+    }
+
+    @Test
+    void functionLiteralsMayOnlyCaptureFixedLocals() {
+        check(withMembers("let fixed: Int = 1;\nlet f: Fn<Int, Int> = fn(value: Int) -> Int {\nreturn value + fixed + p;\n};")).assertClean();
+        Diagnostic d = check(withMembers("var total: Int = 0;\nlet f: Fn<Int, Int> = fn(value: Int) -> Int {\nreturn value + total;\n};"))
+                .single("E0412");
+        assertEquals(new Span(32, 16, 32, 21), d.span());
+        check(withMembers("var total: Int = 0;\nlet a: Action = fn() -> Unit {\nlet inner: Action = fn() -> Unit {\nself.setCount(value: total);\n};\n};"))
+                .single("E0412");
+        check(withMembers("let a: Action = fn() -> Unit {\nvar mine: Int = 0;\nmine = mine + 1;\nself.setCount(value: mine);\n};")).assertClean();
+    }
+
+    @Test
+    void methodReferencesWithAResultAreFnValues() {
+        check(withMembers("let f: Fn<Int, Int> = other.x.toString;")).single("E0507");
+        check(wrap("class A {\n  fn big(self, value: Int) -> Bool {\n    return value > 10;\n  }\n  fn m(self) -> Fn<Int, Bool> {\n    return self.big;\n  }\n}\n")).assertClean();
+    }
+
+    @Test
+    void functionValuesCanBeCalled() {
+        check(withMembers("let f: Fn<Int, Bool> = fn(value: Int) -> Bool {\nreturn value > 0;\n};\nlet b: Bool = f.call(arg: 1);\n"
+                + "let a: Action = self.bump;\na.run();\nlet h: Handler<Int> = self.setCount;\nh.run(arg: 2);")).assertClean();
+        check(withMembers("let f: Fn<Int, Bool> = fn(value: Int) -> Bool {\nreturn value > 0;\n};\nlet b: Bool = f.call(arg: \"x\");")).single("E0401");
+    }
+
+    @Test
+    void listMethodsTakeFunctions() {
+        check(wrapBody("let xs: List<Int> = [1, 2, 3];\nlet big: List<Int> = xs.filter(keep: fn(x: Int) -> Bool {\nreturn x > 1;\n});\n"
+                + "let texts: List<String> = xs.map(transform: fn(x: Int) -> String {\nreturn x.toString();\n});\n"
+                + "let any: Bool = xs.any(test: fn(x: Int) -> Bool {\nreturn x > 2;\n});\n"
+                + "let all: Bool = xs.all(test: fn(x: Int) -> Bool {\nreturn x > 0;\n});\n"
+                + "let n: Int = xs.count(test: fn(x: Int) -> Bool {\nreturn x > 1;\n});\n"
+                + "let at: Int = xs.indexWhere(test: fn(x: Int) -> Bool {\nreturn x > 1;\n});\n"
+                + "let sorted: List<Int> = xs.sortedBy(key: fn(x: Int) -> Int {\nreturn -x;\n});")).assertClean();
+        check(wrapBody("let xs: List<Int> = [1];\nlet ys: List<Int> = xs.filter(keep: fn(x: String) -> Bool {\nreturn true;\n});")).single("E0401");
+        check(wrapBody("let xs: List<Int> = [1];\nlet ys: List<Int> = xs.map(transform: fn(x: Int) -> String {\nreturn \"a\";\n});")).single("E0401");
+        check(wrapBody("let xs: List<Int> = [1];\nlet ys: List<String> = xs.map(transform: 1);")).single("E0401");
+    }
+
     // ---- assets
 
     @Test

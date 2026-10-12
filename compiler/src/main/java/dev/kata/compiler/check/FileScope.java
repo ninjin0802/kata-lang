@@ -96,7 +96,7 @@ final class FileScope {
 
     private Type resolveUnrecorded(Ast.TypeRef ref, boolean allowUnit) {
         String name = ref.name();
-        int arity = name.equals("List") || name.equals("Handler") ? 1 : 0;
+        int arity = name.equals("List") || name.equals("Handler") ? 1 : name.equals("Fn") ? 2 : 0;
         boolean known = Builtins.CORE_TYPES.contains(name) || localClasses.contains(name)
                 || localEnums.contains(name)
                 || Builtins.moduleOf(name) != null;
@@ -131,6 +131,8 @@ final class FileScope {
                 return new Type.ListType(resolve(ref.args().get(0), false));
             case "Handler":
                 return new Type.HandlerType(resolve(ref.args().get(0), false));
+            case "Fn":
+                return new Type.FnType(resolve(ref.args().get(0), false), resolve(ref.args().get(1), false));
             default:
                 return resolveNamed(name, ref.span());
         }

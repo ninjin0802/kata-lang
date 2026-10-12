@@ -7,6 +7,7 @@ import dev.kata.compiler.check.ClassTable.MethodInfo;
 import dev.kata.compiler.check.Type;
 import dev.kata.compiler.syntax.Ast;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -112,7 +113,8 @@ public final class ClassGenerator {
             writer.visitField(access, field.name(), Names.descriptor(field.type()), null, null).visitEnd();
         }
 
-        constructor(program, writer, decl, info, name);
+        List<MethodGenerator.PendingLambda> lambdas = new java.util.ArrayList<>();
+        constructor(program, writer, decl, info, name, lambdas);
 
         for (Ast.MethodDecl method : decl.methods()) {
             MethodInfo methodInfo = info.method(method.name());
@@ -120,12 +122,33 @@ public final class ClassGenerator {
                     Names.method(method.name()),
                     Names.methodDescriptor(methodInfo), null, null);
             mv.visitCode();
-            MethodGenerator generator = new MethodGenerator(program, mv, 1);
+            MethodGenerator generator = new MethodGenerator(program, mv, 1, name, lambdas);
             for (int i = 0; i < method.params().size(); i++) {
                 generator.declareParameter(method.params().get(i).name(), methodInfo.params().get(i).type());
             }
             generator.body(method.body());
             if (methodInfo.returnType().equals(Type.UNIT)) {
+                mv.visitInsn(Opcodes.RETURN);
+            }
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+        // Function literals found so far; generating one may add more (a literal inside a literal).
+        for (int i = 0; i < lambdas.size(); i++) {
+            MethodGenerator.PendingLambda pending = lambdas.get(i);
+            Ast.Lambda lambda = pending.lambda();
+            MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC,
+                    pending.name(), pending.descriptor(), null, null);
+            mv.visitCode();
+            MethodGenerator generator = new MethodGenerator(program, mv, 1, name, lambdas);
+            for (CheckedProgram.Capture capture : program.capturesOf(lambda)) {
+                generator.declareParameter(capture.name(), capture.type());
+            }
+            for (Ast.Param param : lambda.params()) {
+                generator.declareParameter(param.name(), program.typeOf(param.type()));
+            }
+            generator.body(lambda.body());
+            if (program.typeOf(lambda.returnType()).equals(Type.UNIT)) {
                 mv.visitInsn(Opcodes.RETURN);
             }
             mv.visitMaxs(0, 0);
@@ -137,13 +160,13 @@ public final class ClassGenerator {
 
     /** One constructor taking the fields without an initializer; all fields are set in declaration order. */
     private static void constructor(CheckedProgram program, ClassWriter writer, Ast.ClassDecl decl, ClassInfo info,
-            String name) {
+            String name, List<MethodGenerator.PendingLambda> lambdas) {
         MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", Names.constructorDescriptor(info), null,
                 null);
         mv.visitCode();
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Names.OBJECT, "<init>", "()V", false);
-        MethodGenerator generator = new MethodGenerator(program, mv, 1);
+        MethodGenerator generator = new MethodGenerator(program, mv, 1, name, lambdas);
         for (FieldInfo field : info.constructorFields()) {
             generator.declareParameter(field.name(), field.type());
         }

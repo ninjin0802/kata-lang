@@ -4,7 +4,7 @@
   "diagnostics": [
     {
       "code": "E0507",
-      "message": "only a method taking at most one argument and returning Unit can be referenced without calling it",
+      "message": "only a method of this program taking at most one argument can be referenced without calling it (and one taking no argument must return Unit)",
       "file": "src/app/main.kata",
       "line": 15,
       "column": 21,

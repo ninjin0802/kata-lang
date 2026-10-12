@@ -24,6 +24,7 @@
   <tr><td><code>Unit</code></td><td>値を返さないメソッドの戻り値の型。戻り値の型以外には書けない（<code>E0407</code>）。</td></tr>
   <tr><td><code>Action</code></td><td>引数なしで <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。</td></tr>
   <tr><td><code>Handler&lt;T&gt;</code></td><td><code>T</code> の値を1つ受け取って <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
+  <tr><td><code>Fn&lt;A, R&gt;</code></td><td><code>A</code> の値を1つ受け取って <code>R</code> の値を返す処理。<code>R</code> に <code>Unit</code> は書けない（その場合は <code>Handler&lt;A&gt;</code>）。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td>クラス</td><td>利用者定義のクラスと、<a href="05-ui.html#components">組み込みの UI 部品</a>。</td></tr>
   <tr><td>enum</td><td>利用者定義の、決まった選択肢のどれか1つを表す型（<a href="#enums">enum と match</a>）。</td></tr>
@@ -31,7 +32,7 @@
 </table>
 </div>
 <ul>
-  <li><code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
+  <li><code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler</code>、<code>Fn</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
   <li>null は存在しない。すべての変数とフィールドは常に値を持つ。</li>
   <li>型引数の数が合わない場合は <code>E0408</code>。</li>
 </ul>
@@ -162,12 +163,34 @@ fn area(self, shape: Shape) -&gt; Int {
   <tr><th>メソッドの形</th><th>メソッド参照の型</th></tr>
   <tr><td><code>fn m(self) -&gt; Unit</code></td><td><code>Action</code></td></tr>
   <tr><td><code>fn m(self, x: T) -&gt; Unit</code></td><td><code>Handler&lt;T&gt;</code></td></tr>
+  <tr><td><code>fn m(self, x: T) -&gt; R</code>（<code>R</code> は <code>Unit</code> 以外）</td><td><code>Fn&lt;T, R&gt;</code></td></tr>
   <tr><td>それ以外</td><td>参照できない（<code>E0507</code>）</td></tr>
 </table>
 </div>
 <ul>
-  <li><code>Action</code> と <code>Handler&lt;T&gt;</code> の値は、UI 部品に渡すためのもの。kata のコードから呼び出す手段は M1 にない。</li>
+  <li>処理の値は、<code>action.run()</code>、<code>handler.run(arg: x)</code>、<code>fn.call(arg: x)</code> で呼び出せる。</li>
   <li><code>Handler&lt;T&gt;</code> 同士は、<code>T</code> がちょうど同じ型のときだけ代入できる。</li>
+</ul>
+
+<h3 id="function-literals">関数リテラル</h3>
+<pre><code>Button {
+  label: label,
+  onTap: fn() -&gt; Unit {
+    self.press(label: label);
+  },
+}
+
+let big: List&lt;Int&gt; = xs.filter(keep: fn(x: Int) -&gt; Bool {
+  return x &gt; limit;
+});</code></pre>
+<ul>
+  <li><code>fn(引数) -&gt; 型 { ... }</code> は、その場で処理の値を作る。引数の型と戻り値の型は必ず書き、本体はメソッドと同じ規則に従う（値を返すなら、すべての経路を <code>return</code> で終える）。</li>
+  <li>型は形で決まる。引数なしで <code>Unit</code> なら <code>Action</code>、引数1つで <code>Unit</code> なら <code>Handler&lt;T&gt;</code>、引数1つで値を返すなら <code>Fn&lt;T, R&gt;</code>。それ以外の形は書けない（<code>E0507</code>）。</li>
+  <li>本体の中では、<code>self</code> と、外側の<strong>書き換えられない</strong>名前（<code>let</code> のローカル変数、引数、<code>for</code> と <code>match</code> の変数）を使える。</li>
+  <li><code>var</code> で宣言した外側の変数は使えない（<code>E0412</code>）。使いたい値は、先に <code>let</code> に写す。処理が後で実行されたときに、どの時点の値を見るのかが曖昧にならないようにするため。</li>
+  <li>本体の中の <code>return</code> は、その関数リテラルから戻る。外側のメソッドからは戻らない。</li>
+  <li>引数の名前は、外側の名前と重ねられない（<code>E0303</code>）。</li>
+  <li><code>app</code> 宣言の <code>root</code> の中には書けない（<code>E0603</code>）。</li>
 </ul>
 
 <h2 id="list-literal">リスト記法</h2>
@@ -225,6 +248,14 @@ fn area(self, shape: Shape) -&gt; Int {
   <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>get(index: Int) -&gt; T</code></td><td><code>index</code> 番目（0始まり）の要素。範囲外ならパニックになる。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>append(item: T) -&gt; List&lt;T&gt;</code></td><td>末尾に <code>item</code> を加えた新しいリストを返す。元のリストは変わらない。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>filter(keep: Fn&lt;T, Bool&gt;) -&gt; List&lt;T&gt;</code></td><td><code>keep</code> が <code>true</code> を返した要素だけのリスト。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>map(transform: Fn&lt;T, R&gt;) -&gt; List&lt;R&gt;</code></td><td>各要素を <code>transform</code> に通した結果のリスト。結果の型は、渡した処理の戻り値の型で決まる。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>any(test: Fn&lt;T, Bool&gt;) -&gt; Bool</code><br><code>all(test: Fn&lt;T, Bool&gt;) -&gt; Bool</code><br><code>count(test: Fn&lt;T, Bool&gt;) -&gt; Int</code></td><td>当てはまる要素があるか、すべて当てはまるか、当てはまる数。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>indexWhere(test: Fn&lt;T, Bool&gt;) -&gt; Int</code></td><td>最初に当てはまる要素の位置。なければ -1。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>sortedBy(key: Fn&lt;T, Int&gt;) -&gt; List&lt;T&gt;</code></td><td><code>key</code> の値が小さい順に並べたリスト。値が同じ要素は元の順番を保つ。</td></tr>
+  <tr><td><code>Action</code></td><td><code>run() -&gt; Unit</code></td><td>処理を実行する。</td></tr>
+  <tr><td><code>Handler&lt;T&gt;</code></td><td><code>run(arg: T) -&gt; Unit</code></td><td>値を渡して処理を実行する。</td></tr>
+  <tr><td><code>Fn&lt;A, R&gt;</code></td><td><code>call(arg: A) -&gt; R</code></td><td>値を渡して処理を実行し、結果を受け取る。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>removeAt(index: Int) -&gt; List&lt;T&gt;</code></td><td><code>index</code> 番目を除いた新しいリストを返す。範囲外はパニック。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>set(index: Int, item: T) -&gt; List&lt;T&gt;</code></td><td><code>index</code> 番目を <code>item</code> に替えた新しいリストを返す。範囲外はパニック。</td></tr>
 </table>

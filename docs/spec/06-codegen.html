@@ -24,6 +24,7 @@
   <tr><td><code>Unit</code></td><td><code>void</code></td></tr>
   <tr><td><code>Action</code></td><td><code>kata.rt.Action</code></td></tr>
   <tr><td><code>Handler&lt;T&gt;</code></td><td><code>kata.rt.Handler</code>（型引数は消去する）</td></tr>
+  <tr><td><code>Fn&lt;A, R&gt;</code></td><td><code>kata.rt.Fn</code>（型引数は消去する。<code>Object call(Object)</code>）</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>kata.rt.KList</code>（型引数は消去する）。要素の <code>Int</code> は <code>java.lang.Long</code>、<code>Float</code> は <code>java.lang.Double</code>、<code>Bool</code> は <code>java.lang.Boolean</code> に包んで持つ。</td></tr>
   <tr><td><code>kata.ui</code> と <code>kata.sys</code> の名前（<code>Ui</code>、<code>Screen</code>、<code>Column</code>、<code>Store</code> など）</td><td><code>kata.rt</code> の同名のクラスまたはインターフェース</td></tr>
   <tr><td>モジュール <code>a.b</code> のクラス <code>C</code></td><td><code>a.b.C</code></td></tr>
@@ -57,6 +58,8 @@
   <tr><td>メソッド呼び出し</td><td>クラスに対しては <code>invokevirtual</code>、インターフェースに対しては <code>invokeinterface</code>。</td></tr>
   <tr><td>フィールドの読み書き</td><td><code>getfield</code> / <code>putfield</code>。</td></tr>
   <tr><td>メソッド参照</td><td><code>invokedynamic</code>（<code>LambdaMetafactory</code>）で、対象のインスタンスを捕まえた <code>kata.rt.Action</code> または <code>kata.rt.Handler</code> を作る。<code>Handler&lt;Int&gt;</code> と <code>Handler&lt;Bool&gt;</code> では、包まれた値から中身を取り出してメソッドに渡す。</td></tr>
+  <tr><td>関数リテラル</td><td>本体を、囲んでいるクラスの <code>public final</code> の合成メソッド（<code>lambda$0</code>、<code>lambda$1</code>、…）にする。引数は、取り込んだ外側の名前（使われた順）、続いてリテラル自身の引数。リテラルの式は、<code>self</code> と取り込む値を積んで <code>invokedynamic</code>（<code>LambdaMetafactory</code>）で <code>Action</code>、<code>Handler</code>、<code>Fn</code> のいずれかを作る。</td></tr>
+  <tr><td>処理の値の呼び出し、<code>List</code> の <code>filter</code> など</td><td>対応するインターフェースのメソッドの <code>invokeinterface</code>、<code>KList</code> の同名のメソッド。<code>Int</code>、<code>Float</code>、<code>Bool</code> は包んで渡し、結果は取り出す。</td></tr>
   <tr><td>リスト記法</td><td>要素を <code>Object[]</code> に詰めて <code>KList.of</code> を呼ぶ。</td></tr>
   <tr><td><code>List</code> の <code>size</code> / <code>get</code> / <code>append</code></td><td><code>KList</code> の同名のメソッド。<code>get</code> の結果は要素の型に <code>checkcast</code> し、<code>Int</code> と <code>Bool</code> は中身を取り出す。</td></tr>
   <tr><td><code>while</code></td><td>条件分岐と後ろ向きのジャンプ。</td></tr>

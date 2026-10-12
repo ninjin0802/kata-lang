@@ -83,9 +83,26 @@ public final class ClassTable {
         return interfaces.get(qualifiedName);
     }
 
+    private static boolean unresolved(Type type) {
+        if (type instanceof Type.Unknown) {
+            return true;
+        }
+        if (type instanceof Type.ListType list) {
+            return unresolved(list.elem());
+        }
+        if (type instanceof Type.HandlerType handler) {
+            return unresolved(handler.arg());
+        }
+        if (type instanceof Type.FnType fn) {
+            return unresolved(fn.arg()) || unresolved(fn.result());
+        }
+        return false;
+    }
+
     /** Spec 04 #assignability: same type, or a class to an interface it implements. */
     public boolean assignable(Type from, Type to) {
-        if (from instanceof Type.Unknown || to instanceof Type.Unknown || from.equals(to)) {
+        // A type with an unresolved part already has its own diagnostic.
+        if (unresolved(from) || unresolved(to) || from.equals(to)) {
             return true;
         }
         if (to instanceof Type.InterfaceType target && from instanceof Type.ClassType source) {

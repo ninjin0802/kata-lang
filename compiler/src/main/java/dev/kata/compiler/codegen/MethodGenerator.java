@@ -28,15 +28,23 @@ final class MethodGenerator {
                     + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
                     + "Ljava/lang/invoke/CallSite;", false);
 
+    /** A function literal whose body still has to be generated as a method of the owner class. */
+    record PendingLambda(String name, String descriptor, Ast.Lambda lambda) {}
+
     private final CheckedProgram program;
     private final MethodVisitor mv;
+    private final String owner;
+    private final List<PendingLambda> lambdas;
     private final Deque<Map<String, Local>> scopes = new ArrayDeque<>();
     private int nextSlot;
 
     /** @param firstSlot the first free local slot (1 for an instance method: slot 0 is self) */
-    MethodGenerator(CheckedProgram program, MethodVisitor mv, int firstSlot) {
+    MethodGenerator(CheckedProgram program, MethodVisitor mv, int firstSlot, String owner,
+            List<PendingLambda> lambdas) {
         this.program = program;
         this.mv = mv;
+        this.owner = owner;
+        this.lambdas = lambdas;
         this.nextSlot = firstSlot;
         scopes.push(new HashMap<>());
     }
@@ -283,6 +291,8 @@ final class MethodGenerator {
                 descriptor.append(Names.descriptor(ref.variant().fields().get(i).type()));
             }
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, variant, "<init>", descriptor.append(")V").toString(), false);
+        } else if (expr instanceof Ast.Lambda lambda) {
+            lambda(lambda);
         } else if (expr instanceof Ast.ListLit list) {
             pushInt(list.items().size());
             mv.visitTypeInsn(Opcodes.ANEWARRAY, Names.OBJECT);
@@ -308,6 +318,47 @@ final class MethodGenerator {
         }
     }
 
+    /**
+     * The body becomes a method of the enclosing class that takes the captured locals before its own
+     * parameter; the literal itself binds self and the captured values to that method.
+     */
+    private void lambda(Ast.Lambda lambda) {
+        Type type = program.typeOf(lambda);
+        StringBuilder captured = new StringBuilder();
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        for (CheckedProgram.Capture capture : program.capturesOf(lambda)) {
+            loadLocal(capture.name());
+            captured.append(Names.descriptor(capture.type()));
+        }
+        StringBuilder implementation = new StringBuilder("(").append(captured);
+        for (Ast.Param param : lambda.params()) {
+            implementation.append(Names.descriptor(program.typeOf(param.type())));
+        }
+        implementation.append(")").append(Names.descriptor(program.typeOf(lambda.returnType())));
+        String name = "lambda$" + lambdas.size();
+        lambdas.add(new PendingLambda(name, implementation.toString(), lambda));
+        Handle target = new Handle(Opcodes.H_INVOKEVIRTUAL, owner, name, implementation.toString(), false);
+        functionValue(type, "(L" + owner + ";" + captured + ")", target);
+    }
+
+    /** Emits the invokedynamic that turns a bound method into an Action, Handler or Fn. */
+    private void functionValue(Type type, String boundArguments, Handle target) {
+        if (type.equals(Type.ACTION)) {
+            mv.visitInvokeDynamicInsn("run", boundArguments + "L" + Names.ACTION + ";", LAMBDA_BOOTSTRAP,
+                    org.objectweb.asm.Type.getType("()V"), target, org.objectweb.asm.Type.getType("()V"));
+        } else if (type instanceof Type.HandlerType handler) {
+            mv.visitInvokeDynamicInsn("run", boundArguments + "L" + Names.HANDLER + ";", LAMBDA_BOOTSTRAP,
+                    org.objectweb.asm.Type.getType("(Ljava/lang/Object;)V"), target,
+                    org.objectweb.asm.Type.getType("(" + Names.boxedDescriptor(handler.arg()) + ")V"));
+        } else {
+            Type.FnType fn = (Type.FnType) type;
+            mv.visitInvokeDynamicInsn("call", boundArguments + "L" + Names.FN + ";", LAMBDA_BOOTSTRAP,
+                    org.objectweb.asm.Type.getType("(Ljava/lang/Object;)Ljava/lang/Object;"), target,
+                    org.objectweb.asm.Type.getType("(" + Names.boxedDescriptor(fn.arg()) + ")"
+                            + Names.boxedDescriptor(fn.result())));
+        }
+    }
+
     private void member(Ast.Member member) {
         MemberRef ref = program.memberOf(member);
         expr(member.target());
@@ -316,22 +367,14 @@ final class MethodGenerator {
                     Names.descriptor(field.field().type()));
             return;
         }
-        // A method reference: bind the receiver now and produce an Action or a Handler.
+        // A method reference: bind the receiver now and produce an Action, a Handler or an Fn.
         MemberRef.MethodRef method = (MemberRef.MethodRef) ref;
-        String owner = Names.internal(method.owner());
+        String methodOwner = Names.internal(method.owner());
         MethodInfo info = method.method();
         Handle target = new Handle(method.ownerIsInterface() ? Opcodes.H_INVOKEINTERFACE : Opcodes.H_INVOKEVIRTUAL,
-                owner, method.ownerIsInterface() ? info.name() : Names.method(info.name()),
+                methodOwner, method.ownerIsInterface() ? info.name() : Names.method(info.name()),
                 Names.methodDescriptor(info), method.ownerIsInterface());
-        if (info.params().isEmpty()) {
-            mv.visitInvokeDynamicInsn("run", "(L" + owner + ";)L" + Names.ACTION + ";", LAMBDA_BOOTSTRAP,
-                    org.objectweb.asm.Type.getType("()V"), target, org.objectweb.asm.Type.getType("()V"));
-        } else {
-            String boxed = Names.boxedDescriptor(info.params().get(0).type());
-            mv.visitInvokeDynamicInsn("run", "(L" + owner + ";)L" + Names.HANDLER + ";", LAMBDA_BOOTSTRAP,
-                    org.objectweb.asm.Type.getType("(Ljava/lang/Object;)V"), target,
-                    org.objectweb.asm.Type.getType("(" + boxed + ")V"));
-        }
+        functionValue(program.typeOf(member), "(L" + methodOwner + ";)", target);
     }
 
     private void call(Ast.Call call) {
@@ -350,7 +393,19 @@ final class MethodGenerator {
         MemberRef.BuiltinMethod builtin = (MemberRef.BuiltinMethod) ref;
         String name = builtin.method().name();
         Type receiver = builtin.receiver();
-        if (receiver.equals(Type.INT) && name.equals("toFloat")) {
+        if (receiver.equals(Type.ACTION)) {
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, Names.ACTION, "run", "()V", true);
+        } else if (receiver instanceof Type.HandlerType) {
+            expr(call.args().get(0).value());
+            box(program.typeOf(call.args().get(0).value()));
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, Names.HANDLER, "run", "(Ljava/lang/Object;)V", true);
+        } else if (receiver instanceof Type.FnType fn) {
+            expr(call.args().get(0).value());
+            box(program.typeOf(call.args().get(0).value()));
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, Names.FN, "call", "(Ljava/lang/Object;)Ljava/lang/Object;",
+                    true);
+            unbox(fn.result());
+        } else if (receiver.equals(Type.INT) && name.equals("toFloat")) {
             mv.visitInsn(Opcodes.L2D);
         } else if (receiver.equals(Type.INT)) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false);
@@ -390,6 +445,12 @@ final class MethodGenerator {
             expr(call.args().get(0).value());
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, "get", "(J)Ljava/lang/Object;", false);
             unbox(((Type.ListType) receiver).elem());
+        } else if (builtin.method().params().size() == 1
+                && builtin.method().params().get(0).type() instanceof Type.FnType) {
+            // filter, map, any, all, count, indexWhere, sortedBy: KList methods taking one Fn.
+            expr(call.args().get(0).value());
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, name,
+                    "(L" + Names.FN + ";)" + Names.descriptor(builtin.method().returnType()), false);
         } else if (name.equals("removeAt")) {
             expr(call.args().get(0).value());
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.KLIST, "removeAt", "(J)L" + Names.KLIST + ";", false);

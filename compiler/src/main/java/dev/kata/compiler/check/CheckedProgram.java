@@ -81,6 +81,16 @@ public final class CheckedProgram {
         return variants.get(arm);
     }
 
+    /** A local of the enclosing method that a function literal reads. */
+    public record Capture(String name, Type type) {}
+
+    final Map<Ast.Lambda, List<Capture>> captures = new IdentityHashMap<>();
+
+    /** The enclosing locals a function literal uses, in the order they are first used. */
+    public List<Capture> capturesOf(Ast.Lambda lambda) {
+        return captures.get(lambda);
+    }
+
     public AppInfo app() {
         return app;
     }

@@ -210,6 +210,20 @@ class ParserTest {
     }
 
     @Test
+    void parsesFunctionLiterals() {
+        Ast.File file = parseBody("let a: Action = fn() -> Unit {\n};\n"
+                + "let f: Fn<Int, Bool> = fn(x: Int) -> Bool {\nreturn x > 0;\n};\nxs.filter(keep: fn(x: Int) -> Bool {\nreturn true;\n});");
+        assertClean();
+        List<Ast.Stmt> stmts = file.classes().get(0).methods().get(0).body().stmts();
+        Ast.Lambda action = assertInstanceOf(Ast.Lambda.class, ((Ast.Let) stmts.get(0)).value());
+        assertEquals(0, action.params().size());
+        Ast.Lambda test = assertInstanceOf(Ast.Lambda.class, ((Ast.Let) stmts.get(1)).value());
+        assertEquals("x", test.params().get(0).name());
+        assertEquals("Bool", test.returnType().name());
+        assertEquals(2, ((Ast.Let) stmts.get(1)).type().args().size());
+    }
+
+    @Test
     void parsesLoops() {
         Ast.File file = parseBody("while (c) { }\nfor (x: Int in xs) { }");
         assertClean();

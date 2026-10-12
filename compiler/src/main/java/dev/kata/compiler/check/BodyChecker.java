@@ -34,6 +34,12 @@ final class BodyChecker {
     private Type returnType;
     private SelfMode selfMode;
     private final Deque<Map<String, Local>> locals = new ArrayDeque<>();
+    /** One entry per function literal being checked, innermost last. */
+    private final List<LambdaScope> lambdas = new ArrayList<>();
+
+    /** framesOutside: how many local frames existed when the literal started. */
+    private record LambdaScope(int framesOutside, java.util.LinkedHashMap<String, Type> captures) {}
+
     private final java.util.Set<Ast.Stmt> brokenMatches =
             java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
@@ -188,7 +194,7 @@ final class BodyChecker {
     private void assign(Ast.Assign assign) {
         Ast.Expr target = assign.target();
         if (target instanceof Ast.Name name) {
-            Local local = lookup(name.name());
+            Local local = lookup(name.name(), name.span());
             if (local != null) {
                 program.exprTypes.put(name, local.type());
                 if (!local.mutable()) {
@@ -239,11 +245,35 @@ final class BodyChecker {
     }
 
     private Local lookup(String name) {
+        return lookup(name, null);
+    }
+
+    /**
+     * Finds a local. When `use` is given and the local lies outside one or more enclosing function
+     * literals, it is recorded as captured by each of them; a `var` cannot be captured (E0412).
+     */
+    private Local lookup(String name, Span use) {
+        int index = 0;
         for (Map<String, Local> frame : locals) {
             Local local = frame.get(name);
             if (local != null) {
+                if (use != null) {
+                    int fromBottom = locals.size() - 1 - index;
+                    boolean reported = false;
+                    for (LambdaScope lambda : lambdas) {
+                        if (fromBottom < lambda.framesOutside()) {
+                            if (local.mutable() && !reported) {
+                                out.add(Diagnostic.of("E0412", "a function literal cannot use '" + name
+                                        + "', which is declared with var; copy it into a let first", path, use));
+                                reported = true;
+                            }
+                            lambda.captures().putIfAbsent(name, local.type());
+                        }
+                    }
+                }
                 return local;
             }
+            index++;
         }
         return null;
     }
@@ -310,6 +340,9 @@ final class BodyChecker {
         if (expr instanceof Ast.EnumConstruct construct) {
             return enumConstruct(construct);
         }
+        if (expr instanceof Ast.Lambda lambda) {
+            return lambda(lambda);
+        }
         if (expr instanceof Ast.Unary unary) {
             return unary(unary);
         }
@@ -333,7 +366,7 @@ final class BodyChecker {
     }
 
     private Type name(Ast.Name name) {
-        Local local = lookup(name.name());
+        Local local = lookup(name.name(), name.span());
         if (local != null) {
             return local.type();
         }
@@ -388,9 +421,13 @@ final class BodyChecker {
         if (userMethod && method.returnType().equals(Type.UNIT) && method.params().size() == 1) {
             return new Type.HandlerType(method.params().get(0).type());
         }
+        if (userMethod && method.params().size() == 1) {
+            return new Type.FnType(method.params().get(0).type(), method.returnType());
+        }
         program.members.remove(member);
-        out.add(Diagnostic.of("E0507", "only a method taking at most one argument and returning Unit can be "
-                + "referenced without calling it", path, member.span()).withExpected(null, method.signature()));
+        out.add(Diagnostic.of("E0507", "only a method of this program taking at most one argument can be "
+                + "referenced without calling it (and one taking no argument must return Unit)", path,
+                member.span()).withExpected(null, method.signature()));
         return Type.UNKNOWN;
     }
 
@@ -414,6 +451,8 @@ final class BodyChecker {
             if (method != null) {
                 program.members.put(call, new MemberRef.MethodRef(info.qualifiedName(), true, method));
             }
+        } else if (receiver instanceof Type.ListType list && call.name().equals("map")) {
+            return mapCall(call, list);
         } else if (!(receiver instanceof Type.Unknown)) {
             method = Builtins.method(receiver, call.name());
             if (method != null) {
@@ -433,6 +472,30 @@ final class BodyChecker {
         matchNamed(call.args(), names, types, call.argsSpan(), "E0502",
                 "arguments of '" + call.name() + "' must be exactly: ", "(", ")");
         return method.returnType();
+    }
+
+    /** `map` is the one built-in whose result type depends on its argument: List<T>.map(Fn<T, R>) is List<R>. */
+    private Type mapCall(Ast.Call call, Type.ListType list) {
+        if (call.args().size() != 1 || !call.args().get(0).name().equals("transform")) {
+            out.add(Diagnostic.of("E0502", "arguments of 'map' must be exactly: transform", path, call.argsSpan())
+                    .withExpected("transform", String.join(", ", call.args().stream().map(Ast.Named::name).toList())));
+            inferAll(call.args());
+            return Type.UNKNOWN;
+        }
+        Ast.Expr argument = call.args().get(0).value();
+        Type actual = infer(argument, null);
+        if (actual instanceof Type.Unknown) {
+            return Type.UNKNOWN;
+        }
+        if (!(actual instanceof Type.FnType fn) || !fn.arg().equals(list.elem())) {
+            out.add(Diagnostic.of("E0401", "type mismatch", path, argument.span())
+                    .withExpected("Fn<" + list.elem().display() + ", ...>", actual.display()));
+            return Type.UNKNOWN;
+        }
+        Type result = new Type.ListType(fn.result());
+        program.members.put(call, new MemberRef.BuiltinMethod(list,
+                new MethodInfo("map", List.of(new ParamInfo("transform", fn)), result)));
+        return result;
     }
 
     private Type construct(Ast.Construct construct) {
@@ -457,6 +520,54 @@ final class BodyChecker {
         if (Builtins.ASSET_COMPONENTS.contains(info.qualifiedName())) {
             checkAsset(construct);
         }
+        return type;
+    }
+
+    /** Spec 04 #function-literals: the shape decides the type; the body is checked like a method body. */
+    private Type lambda(Ast.Lambda lambda) {
+        if (selfMode == SelfMode.APP_ROOT) {
+            out.add(Diagnostic.of("E0603", "app root cannot contain a function literal", path, lambda.span()));
+            return Type.UNKNOWN;
+        }
+        List<Type> paramTypes = new ArrayList<>();
+        for (Ast.Param param : lambda.params()) {
+            paramTypes.add(scope.resolve(param.type(), false));
+        }
+        Type result = scope.resolve(lambda.returnType(), true);
+        Type type;
+        if (paramTypes.isEmpty() && result.equals(Type.UNIT)) {
+            type = Type.ACTION;
+        } else if (paramTypes.size() == 1 && result.equals(Type.UNIT)) {
+            type = new Type.HandlerType(paramTypes.get(0));
+        } else if (paramTypes.size() == 1) {
+            type = new Type.FnType(paramTypes.get(0), result);
+        } else {
+            out.add(Diagnostic.of("E0507", "a function literal takes no argument and returns Unit (Action), takes "
+                    + "one and returns Unit (Handler), or takes one and returns a value (Fn)", path, lambda.span()));
+            type = Type.UNKNOWN;
+        }
+        Type outerReturn = returnType;
+        returnType = result;
+        LambdaScope lambdaScope = new LambdaScope(locals.size(), new java.util.LinkedHashMap<>());
+        lambdas.add(lambdaScope);
+        locals.push(new HashMap<>());
+        for (int i = 0; i < lambda.params().size(); i++) {
+            Ast.Param param = lambda.params().get(i);
+            declare(param.name(), param.nameSpan(), new Local(paramTypes.get(i), false));
+        }
+        block(lambda.body());
+        locals.pop();
+        lambdas.remove(lambdas.size() - 1);
+        returnType = outerReturn;
+        if (!result.equals(Type.UNIT) && !(result instanceof Type.Unknown) && !Flow.terminates(lambda.body())) {
+            out.add(Diagnostic.of("E0404", "not every path of this function ends with return", path,
+                    lambda.returnType().span()).withExpected(result.display(), null));
+        }
+        List<CheckedProgram.Capture> captured = new ArrayList<>();
+        for (Map.Entry<String, Type> capture : lambdaScope.captures().entrySet()) {
+            captured.add(new CheckedProgram.Capture(capture.getKey(), capture.getValue()));
+        }
+        program.captures.put(lambda, captured);
         return type;
     }
 

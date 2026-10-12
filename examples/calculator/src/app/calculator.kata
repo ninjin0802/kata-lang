@@ -11,16 +11,6 @@ import kata.ui.Screen;
 import kata.ui.StyledText;
 import kata.ui.Ui;
 
-// One key of the calculator. Its press method is what the button calls.
-class Key {
-  let calculator: Calculator;
-  let label: String;
-
-  fn press(self) -> Unit {
-    self.calculator.press(label: self.label);
-  }
-}
-
 // The operator waiting for its right operand.
 enum Op {
   None,
@@ -70,7 +60,12 @@ class Calculator implements Screen {
 
   fn key(self, label: String) -> Ui {
     return Expand {
-      child: Button { label: label, onTap: Key { calculator: self, label: label }.press },
+      child: Button {
+        label: label,
+        onTap: fn() -> Unit {
+          self.press(label: label);
+        },
+      },
     };
   }
 
