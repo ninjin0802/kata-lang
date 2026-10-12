@@ -1,0 +1,167 @@
+package dev.kata.compiler.build;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+/** Assembles an APK from generated classes using the SDK build-tools directly. */
+public final class ApkBuilder {
+    private ApkBuilder() {}
+
+    public static Path build(Path project, Map<String, byte[]> classes, AppInfo app, Path kataHome, Sdk sdk)
+            throws ToolFailure {
+        try {
+            Path build = project.toAbsolutePath().normalize().resolve("build");
+            deleteTree(build.resolve("classes"));
+            deleteTree(build.resolve("dex"));
+            Path classesDir = Files.createDirectories(build.resolve("classes"));
+            Path dexDir = Files.createDirectories(build.resolve("dex"));
+
+            List<String> classFiles = new ArrayList<>();
+            for (Map.Entry<String, byte[]> entry : classes.entrySet()) {
+                Path file = classesDir.resolve(entry.getKey() + ".class");
+                Files.createDirectories(file.getParent());
+                Files.write(file, entry.getValue());
+                classFiles.add(file.toString());
+            }
+
+            Path manifest = build.resolve("AndroidManifest.xml");
+            Files.writeString(manifest, manifest(app), StandardCharsets.UTF_8);
+
+            Path base = build.resolve("base.apk");
+            Path aligned = build.resolve("aligned.apk");
+            Path apk = build.resolve("app.apk");
+            Files.deleteIfExists(base);
+            Files.deleteIfExists(aligned);
+            Files.deleteIfExists(apk);
+
+            run("aapt2", List.of(sdk.buildTool("aapt2").toString(), "link",
+                    "-o", base.toString(),
+                    "--manifest", manifest.toString(),
+                    "-I", sdk.androidJar().toString(),
+                    "--min-sdk-version", Integer.toString(Sdk.MIN_SDK),
+                    "--target-sdk-version", Integer.toString(Sdk.TARGET_SDK),
+                    "--version-code", "1",
+                    "--version-name", "1.0"));
+
+            List<String> d8 = new ArrayList<>(List.of(javaBinary(), "-cp", sdk.d8Jar().toString(),
+                    "com.android.tools.r8.D8",
+                    "--min-api", Integer.toString(Sdk.MIN_SDK),
+                    "--lib", sdk.androidJar().toString(),
+                    "--output", dexDir.toString()));
+            d8.addAll(classFiles);
+            d8.add(kataHome.resolve("runtime").resolve("kata-rt-core.jar").toString());
+            d8.add(kataHome.resolve("runtime").resolve("kata-rt-android.jar").toString());
+            run("d8", d8);
+
+            URI zipUri = URI.create("jar:" + base.toUri());
+            try (FileSystem zip = FileSystems.newFileSystem(zipUri, Map.of())) {
+                Files.copy(dexDir.resolve("classes.dex"), zip.getPath("classes.dex"),
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            run("zipalign", List.of(sdk.buildTool("zipalign").toString(), "-f", "4",
+                    base.toString(), aligned.toString()));
+
+            Path keystore = debugKeystore();
+            run("apksigner", List.of(sdk.buildTool("apksigner").toString(), "sign",
+                    "--ks", keystore.toString(),
+                    "--ks-pass", "pass:android",
+                    "--key-pass", "pass:android",
+                    "--out", apk.toString(),
+                    aligned.toString()));
+            return apk;
+        } catch (IOException e) {
+            throw new ToolFailure("E0903", "io: " + e);
+        }
+    }
+
+    static String manifest(AppInfo app) {
+        return """
+                <?xml version="1.0" encoding="utf-8"?>
+                <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="%s">
+                    <application android:label="%s" android:theme="@android:style/Theme.Material.Light">
+                        <activity
+                            android:name="kata.gen.MainActivity"
+                            android:exported="true"
+                            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density">
+                            <intent-filter>
+                                <action android:name="android.intent.action.MAIN" />
+                                <category android:name="android.intent.category.LAUNCHER" />
+                            </intent-filter>
+                        </activity>
+                    </application>
+                </manifest>
+                """.formatted(xml(app.id()), xml(app.name()));
+    }
+
+    /** Escapes for an XML attribute; a leading @ or ? would otherwise be read as a resource reference. */
+    private static String xml(String text) {
+        String escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
+        if (escaped.startsWith("@") || escaped.startsWith("?")) {
+            escaped = "\\" + escaped;
+        }
+        return escaped;
+    }
+
+    private static Path debugKeystore() throws ToolFailure, IOException {
+        Path keystore = Path.of(System.getProperty("user.home"), ".android", "debug.keystore");
+        if (!Files.exists(keystore)) {
+            Files.createDirectories(keystore.getParent());
+            run("keytool", List.of(Path.of(System.getProperty("java.home"), "bin", "keytool").toString(),
+                    "-genkeypair",
+                    "-keystore", keystore.toString(),
+                    "-storepass", "android",
+                    "-keypass", "android",
+                    "-alias", "androiddebugkey",
+                    "-keyalg", "RSA",
+                    "-keysize", "2048",
+                    "-validity", "10000",
+                    "-dname", "CN=Android Debug,O=Android,C=US"));
+        }
+        return keystore;
+    }
+
+    private static String javaBinary() {
+        return Path.of(System.getProperty("java.home"), "bin", "java").toString();
+    }
+
+    private static void run(String tool, List<String> command) throws ToolFailure {
+        try {
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            process.getOutputStream().close();
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            int status = process.waitFor();
+            if (status != 0) {
+                throw new ToolFailure("E0903", tool + ": " + output.strip());
+            }
+        } catch (IOException e) {
+            throw new ToolFailure("E0903", tool + ": " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ToolFailure("E0903", tool + ": interrupted");
+        }
+    }
+
+    private static void deleteTree(Path dir) throws IOException {
+        if (!Files.exists(dir)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(dir)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        }
+    }
+}

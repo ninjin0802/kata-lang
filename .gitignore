@@ -1,4 +1,7 @@
-build/
+/build/
+/compiler/build/
+/runtime-core/build/
+/runtime-android/build/
+/examples/*/build/
 .gradle/
-examples/*/build/
 .superpowers/
