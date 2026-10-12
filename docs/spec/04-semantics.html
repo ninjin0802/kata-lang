@@ -170,7 +170,7 @@ Counter {}</code></pre>
   <tr><th>型</th><th>メソッド</th><th>内容</th></tr>
   <tr><td><code>Int</code></td><td><code>toString() -&gt; String</code></td><td>10進数の文字列にする。</td></tr>
   <tr><td><code>Int</code></td><td><code>toFloat() -&gt; Float</code></td><td>同じ値の <code>Float</code> にする。</td></tr>
-  <tr><td><code>Float</code></td><td><code>toString() -&gt; String</code></td><td>指数を使わない10進数の文字列にする。必ず小数点を含む（<code>3.0</code>、<code>0.1</code>）。無限大は <code>Infinity</code> / <code>-Infinity</code>、非数は <code>NaN</code>。</td></tr>
+  <tr><td><code>Float</code></td><td><code>toString() -&gt; String</code></td><td>指数を使わない10進数の文字列にする。必ず小数点を含む（<code>3.0</code>、<code>0.1</code>）。読み戻すと元と同じ数になる桁数で出すので、<code>0.1 + 0.2</code> は <code>0.30000000000000004</code> になる。無限大は <code>Infinity</code> / <code>-Infinity</code>、非数は <code>NaN</code>。</td></tr>
   <tr><td><code>Float</code></td><td><code>toInt() -&gt; Int</code></td><td>小数部を切り捨てる（0 の方向）。<code>Int</code> の範囲を超える値は範囲の端になり、非数は 0 になる。</td></tr>
   <tr><td><code>Float</code></td><td><code>round(decimals: Int) -&gt; Float</code></td><td>小数第 <code>decimals</code> 位までに丸める（ちょうど中間の値は 0 から遠い方へ）。<code>decimals</code> が負ならパニック。無限大と非数はそのまま返す。</td></tr>
   <tr><td><code>String</code></td><td><code>toFloat() -&gt; Float</code></td><td>10進数の文字列を数にする。受け付ける形は、先頭に任意の <code>-</code>、1桁以上の数字、任意で <code>.</code> と0桁以上の数字（<code>12</code>、<code>-0.5</code>、<code>3.</code>）。それ以外はパニック。</td></tr>

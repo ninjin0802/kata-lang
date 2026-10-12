@@ -192,7 +192,7 @@ class AlignBottom implements Ui {
 <div class="table-wrap">
 <table>
   <tr><th>部品</th><th>働き</th></tr>
-  <tr><td><code>Expand</code></td><td><code>Column</code> または <code>Row</code> の直接の子として置く。他の子を並べた残りの長さを、並べる方向に占める。<code>Expand</code> が複数あれば等分する。</td></tr>
+  <tr><td><code>Expand</code></td><td><code>Column</code> または <code>Row</code> の直接の子として置く。他の子を並べた残りの長さを、並べる方向に占める。<code>Expand</code> が複数あれば、中身の大きさにかかわらず等分し、<code>child</code> はその長さいっぱいに広がる。</td></tr>
   <tr><td><code>Space</code></td><td>縦横とも <code>dp</code> の大きさの空白。<code>Column</code> や <code>Row</code> の子の間に置いて間隔を空ける。</td></tr>
   <tr><td><code>Center</code></td><td>親が与える範囲いっぱいに広がり、<code>child</code> を縦横の中央に置く。</td></tr>
   <tr><td><code>CenterHorizontal</code></td><td>幅いっぱいに広がり、<code>child</code> を横の中央に置く。高さは <code>child</code> に合わせる。</td></tr>
