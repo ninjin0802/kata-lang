@@ -295,6 +295,43 @@ class Snackbar implements Ui {
   let onDismiss: Action;
 }
 
+class Image implements Ui {
+  let name: String;
+}
+
+class Icon implements Ui {
+  let name: String;
+  let size: Int;
+  let color: Color;
+}
+
+class Date {
+  let year: Int;
+  let month: Int;
+  let day: Int;
+}
+
+class Time {
+  let hour: Int;
+  let minute: Int;
+}
+
+class DatePicker implements Ui {
+  let value: Date;
+  let onChange: Handler&lt;Date&gt;;
+}
+
+class TimePicker implements Ui {
+  let value: Time;
+  let onChange: Handler&lt;Time&gt;;
+}
+
+class Menu implements Ui {
+  let label: String;
+  let options: List&lt;String&gt;;
+  let onSelect: Handler&lt;Int&gt;;
+}
+
 interface Items {
   fn size(self) -&gt; Int;
   fn item(self, index: Int) -&gt; Ui;
@@ -408,7 +445,7 @@ class LazyList implements Ui {
   <tr><td><code>Padding</code>、<code>PaddingEdges</code>、<code>Background</code>、<code>Rounded</code>、<code>Border</code>、<code>Card</code>、<code>Tappable</code>、<code>BackHandler</code>、<code>Scroll</code>、<code>HorizontalScroll</code></td><td>受け継ぐ</td><td>受け継ぐ</td><td>引き継いで広げる</td><td>引き継いで広げる</td></tr>
   <tr><td><code>Expand</code>（<code>Column</code> の直接の子）</td><td>受け継ぐ</td><td>残りを占める</td><td>引き継いで広げる</td><td>いっぱい</td></tr>
   <tr><td><code>Expand</code>（<code>Row</code> の直接の子）</td><td>残りを占める</td><td>受け継ぐ</td><td>いっぱい</td><td>引き継いで広げる</td></tr>
-  <tr><td><code>Space</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
+  <tr><td><code>Space</code>、<code>Icon</code></td><td>固定</td><td>固定</td><td>—</td><td>—</td></tr>
   <tr><td><code>Slider</code>、<code>Progress</code>、<code>TopBar</code>、<code>BackBar</code>、<code>Tabs</code>、<code>BottomNav</code>、<code>LazyList</code></td><td>いっぱい</td><td>受け継ぐ</td><td>—</td><td>—</td></tr>
   <tr><td><code>Alert</code>、<code>Modal</code>、<code>BottomSheet</code>、<code>Snackbar</code></td><td>0</td><td>0</td><td>（重ねた層の中で決まる）</td><td>（同左）</td></tr>
   <tr><td><code>Divider</code></td><td>いっぱい</td><td>固定（1dp）</td><td>—</td><td>—</td></tr>
@@ -527,6 +564,23 @@ class LazyList implements Ui {
   <li><code>item</code> は、行が画面に入るたびに、0 から <code>size() - 1</code> の番号で呼ばれる。フィールドを書き換えてはならない。</li>
   <li><code>LazyList</code> は幅いっぱいに広がる。高さは自分では決まらないので、<code>Expand</code> や <code>Height</code> で与える。</li>
   <li>数十件までの一覧は <code>Scroll</code> と <code>Column</code> で足りる。件数が多いときに <code>LazyList</code> を使う。</li>
+</ul>
+
+<h2 id="images">画像とアイコン</h2>
+<ul>
+  <li>画像ファイルは、プロジェクトの <code>assets/</code> ディレクトリに置く。中身はそのまま APK に入る。PNG、JPEG、WebP が使える。</li>
+  <li><code>Image { name: "photo.png" }</code> は、<code>assets/photo.png</code> を表示する。<code>name</code> は <code>assets/</code> からの相対パス。</li>
+  <li>画像の1画素を 1dp として表示する。大きさを変えるときは <code>Width</code> や <code>Height</code> で包む。画像は縦横比を保ったまま、その範囲に収まるように縮小・拡大される。</li>
+  <li><code>Icon</code> は、単色の画像を <code>size</code>（dp）の正方形に収め、<code>color</code> で塗って表示する。画像の不透明な部分の形だけが使われる。</li>
+  <li><code>name</code> が文字列リテラルのとき、その名前のファイルが <code>assets/</code> になければコンパイル時に <code>E0605</code> になる。計算で作った名前は実行時に確かめられ、なければパニックになる。</li>
+</ul>
+
+<h2 id="pickers">日付、時刻、メニュー</h2>
+<ul>
+  <li><code>Date</code> と <code>Time</code> は値を表すクラスで、<code>Ui</code> ではない。<code>month</code> は 1 から 12、<code>hour</code> は 0 から 23。</li>
+  <li><code>DatePicker</code> はカレンダー、<code>TimePicker</code> は24時間表記の時計を表示する。考え方は<a href="#controls">入力部品</a>と同じで、選ばれた値は <code>onChange</code> に <code>Date</code> または <code>Time</code> として渡される。</li>
+  <li>存在しない日付（2月30日など）や範囲外の時刻を <code>value</code> に渡すと、描画するときにパニックになる。</li>
+  <li><code>Menu</code> は <code>label</code> を表示するボタンで、押すと <code>options</code> の一覧を開く。選ばれた項目の番号（0始まり）で <code>onSelect</code> を実行する。</li>
 </ul>
 
 <h2 id="controls">入力部品</h2>

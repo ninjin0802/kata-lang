@@ -18,8 +18,10 @@ public final class Checker {
     /**
      * @param files parsed files without syntax errors, in path order
      * @param texts source text by file path, used to build fix replacements
+     * @param assets paths of the files under the project's assets/ directory
      */
-    public static CheckedProgram check(List<Ast.File> files, Map<String, String> texts, List<Diagnostic> out) {
+    public static CheckedProgram check(List<Ast.File> files, Map<String, String> texts, java.util.Set<String> assets,
+            List<Diagnostic> out) {
         ClassTable table = new ClassTable();
         Builtins.register(table);
         CheckedProgram program = new CheckedProgram(files, table);
@@ -43,7 +45,7 @@ public final class Checker {
         for (int i = 0; i < scopes.size(); i++) {
             FileScope scope = scopes.get(i);
             BodyChecker bodies = new BodyChecker(table, scope, new SourceText(texts.get(scope.file.path())),
-                    program, out);
+                    program, assets, out);
             for (Ast.ClassDecl decl : accepted.get(i)) {
                 decls.checkInterfaces(scope, decl);
                 bodies.checkClass(decl, program.classInfos.get(decl));

@@ -1,0 +1,91 @@
+module app.media;
+
+import kata.ui.Color;
+import kata.ui.Column;
+import kata.ui.Date;
+import kata.ui.DatePicker;
+import kata.ui.Icon;
+import kata.ui.Image;
+import kata.ui.Menu;
+import kata.ui.Padding;
+import kata.ui.Screen;
+import kata.ui.Tabs;
+import kata.ui.Text;
+import kata.ui.Time;
+import kata.ui.TimePicker;
+import kata.ui.Ui;
+
+// Pictures from assets/, a pop-up menu, and the date and time pickers, one page per tab.
+class Media implements Screen {
+  var page: Int = 0;
+  var choice: Int = 0;
+  var date: Date = Date { year: 2026, month: 10, day: 12 };
+  var time: Time = Time { hour: 10, minute: 30 };
+
+  fn view(self) -> Ui {
+    return Column {
+      children: [
+        Tabs { labels: ["Pictures", "Date", "Time"], selected: self.page, onChange: self.setPage },
+        Padding { all: 16, child: self.body() },
+      ],
+    };
+  }
+
+  fn body(self) -> Ui {
+    if (self.page == 1) {
+      return Column {
+        children: [
+          Text { text: "date=".concat(other: self.dateText()) },
+          DatePicker { value: self.date, onChange: self.setDate },
+        ],
+      };
+    }
+    if (self.page == 2) {
+      return Column {
+        children: [
+          Text { text: "time=".concat(other: self.timeText()) },
+          TimePicker { value: self.time, onChange: self.setTime },
+        ],
+      };
+    }
+    return Column {
+      children: [
+        Image { name: "photo.png" },
+        Icon { name: "icons/dot.png", size: 48, color: Color { red: 0, green: 150, blue: 136, alpha: 255 } },
+        Menu { label: "More", options: ["Share", "Rename", "Delete"], onSelect: self.setChoice },
+        Text { text: "choice=".concat(other: self.choice.toString()) },
+      ],
+    };
+  }
+
+  fn dateText(self) -> String {
+    return self.date.year.toString().concat(other: "-").concat(other: self.date.month.toString())
+      .concat(other: "-").concat(other: self.date.day.toString());
+  }
+
+  fn timeText(self) -> String {
+    return self.time.hour.toString().concat(other: ":").concat(other: self.time.minute.toString());
+  }
+
+  fn setPage(self, value: Int) -> Unit {
+    self.page = value;
+  }
+
+  fn setChoice(self, value: Int) -> Unit {
+    self.choice = value;
+  }
+
+  fn setDate(self, value: Date) -> Unit {
+    self.date = value;
+  }
+
+  fn setTime(self, value: Time) -> Unit {
+    self.time = value;
+  }
+}
+
+app {
+  id: "dev.kata.media",
+  name: "Media",
+  root: Media {},
+}

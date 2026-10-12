@@ -199,6 +199,11 @@ Components (all in `kata.ui`; fields in this order, all required):
 | `Modal`, `BottomSheet` | `child: Ui, onDismiss: Action` |
 | `Snackbar` | `message: String, actionLabel: String, onAction: Action, onDismiss: Action` — `onDismiss` runs after 4 s |
 | `LazyList` | `items: Items` — builds only the visible rows; full width, give it a height with `Expand` |
+| `Image` | `name: String` — a file under `<project>/assets/` (PNG, JPEG, WebP); 1 image pixel = 1 dp, wrap in `Width`/`Height` to scale. A literal name that does not exist is a compile error. |
+| `Icon` | `name: String, size: Int, color: Color` — a single-color asset drawn as a `size`-dp square in `color` |
+| `Menu` | `label: String, options: List<String>, onSelect: Handler<Int>` — button that opens a pop-up menu |
+| `DatePicker` | `value: Date, onChange: Handler<Date>` — `Date { year, month, day }`, month 1–12 |
+| `TimePicker` | `value: Time, onChange: Handler<Time>` — `Time { hour, minute }`, hour 0–23 |
 | `Space` | `dp: Int` — an empty square, for gaps |
 | `Center`, `CenterHorizontal`, `CenterVertical`, `AlignEnd` (right), `AlignBottom` | `child: Ui` |
 

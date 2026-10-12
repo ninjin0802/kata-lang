@@ -25,6 +25,7 @@ examples/controls/   M1 のサンプルアプリ（入力部品）
 examples/widgets/    M1 のサンプルアプリ（選択の部品と配置の部品）
 examples/shell/      M1 のサンプルアプリ（画面の骨組み）
 examples/overlays/   M1 のサンプルアプリ（重ねて出す部品と長い一覧）
+examples/media/      M1 のサンプルアプリ（画像、アイコン、日付と時刻、メニュー）
 scripts/             エミュレータでの確認スクリプト</code></pre>
 
 <h2 id="components">部品と依存</h2>
@@ -54,6 +55,7 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
 <pre><code>&lt;プロジェクト&gt;/
   src/                 ソースのルート
     app/counter.kata   モジュール app.counter
+  assets/              画像などのファイル（任意）。そのまま APK に入る
   build/               生成物（kata build が作る）
     classes/           .class
     app.apk            完成した APK</code></pre>
@@ -68,7 +70,7 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
   <li><strong>コード生成</strong>：<code>build/classes/</code> に <code>.class</code> を書き出す。<code>app</code> 宣言から <code>kata.gen.MainActivity</code> も生成する。</li>
   <li><strong>マニフェスト生成</strong>：<code>app</code> 宣言の <code>id</code> と <code>name</code> から <code>build/AndroidManifest.xml</code> を作る。</li>
   <li><strong>DEX 変換</strong>：<code>d8</code> で、生成した <code>.class</code> と2つのランタイムの jar を <code>classes.dex</code> にまとめる。</li>
-  <li><strong>パッケージ</strong>：<code>aapt2 link</code> でマニフェストを処理した APK を作り、<code>classes.dex</code> を追加する。</li>
+  <li><strong>パッケージ</strong>：<code>aapt2 link</code> でマニフェストと <code>assets/</code>（あれば。シンボリックリンクの場合は入れない）を処理した APK を作り、<code>classes.dex</code> を追加する。</li>
   <li><strong>整列と署名</strong>：<code>zipalign</code> の後、<code>apksigner</code> で debug 鍵による署名を行い、<code>build/app.apk</code> を出力する。</li>
 </ol>
 <p>アプリのビルドに Gradle と Android Gradle Plugin は使わない。Android SDK の build-tools を直接呼ぶ。</p>

@@ -74,6 +74,25 @@ public final class UiValidator {
             index("BottomNav", ((BottomNav) root).labels.size(), ((BottomNav) root).selected);
         } else if (root instanceof Badge) {
             nonNegative("Badge.count", ((Badge) root).count);
+        } else if (root instanceof Icon) {
+            nonNegative("Icon.size", ((Icon) root).size);
+            color(((Icon) root).color);
+        } else if (root instanceof DatePicker) {
+            Date date = ((DatePicker) root).value;
+            if (date.month < 1 || date.month > 12) {
+                throw new IllegalArgumentException("Date.month out of range: " + date.month);
+            }
+            if (date.day < 1 || date.day > daysIn(date.year, date.month)) {
+                throw new IllegalArgumentException("Date.day out of range: " + date.day);
+            }
+        } else if (root instanceof TimePicker) {
+            Time time = ((TimePicker) root).value;
+            if (time.hour < 0 || time.hour > 23) {
+                throw new IllegalArgumentException("Time.hour out of range: " + time.hour);
+            }
+            if (time.minute < 0 || time.minute > 59) {
+                throw new IllegalArgumentException("Time.minute out of range: " + time.minute);
+            }
         } else if (root instanceof Rounded) {
             nonNegative("Rounded.radius", ((Rounded) root).radius);
             color(((Rounded) root).color);
@@ -101,6 +120,14 @@ public final class UiValidator {
         if (selected < 0 || selected >= size) {
             throw new IllegalArgumentException(component + ".selected out of range: " + selected);
         }
+    }
+
+    private static long daysIn(long year, long month) {
+        if (month == 2) {
+            boolean leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+            return leap ? 29 : 28;
+        }
+        return month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31;
     }
 
     private static void color(Color color) {

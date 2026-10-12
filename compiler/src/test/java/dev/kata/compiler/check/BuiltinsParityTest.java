@@ -21,7 +21,8 @@ class BuiltinsParityTest {
             "CenterHorizontal", "CenterVertical", "AlignEnd", "AlignBottom", "Checkbox", "Switch", "Slider",
             "Progress", "Loading", "Divider", "TextArea", "Tappable", "Rounded", "RadioGroup", "Dropdown", "Rating",
             "Border", "Card", "Grid", "Stack", "Items", "Label", "TopBar", "BackBar", "Tabs", "BottomNav",
-            "BackHandler", "Fab", "Chip", "Badge", "Alert", "Modal", "BottomSheet", "Snackbar", "LazyList");
+            "BackHandler", "Fab", "Chip", "Badge", "Alert", "Modal", "BottomSheet", "Snackbar", "LazyList", "Image",
+            "Icon", "Date", "Time", "DatePicker", "TimePicker", "Menu");
 
     @Test
     void exportsExactlyTheNamesInTheSpec() {

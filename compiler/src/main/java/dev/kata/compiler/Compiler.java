@@ -40,7 +40,7 @@ public final class Compiler {
 
     public static Result check(Path project) throws UsageError {
         List<Diagnostic> diagnostics = new ArrayList<>();
-        analyze(readSources(project), diagnostics);
+        analyze(readSources(project), readAssets(project), diagnostics);
         return new Result(diagnostics, null);
     }
 
@@ -52,7 +52,7 @@ public final class Compiler {
      */
     public static Result build(Path project, Map<String, String> env, Path kataHome) throws UsageError {
         List<Diagnostic> diagnostics = new ArrayList<>();
-        CheckedProgram program = analyze(readSources(project), diagnostics);
+        CheckedProgram program = analyze(readSources(project), readAssets(project), diagnostics);
         if (!diagnostics.isEmpty()) {
             return new Result(diagnostics, null);
         }
@@ -89,7 +89,7 @@ public final class Compiler {
     }
 
     /** Runs every phase up to checking. The program is null when lexing or parsing reported anything. */
-    static CheckedProgram analyze(List<Source> sources, List<Diagnostic> diagnostics) {
+    static CheckedProgram analyze(List<Source> sources, java.util.Set<String> assets, List<Diagnostic> diagnostics) {
         List<Ast.File> files = parse(sources, diagnostics);
         if (!diagnostics.isEmpty()) {
             return null;
@@ -98,7 +98,24 @@ public final class Compiler {
         for (Source source : sources) {
             texts.put(source.path(), source.text());
         }
-        return Checker.check(files, texts, diagnostics);
+        return Checker.check(files, texts, assets, diagnostics);
+    }
+
+    /** The files under <project>/assets, as paths relative to it. Symbolic links are not followed. */
+    static java.util.Set<String> readAssets(Path project) throws UsageError {
+        Path assets = project.resolve("assets");
+        java.util.Set<String> names = new java.util.TreeSet<>();
+        if (!Files.isDirectory(assets, LinkOption.NOFOLLOW_LINKS)) {
+            return names;
+        }
+        try (Stream<Path> paths = Files.walk(assets)) {
+            for (Path file : paths.filter(p -> Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).toList()) {
+                names.add(assets.relativize(file).toString().replace(File.separatorChar, '/'));
+            }
+        } catch (IOException e) {
+            throw new UsageError("cannot read assets: " + e.getMessage());
+        }
+        return names;
     }
 
     static List<Source> readSources(Path project) throws UsageError {

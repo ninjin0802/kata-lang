@@ -26,6 +26,8 @@ public final class Builtins {
     private static final Type UI_TYPE = new Type.InterfaceType(UI);
     private static final Type COLOR_TYPE = new Type.ClassType(UI_MODULE + ".Color");
     private static final Type ITEMS_TYPE = new Type.InterfaceType(ITEMS);
+    private static final Type DATE_TYPE = new Type.ClassType(UI_MODULE + ".Date");
+    private static final Type TIME_TYPE = new Type.ClassType(UI_MODULE + ".Time");
     private static final Map<String, List<FieldInfo>> UI_CLASSES = new LinkedHashMap<>();
 
     static {
@@ -83,10 +85,20 @@ public final class Builtins {
         ui("BottomSheet", field("child", UI_TYPE), field("onDismiss", Type.ACTION));
         ui("Snackbar", field("message", Type.STRING), field("actionLabel", Type.STRING), field("onAction", Type.ACTION), field("onDismiss", Type.ACTION));
         ui("LazyList", field("items", ITEMS_TYPE));
+        ui("Image", field("name", Type.STRING));
+        ui("Icon", field("name", Type.STRING), field("size", Type.INT), field("color", COLOR_TYPE));
+        ui("Date", field("year", Type.INT), field("month", Type.INT), field("day", Type.INT));
+        ui("Time", field("hour", Type.INT), field("minute", Type.INT));
+        ui("DatePicker", field("value", DATE_TYPE), field("onChange", new Type.HandlerType(DATE_TYPE)));
+        ui("TimePicker", field("value", TIME_TYPE), field("onChange", new Type.HandlerType(TIME_TYPE)));
+        ui("Menu", field("label", Type.STRING), field("options", new Type.ListType(Type.STRING)), field("onSelect", new Type.HandlerType(Type.INT)));
     }
 
     /** Classes that are values passed to components rather than components themselves. */
-    private static final Set<String> NOT_UI = Set.of("Color");
+    private static final Set<String> NOT_UI = Set.of("Color", "Date", "Time");
+
+    /** Components whose `name` field names a file under the project's assets/ directory. */
+    public static final Set<String> ASSET_COMPONENTS = Set.of(UI_MODULE + ".Image", UI_MODULE + ".Icon");
 
     private static FieldInfo field(String name, Type type) {
         return new FieldInfo(name, type, false, false);

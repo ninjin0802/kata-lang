@@ -112,6 +112,58 @@ final class Extras {
             badge.setBackground(pill);
             return badge;
         }
+        if (node instanceof Image || node instanceof Icon) {
+            AssetImage image = new AssetImage(activity);
+            image.setAdjustViewBounds(true);
+            image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+            return image;
+        }
+        if (node instanceof DatePicker) {
+            final android.widget.DatePicker picker = new android.widget.DatePicker(activity);
+            Date date = ((DatePicker) node).value;
+            picker.init((int) date.year, (int) date.month - 1, (int) date.day, (view, year, month, day) -> {
+                DatePicker current = (DatePicker) picker.getTag();
+                Date held = current.value;
+                // Reported only when it differs from what the Screen holds.
+                if (held.year != year || held.month != month + 1 || held.day != day) {
+                    current.onChange.run(new Date(year, month + 1, day));
+                    activity.rerender();
+                }
+            });
+            return picker;
+        }
+        if (node instanceof TimePicker) {
+            final android.widget.TimePicker picker = new android.widget.TimePicker(activity);
+            picker.setIs24HourView(Boolean.TRUE);
+            picker.setOnTimeChangedListener((view, hour, minute) -> {
+                TimePicker current = (TimePicker) picker.getTag();
+                // Setting the hour and the minute are two steps; the state in between is not a user's choice.
+                if (!r.binding && current != null
+                        && (current.value.hour != hour || current.value.minute != minute)) {
+                    current.onChange.run(new Time(hour, minute));
+                    activity.rerender();
+                }
+            });
+            return picker;
+        }
+        if (node instanceof Menu) {
+            final android.widget.Button button = new android.widget.Button(activity);
+            button.setAllCaps(false);
+            button.setOnClickListener(view -> {
+                Menu menu = (Menu) button.getTag();
+                android.widget.PopupMenu popup = new android.widget.PopupMenu(activity, button);
+                for (int i = 0; i < menu.options.size(); i++) {
+                    popup.getMenu().add(0, i, i, (String) menu.options.get(i));
+                }
+                popup.setOnMenuItemClickListener(item -> {
+                    ((Menu) button.getTag()).onSelect.run(Long.valueOf(item.getItemId()));
+                    activity.rerender();
+                    return true;
+                });
+                popup.show();
+            });
+            return button;
+        }
         if (node instanceof Alert) {
             return new AlertAnchor(r);
         }
@@ -167,6 +219,35 @@ final class Extras {
         } else if (node instanceof Badge) {
             long count = ((Badge) node).count;
             setText((TextView) view, count > 99 ? "99+" : Long.toString(count));
+        } else if (node instanceof Image) {
+            ((AssetImage) view).show(((Image) node).name);
+            ((AssetImage) view).clearColorFilter();
+        } else if (node instanceof Icon) {
+            ((AssetImage) view).show(((Icon) node).name);
+            ((AssetImage) view).setColorFilter(r.argb(((Icon) node).color), android.graphics.PorterDuff.Mode.SRC_IN);
+        } else if (node instanceof DatePicker) {
+            android.widget.DatePicker picker = (android.widget.DatePicker) view;
+            Date date = ((DatePicker) node).value;
+            if (picker.getYear() != date.year || picker.getMonth() != date.month - 1
+                    || picker.getDayOfMonth() != date.day) {
+                picker.updateDate((int) date.year, (int) date.month - 1, (int) date.day);
+            }
+        } else if (node instanceof TimePicker) {
+            android.widget.TimePicker picker = (android.widget.TimePicker) view;
+            Time time = ((TimePicker) node).value;
+            r.binding = true;
+            try {
+                if (picker.getHour() != time.hour) {
+                    picker.setHour((int) time.hour);
+                }
+                if (picker.getMinute() != time.minute) {
+                    picker.setMinute((int) time.minute);
+                }
+            } finally {
+                r.binding = false;
+            }
+        } else if (node instanceof Menu) {
+            setText((TextView) view, ((Menu) node).label);
         } else if (node instanceof Alert) {
             ((AlertAnchor) view).sync();
         } else if (node instanceof Modal || node instanceof BottomSheet) {
@@ -232,6 +313,38 @@ final class Extras {
             segment.setTextColor(active ? ACCENT : MUTED);
             segment.setTypeface(Typeface.defaultFromStyle(active ? Typeface.BOLD : Typeface.NORMAL));
             segment.setSelected(active);
+        }
+    }
+
+    /** Shows a picture from the APK's assets. One image pixel is one dp. */
+    private static final class AssetImage extends android.widget.ImageView {
+        private static final java.util.Map<String, android.graphics.Bitmap> CACHE =
+                new java.util.HashMap<String, android.graphics.Bitmap>();
+        private String shown;
+
+        AssetImage(android.content.Context context) {
+            super(context);
+        }
+
+        void show(String name) {
+            if (name.equals(shown)) {
+                return;
+            }
+            android.graphics.Bitmap bitmap = CACHE.get(name);
+            if (bitmap == null) {
+                try (java.io.InputStream in = getContext().getAssets().open(name)) {
+                    bitmap = android.graphics.BitmapFactory.decodeStream(in);
+                } catch (java.io.IOException e) {
+                    bitmap = null;
+                }
+                if (bitmap == null) {
+                    throw new IllegalArgumentException("Image.name not found in assets: " + name);
+                }
+                bitmap.setDensity(android.util.DisplayMetrics.DENSITY_DEFAULT);
+                CACHE.put(name, bitmap);
+            }
+            setImageBitmap(bitmap);
+            shown = name;
         }
     }
 

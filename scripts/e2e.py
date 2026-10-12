@@ -578,8 +578,44 @@ def check_overlays():
     adb("uninstall", app_id, check=False)
 
 
+def check_media():
+    app_id = "dev.kata.media"
+    install_and_launch(build("media"), app_id)
+    root = wait_for(lambda r: exists(r, text="choice=0"), "the media example to appear")
+
+    # Image: one image pixel is one dp, and the picture's own color is shown.
+    photo, dot = find_all(root, cls="android.widget.ImageView")[:2]
+    near(photo.width, px(96), "Image width in dp")
+    near(photo.height, px(64), "Image height in dp")
+    assert pixel(*photo.center) == (30, 144, 255), "Image shows the asset"
+    # Icon: a square of the given size, painted in the given color.
+    near(dot.width, px(48), "Icon size")
+    near(dot.height, px(48), "Icon size")
+    assert pixel(*dot.center) == (0, 150, 136), "Icon is tinted"
+
+    # Menu: the button opens a pop-up and reports the chosen index.
+    tap_text("More")
+    tap(find(wait_for(lambda r: exists(r, text="Rename"), "the pop-up menu"), text="Rename"))
+    wait_for(lambda r: exists(r, text="choice=1"), "the menu choice")
+
+    # DatePicker: tapping another day of the shown month reports the new date.
+    tap_text("Date")
+    root = wait_for(lambda r: exists(r, text="date=2026-10-12"), "the date page")
+    tap(find(root, text="20"))
+    wait_for(lambda r: exists(r, text="date=2026-10-20"), "the picked date")
+
+    # TimePicker: shows the stored time; picking an hour on the dial reports it.
+    tap_text("Time")
+    root = wait_for(lambda r: exists(r, text="time=10:30"), "the time page")
+    three = [n for n in find_all(root) if n.element.get("content-desc") == "3"][0]
+    tap(three)
+    wait_for(lambda r: exists(r, text="time=3:30"), "the picked hour, with the minute kept")
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
     "calculator": check_calculator,
+    "media": check_media,
     "shell": check_shell,
     "overlays": check_overlays,
     "widgets": check_widgets,

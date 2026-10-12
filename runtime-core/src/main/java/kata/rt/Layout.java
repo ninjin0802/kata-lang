@@ -133,6 +133,10 @@ public final class Layout {
             }
             return spec(iw, ih, pass(iw), pass(ih), Gravity.TOP_START);
         }
+        if (node instanceof Icon) {
+            Dim size = Dim.fixed(((Icon) node).size);
+            return spec(size, size, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
+        }
         if (node instanceof Space) {
             Dim size = Dim.fixed(((Space) node).dp);
             return spec(size, size, Dim.WRAP, Dim.WRAP, Gravity.TOP_START);
@@ -181,7 +185,7 @@ public final class Layout {
                 || node instanceof BottomNav || node instanceof LazyList)) {
             return true;
         }
-        if (node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis
+        if (node instanceof Icon || node instanceof Space || node instanceof Width && widthAxis || node instanceof Height && !widthAxis
                 || node instanceof HorizontalScroll && widthAxis || node instanceof Scroll && !widthAxis) {
             return false;
         }

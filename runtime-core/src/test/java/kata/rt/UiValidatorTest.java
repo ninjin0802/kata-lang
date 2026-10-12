@@ -106,6 +106,23 @@ class UiValidatorTest {
     }
 
     @Test
+    void datesTimesAndIconsAreChecked() {
+        Handler ignore = value -> { };
+        assertInvalid("Date.month out of range: 13", new DatePicker(new Date(2026, 13, 1), ignore));
+        assertInvalid("Date.month out of range: 0", new DatePicker(new Date(2026, 0, 1), ignore));
+        assertInvalid("Date.day out of range: 32", new DatePicker(new Date(2026, 1, 32), ignore));
+        assertInvalid("Date.day out of range: 30", new DatePicker(new Date(2026, 2, 30), ignore));
+        assertInvalid("Time.hour out of range: 24", new TimePicker(new Time(24, 0), ignore));
+        assertInvalid("Time.minute out of range: 60", new TimePicker(new Time(0, 60), ignore));
+        assertInvalid("Icon.size out of range: -1", new Icon("a.png", -1, BLACK));
+        assertInvalid("Color.red out of range: 256", new Icon("a.png", 24, new Color(256, 0, 0, 255)));
+        assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
+            new DatePicker(new Date(2024, 2, 29), ignore), new TimePicker(new Time(23, 59), ignore),
+            new Icon("a.png", 0, BLACK), new Image("a.png"), new Menu("m", KList.of(new Object[0]), ignore),
+        }))));
+    }
+
+    @Test
     void zeroIsAllowed() {
         assertDoesNotThrow(() -> UiValidator.validate(new Column(KList.of(new Object[] {
             new StyledText("t", 0, BLACK), new Padding(0, LEAF), new PaddingEdges(0, 0, 0, 0, LEAF),

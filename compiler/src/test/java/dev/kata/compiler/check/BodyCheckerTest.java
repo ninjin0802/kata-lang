@@ -322,6 +322,27 @@ class BodyCheckerTest {
         check(wrapBody("for (x: Int in 5) {\n}")).single("E0401");
     }
 
+    // ---- assets
+
+    @Test
+    void imageNameMustBeAnExistingAsset() {
+        String source = wrap("class A {\n  fn m(self) -> Ui {\n    return Image { name: \"logo.png\" };\n  }\n}\n")
+                .replace("import kata.ui.Ui;", "import kata.ui.Ui;\nimport kata.ui.Image;");
+        checkFiles(Map.of(CheckSupport.PATH, source), java.util.Set.of("logo.png", "icons/star.png")).assertClean();
+        Diagnostic d = checkFiles(Map.of(CheckSupport.PATH, source), java.util.Set.of("icons/star.png"))
+                .single("E0605");
+        assertEquals("icons/star.png", d.expected());
+        assertEquals("logo.png", d.found());
+        assertEquals(new Span(8, 26, 8, 36), d.span());
+    }
+
+    @Test
+    void computedImageNamesAreNotCheckedAtCompileTime() {
+        String source = wrap("class A {\n  fn m(self, file: String) -> Ui {\n    return Image { name: file };\n  }\n}\n")
+                .replace("import kata.ui.Ui;", "import kata.ui.Ui;\nimport kata.ui.Image;");
+        check(source).assertClean();
+    }
+
     // ---- app
 
     @Test

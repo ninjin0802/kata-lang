@@ -273,6 +273,14 @@ class LayoutTest {
     }
 
     @Test
+    void iconIsAFixedSquare() {
+        Spec spec = other(new Icon("a.png", 24, BLACK), FILL, FILL);
+        assertEquals(Dim.fixed(24), spec.width);
+        assertEquals(Dim.fixed(24), spec.height);
+        assertEquals(WRAP, other(new Image("a.png"), WRAP, WRAP).width);
+    }
+
+    @Test
     void parentKindFollowsTheContainer() {
         assertEquals(Parent.COLUMN, Layout.parentKind(new Column(KList.of(new Object[0]))));
         assertEquals(Parent.ROW, Layout.parentKind(new Row(KList.of(new Object[0]))));

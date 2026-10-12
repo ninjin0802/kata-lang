@@ -46,7 +46,7 @@ public final class ApkBuilder {
             Files.deleteIfExists(aligned);
             Files.deleteIfExists(apk);
 
-            run("aapt2", List.of(sdk.buildTool("aapt2").toString(), "link",
+            List<String> link = new ArrayList<>(List.of(sdk.buildTool("aapt2").toString(), "link",
                     "-o", base.toString(),
                     "--manifest", manifest.toString(),
                     "-I", sdk.androidJar().toString(),
@@ -54,6 +54,13 @@ public final class ApkBuilder {
                     "--target-sdk-version", Integer.toString(Sdk.TARGET_SDK),
                     "--version-code", "1",
                     "--version-name", "1.0"));
+            // The project's assets/ directory, if it is a real directory, is packaged as is.
+            Path assets = project.toAbsolutePath().normalize().resolve("assets");
+            if (Files.isDirectory(assets, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                link.add("-A");
+                link.add(assets.toString());
+            }
+            run("aapt2", link);
 
             List<String> d8 = new ArrayList<>(List.of(javaBinary(), "-cp", sdk.d8Jar().toString(),
                     "com.android.tools.r8.D8",

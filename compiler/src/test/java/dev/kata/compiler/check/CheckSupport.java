@@ -55,6 +55,11 @@ public final class CheckSupport {
     }
 
     public static CheckSupport checkFiles(Map<String, String> sources) {
+        return checkFiles(sources, java.util.Set.of());
+    }
+
+    /** @param assets the paths of the files under the project's assets/ directory */
+    public static CheckSupport checkFiles(Map<String, String> sources, java.util.Set<String> assets) {
         CheckSupport support = new CheckSupport();
         List<Ast.File> files = new ArrayList<>();
         Map<String, String> ordered = new LinkedHashMap<>(new java.util.TreeMap<>(sources));
@@ -65,7 +70,7 @@ public final class CheckSupport {
         if (!support.diagnostics.isEmpty()) {
             fail("test source has syntax errors: " + support.diagnostics);
         }
-        support.program = Checker.check(files, ordered, support.diagnostics);
+        support.program = Checker.check(files, ordered, assets, support.diagnostics);
         return support;
     }
 

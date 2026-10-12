@@ -35,7 +35,11 @@ final class BodyChecker {
     private SelfMode selfMode;
     private final Deque<Map<String, Local>> locals = new ArrayDeque<>();
 
-    BodyChecker(ClassTable table, FileScope scope, SourceText text, CheckedProgram program, List<Diagnostic> out) {
+    private final java.util.Set<String> assets;
+
+    BodyChecker(ClassTable table, FileScope scope, SourceText text, CheckedProgram program,
+            java.util.Set<String> assets, List<Diagnostic> out) {
+        this.assets = assets;
         this.table = table;
         this.scope = scope;
         this.text = text;
@@ -442,7 +446,25 @@ final class BodyChecker {
         matchNamed(construct.inits(), names, types, construct.initsSpan(), "E0503",
                 "'" + construct.type() + "' must be constructed with exactly: ", empty ? "{" : "{ ",
                 empty ? "}" : " }");
+        if (Builtins.ASSET_COMPONENTS.contains(info.qualifiedName())) {
+            checkAsset(construct);
+        }
         return type;
+    }
+
+    /** A literal asset name must exist in assets/; a computed one can only be checked when the app runs. */
+    private void checkAsset(Ast.Construct construct) {
+        for (Ast.Named init : construct.inits()) {
+            if (init.name().equals("name") && init.value() instanceof Ast.StringLit literal
+                    && !assets.contains(literal.value())) {
+                List<String> known = new ArrayList<>(assets);
+                java.util.Collections.sort(known);
+                String listed = known.isEmpty() ? null
+                        : String.join(", ", known.subList(0, Math.min(10, known.size())));
+                out.add(Diagnostic.of("E0605", "no file '" + literal.value() + "' in the project's assets directory",
+                        path, literal.span()).withExpected(listed, literal.value()));
+            }
+        }
     }
 
     /** Checks `name: value` pairs against the declared names, which must appear all, once, in order. */

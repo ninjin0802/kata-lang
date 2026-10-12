@@ -26,7 +26,7 @@ final class Renderer implements Host<View> {
     private Ui current;
     private View rootView;
     /** True while the renderer itself is changing a control, so that the change is not reported. */
-    private boolean binding;
+    boolean binding;
 
     Renderer(KataActivity activity, FrameLayout container) {
         this.activity = activity;
