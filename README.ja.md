@@ -1,0 +1,66 @@
+# kata
+
+AI のコーディングエージェントが読み書きすることを前提に設計した、Android 向けの実験的なプログラミング言語です。
+
+[English](README.md)
+
+## 状態
+
+実験段階です。1画面で完結する小さなアプリを作れます（`examples/` にカウンター、見た目の指定、入力欄とスクロール、四則演算の電卓があります）。通信、保存、複数画面、画像、Android の API の直接呼び出しはまだできません。言語と出力の形式は予告なく変わることがあります。
+
+## 特徴
+
+- **短さより明示性。** すべての宣言に型を書き、引数はすべて名前付きで、`self.` は必須です。書き方は1通りで、オーバーロード、既定引数、暗黙の型変換、シャドーイング、継承、null、例外がありません。
+- **読む範囲が閉じている。** フィールドを書き換えられるのはそのクラスの中だけで、ファイルが使う外部の名前は先頭の import にすべて現れます。
+- **機械向けの診断。** `kata check` は、固定のエラーコード、正確な範囲、機械的に決まる修正案を JSON で返します。
+- **アプリ側に Kotlin も Gradle も要らない。** コンパイラが JVM バイトコードを直接出力し、Android SDK の build-tools で APK を組み立てます。カウンターの APK は 25 KB です。
+
+## 試す
+
+必要なもの：JDK 17、`platforms/android-35` と `build-tools/35.0.0` を含む Android SDK（`ANDROID_HOME` を設定）。
+
+```
+./gradlew installDist
+compiler/build/install/kata/bin/kata check examples/counter
+compiler/build/install/kata/bin/kata build examples/counter    # examples/counter/build/app.apk ができる
+adb install examples/counter/build/app.apk
+```
+
+アプリを書くには [`docs/kata-guide.md`](docs/kata-guide.md)（英語、1ファイル）を読んでください。仕様の全体は [`docs/spec/`](docs/spec/index.html) にあり、これが正です。
+
+## AI エージェントにとって本当に有利か
+
+小さな課題で1度計測しました。結論は「トークンコストでは、まだ有利ではない」です。
+
+同じモデルに、同じ要件の電卓を、kata（手引きだけを渡す）と Kotlin（View と Gradle）でゼロから作らせました。4つとも同じ端末上の動作確認を通っています。
+
+| | kata（仕様書） | kata（手引き） | Kotlin 1回目 | Kotlin 2回目 |
+|---|---|---|---|---|
+| 総トークン | 62,054 | 46,131 | 43,349 | 42,896 |
+| 所要時間 | 54秒 | 39秒 | 88秒 | 81秒 |
+| ビルド回数（うち失敗） | 1（0） | 1（0） | 2（1） | 2（1） |
+| ソースの量 | 4,542文字 | 3,476文字 | 4,660文字 | 4,622文字 |
+| APK | 25 KB | 25 KB | 845 KB | 855 KB |
+
+- kata は2回とも1回目のビルドで通りました。Kotlin は2回とも、同じ暗黙の名前の衝突（`display` と `View.getDisplay()`）で1回失敗しています。
+- ソースは kata のほうが短いものの、エージェントは先に手引きを読む必要があります。小さなアプリでは、この固定費が節約分を上回ります。
+- 課題は1つ、各列1〜2回の計測です。傾向であって、確かな結果ではありません。
+
+## 構成
+
+```
+docs/spec/         仕様書（正）
+docs/kata-guide.md アプリを書くための手引き
+compiler/          字句解析、構文解析、検査、バイトコード生成、APK の組み立て、CLI（Java 17、ASM）
+runtime-core/      UI の値、配置の規則、差分反映（Android に依存しない）
+runtime-android/   Activity と View への描画
+examples/          サンプルアプリ
+scripts/e2e.sh     端末上の動作確認（エミュレータか実機が1台必要）
+```
+
+## テスト
+
+```
+./gradlew test      # 端末を使わないテストすべて
+scripts/e2e.sh      # サンプルをビルドして、接続中の端末で確認
+```
