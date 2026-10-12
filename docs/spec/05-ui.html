@@ -36,6 +36,53 @@ class Text implements Ui {
 class Button implements Ui {
   let label: String;
   let onTap: Action;
+}
+
+class Color {
+  let red: Int;
+  let green: Int;
+  let blue: Int;
+}
+
+class StyledText implements Ui {
+  let text: String;
+  let size: Int;
+  let color: Color;
+}
+
+class StyledButton implements Ui {
+  let label: String;
+  let onTap: Action;
+  let textColor: Color;
+  let background: Color;
+}
+
+class Padding implements Ui {
+  let all: Int;
+  let child: Ui;
+}
+
+class Background implements Ui {
+  let color: Color;
+  let child: Ui;
+}
+
+class Width implements Ui {
+  let dp: Int;
+  let child: Ui;
+}
+
+class Height implements Ui {
+  let dp: Int;
+  let child: Ui;
+}
+
+class FillWidth implements Ui {
+  let child: Ui;
+}
+
+class FillHeight implements Ui {
+  let child: Ui;
 }</code></pre>
 
 <h2 id="components">UI 部品</h2>
@@ -50,8 +97,40 @@ class Button implements Ui {
 </div>
 <ul>
   <li>UI 部品は値であり、作っただけでは画面に出ない。<code>Screen</code> の <code>view</code> が返したものが表示される。</li>
-  <li>M1 には、大きさ、余白、色、文字の大きさを指定する手段がない。見た目は Android の既定に従う。</li>
+  <li><code>Text</code> と <code>Button</code> の見た目は Android の既定に従う。色や大きさを指定するときは<a href="#styling">見た目の指定</a>の部品を使う。</li>
   <li>利用者は <code>Ui</code> を実装するクラスを作れない（<code>E0506</code>）。画面の部品化は、<code>Ui</code> を返すメソッドで行う。</li>
+</ul>
+
+<h2 id="styling">見た目の指定</h2>
+<p>見た目は、専用の部品で指定する。1つの部品は1つのことだけを指定し、重ねて使う。</p>
+<pre><code>Padding {
+  all: 16,
+  child: Background {
+    color: Color { red: 255, green: 243, blue: 224 },
+    child: StyledText {
+      text: self.count.toString(),
+      size: 48,
+      color: Color { red: 138, green: 59, blue: 18 },
+    },
+  },
+}</code></pre>
+<div class="table-wrap">
+<table>
+  <tr><th>部品</th><th>指定すること</th></tr>
+  <tr><td><code>Color</code></td><td>色。<code>red</code>、<code>green</code>、<code>blue</code> はそれぞれ 0 から 255。不透明。<code>Ui</code> ではなく、他の部品の項目に渡す値。</td></tr>
+  <tr><td><code>StyledText</code></td><td>文字の大きさ（<code>size</code>、単位は sp）と文字の色を指定した文字列。</td></tr>
+  <tr><td><code>StyledButton</code></td><td>文字の色と背景の色を指定したボタン。</td></tr>
+  <tr><td><code>Padding</code></td><td><code>child</code> の四方に <code>all</code>（単位は dp）の余白を取る。</td></tr>
+  <tr><td><code>Background</code></td><td><code>child</code> の後ろを <code>color</code> で塗る。塗る範囲は <code>child</code> の大きさと同じ。</td></tr>
+  <tr><td><code>Width</code> / <code>Height</code></td><td><code>child</code> の幅または高さを <code>dp</code>（単位は dp）に固定する。</td></tr>
+  <tr><td><code>FillWidth</code> / <code>FillHeight</code></td><td><code>child</code> の幅または高さを、親が与える範囲いっぱいに広げる。</td></tr>
+</table>
+</div>
+<ul>
+  <li>大きさを指定しない部品は、中身に合った大きさになる。</li>
+  <li>色の値が 0 から 255 の範囲にない場合と、<code>size</code>、<code>all</code>、<code>dp</code> が負の場合は、描画するときにパニックになる。</li>
+  <li>余白の内側を塗るときは <code>Background</code> の中に <code>Padding</code> を、外側だけ空けるときは <code>Padding</code> の中に <code>Background</code> を置く。</li>
+  <li>ルートの UI は、ステータスバーなどのシステムの表示と重ならない範囲の左上に置かれる。</li>
 </ul>
 
 <h2 id="screen">Screen</h2>

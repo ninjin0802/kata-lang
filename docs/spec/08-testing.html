@@ -58,6 +58,15 @@
 </ol>
 <p>このスクリプトは Gradle のテストには含めない。エミュレータが要るため、手元で明示的に実行する。</p>
 
+<h3 id="device-style">見た目の確認</h3>
+<p><code>examples/styled/</code> に、<a href="05-ui.html#styling">見た目の指定</a>の全部品を使ったサンプルを置く。<code>scripts/e2e.sh</code> はこれもビルドして起動し、次を確かめる。</p>
+<ul>
+  <li><code>uiautomator dump</code> の座標から、<code>Width</code> / <code>Height</code> で固定した大きさと <code>Padding</code> の余白が、dp を画素に換算した値と一致すること。</li>
+  <li><code>FillWidth</code> を付けた部品の幅が、画面の利用できる幅と一致すること。</li>
+  <li>画面を回転させた後も、操作で変えた表示が保たれていること（カウンターのサンプルで確かめる）。</li>
+</ul>
+<p>色は、スクリーンショットの決めた位置の画素の値で確かめる。</p>
+
 <h2 id="commands">実行方法</h2>
 <div class="table-wrap">
 <table>

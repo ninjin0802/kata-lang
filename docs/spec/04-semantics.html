@@ -210,7 +210,7 @@ while (i &lt; 3) {
 
 <h2 id="panic">パニック</h2>
 <ul>
-  <li>M1 でパニックになるのは、0 による除算と、<code>List</code> の <code>get</code> の範囲外アクセス。</li>
+  <li>M1 でパニックになるのは、0 による除算、<code>List</code> の <code>get</code> の範囲外アクセス、<a href="05-ui.html#styling">見た目の指定</a>の値が範囲外である場合。</li>
   <li>パニックは捕まえられない。アプリは停止し、kata のファイル名と行番号を含むスタックトレースが logcat に出る。</li>
 </ul>
 
