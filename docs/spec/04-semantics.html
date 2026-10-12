@@ -212,6 +212,7 @@ while (i &lt; 3) {
 <h2 id="modules">モジュールと import</h2>
 <ul>
   <li>1ファイルが1モジュール。<code>module</code> 宣言の名前はファイルの位置と一致させる（<code>E0601</code>）。</li>
+  <li><code>kata</code> で始まるモジュール名は、組み込みとランタイムのために予約されていて使えない（<code>E0601</code>）。</li>
   <li>import は1行で1つの名前を取り込む。まとめて取り込む書き方はない。</li>
   <li><span class="tag m1">M1</span> で import できるのは、組み込みモジュール <code>kata.ui</code> の名前だけ。それ以外は <code>E0307</code>。</li>
   <li>import していない <code>kata.ui</code> の名前を使うと <code>E0305</code>（追加すべき import 文を修正案として返す）。</li>

@@ -61,7 +61,8 @@ public final class ClassGenerator {
 
         for (Ast.MethodDecl method : decl.methods()) {
             MethodInfo methodInfo = info.method(method.name());
-            MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, method.name(),
+            MethodVisitor mv = writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
+                    Names.method(method.name()),
                     Names.methodDescriptor(methodInfo), null, null);
             mv.visitCode();
             MethodGenerator generator = new MethodGenerator(program, mv, 1);

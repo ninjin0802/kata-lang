@@ -36,6 +36,7 @@
   <li>フィールドは <code>public</code>。<code>let</code> は <code>final</code> を付ける。外部からの書き込みは検査で防いでいるので、JVM 側では制限しない。</li>
   <li>コンストラクタは <code>public</code> で1つ。初期化の式を持たないフィールドを、宣言順に引数として受け取る。本体では、全フィールドを宣言順に初期化する。</li>
   <li>メソッドは <code>public final</code> のインスタンスメソッド。引数は宣言順。</li>
+  <li>メソッド名は kata の名前をそのまま使う。ただし <code>wait</code>、<code>notify</code>、<code>notifyAll</code>、<code>finalize</code> は、<code>java.lang.Object</code> のメソッドと衝突しないよう、JVM 上では名前の後ろに <code>$kata</code> を付ける。kata のコードからは元の名前で呼ぶ。</li>
   <li>各クラスに <code>SourceFile</code> を、各メソッドに行番号の表を出力する。スタックトレースに kata のファイル名と行番号が出るようにするため。</li>
 </ul>
 

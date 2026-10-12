@@ -70,7 +70,10 @@ public final class Checker {
         String path = file.path();
         String expected = path.substring("src/".length(), path.length() - ".kata".length()).replace('/', '.');
         String actual = file.module().name();
-        if (!actual.equals(expected)) {
+        if (file.module().parts().get(0).equals("kata")) {
+            out.add(Diagnostic.of("E0601", "module names starting with 'kata' are reserved", path,
+                    file.module().span()));
+        } else if (!actual.equals(expected)) {
             out.add(Diagnostic.of("E0601", "module name does not match the file location", path,
                     file.module().span()).withExpected(expected, actual).withFix(file.module().span(), expected));
         }

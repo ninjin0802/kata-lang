@@ -77,11 +77,13 @@
 <ul>
   <li>診断は、ファイルのパス、行、列の順に並べる。</li>
   <li><code>fix</code> は、適用すればその診断が解消することを保証する。他の診断が残ることはある。</li>
+  <li><code>fix</code> は行の区切りを前提にしない。import の追加は、最後の import（なければ <code>module</code> 宣言）の直後に改行と import 文を挿入する。import の削除は、その import 文の範囲だけを取り除く。</li>
+  <li>コンパイラ自体が失敗した場合も、<code>E0999</code> を1件持つ JSON を出力し、終了コード 1 で終わる。</li>
 </ul>
 
 <h2 id="phases">診断を返す範囲</h2>
 <ol>
-  <li>全ファイルの字句解析と構文解析を行う。構文解析は、文とメンバーの区切り（<code>;</code> と <code>}</code>）で立て直して続け、見つかった診断をすべて集める。</li>
+  <li>全ファイルの字句解析を行い、字句の診断がなかったファイルの構文解析を行う（字句の誤りが原因の構文の診断を重ねて出さないため）。構文解析は、文とメンバーの区切り（<code>;</code> と <code>}</code>）で立て直して続け、見つかった診断をすべて集める。</li>
   <li>ここまでで診断が1件でもあれば、それを返して終わる。</li>
   <li>なければ検査を行い、見つかった診断をすべて返す。</li>
   <li><code>kata build</code> は、診断が0件のときだけコード生成以降に進む。</li>
@@ -164,7 +166,7 @@
 <div class="table-wrap">
 <table>
   <tr><th>コード</th><th>内容</th><th>fix</th></tr>
-  <tr><td id="E0601"><code>E0601</code></td><td><code>module</code> 宣言の名前がファイルの位置と合わない。</td><td>正しいモジュール名への置き換え</td></tr>
+  <tr><td id="E0601"><code>E0601</code></td><td><code>module</code> 宣言の名前がファイルの位置と合わない、または予約された <code>kata</code> で始まる。</td><td>位置と合わない場合は、正しいモジュール名への置き換え</td></tr>
   <tr><td id="E0602"><code>E0602</code></td><td><code>app</code> 宣言がない、または2つ以上ある。</td><td>なし</td></tr>
   <tr><td id="E0603"><code>E0603</code></td><td><code>app</code> 宣言の項目の不足、未知の項目、順番の違い、<code>id</code> または <code>name</code> の形の誤り。</td><td>なし</td></tr>
   <tr><td id="E0604"><code>E0604</code></td><td><code>root</code> が <code>Screen</code> に代入できない。</td><td>なし</td></tr>

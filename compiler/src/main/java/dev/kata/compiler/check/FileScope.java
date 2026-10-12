@@ -62,9 +62,8 @@ final class FileScope {
     void reportUnusedImports() {
         for (Ast.Import decl : imports.values()) {
             if (!usedImports.contains(decl.name())) {
-                Span line = new Span(decl.span().line(), 1, decl.span().endLine() + 1, 1);
                 out.add(Diagnostic.of("E0306", "unused import '" + decl.name() + "'", file.path(), decl.span())
-                        .withFix(line, ""));
+                        .withFix(decl.span(), ""));
             }
         }
     }
@@ -126,7 +125,7 @@ final class FileScope {
             } else if (reportedMissingImports.add(name)) {
                 Span insertAt = importInsertionPoint();
                 out.add(Diagnostic.of("E0305", "'" + name + "' must be imported from kata.ui", file.path(), span)
-                        .withFix(insertAt, "import kata.ui." + name + ";\n"));
+                        .withFix(insertAt, "\nimport kata.ui." + name + ";"));
             }
             String qualified = Builtins.UI_MODULE + "." + name;
             return Builtins.isUiInterface(name) ? new Type.InterfaceType(qualified) : new Type.ClassType(qualified);
@@ -135,12 +134,12 @@ final class FileScope {
         return Type.UNKNOWN;
     }
 
-    /** The start of the line after the last import (or after the module declaration). */
+    /** Just after the last import, or after the module declaration when there are no imports. */
     private Span importInsertionPoint() {
-        int line = file.module().span().endLine();
+        Span last = file.moduleDeclSpan();
         for (Ast.Import decl : file.imports()) {
-            line = Math.max(line, decl.span().endLine());
+            last = decl.span();
         }
-        return new Span(line + 1, 1, line + 1, 1);
+        return last.endPoint();
     }
 }

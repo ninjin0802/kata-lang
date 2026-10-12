@@ -34,6 +34,15 @@ class DeclCheckerTest {
     }
 
     @Test
+    void modulesUnderKataAreReserved() {
+        String source = wrap("").replace("module app.main;", "module kata.gen;");
+        CheckSupport result = checkFiles(Map.of("src/kata/gen.kata", source));
+        Diagnostic d = result.single("E0601");
+        assertEquals(new Span(1, 8, 1, 16), d.span());
+        assertEquals(null, d.fix());
+    }
+
+    @Test
     void duplicateClassIsE0303() {
         Diagnostic d = check(wrap("class A {\n}\nclass A {\n}\n")).single("E0303");
         assertEquals(new Span(7, 7, 7, 8), d.span());
@@ -60,7 +69,7 @@ class DeclCheckerTest {
     void uiNameWithoutImportIsE0305WithFix() {
         Diagnostic d = check(wrap("class A {\n  let c: Column;\n}\n")).single("E0305");
         assertEquals(new Span(6, 10, 6, 16), d.span());
-        assertEquals(new Fix(new Span(5, 1, 5, 1), "import kata.ui.Column;\n"), d.fix());
+        assertEquals(new Fix(new Span(4, 19, 4, 19), "\nimport kata.ui.Column;"), d.fix());
     }
 
     @Test
@@ -68,7 +77,20 @@ class DeclCheckerTest {
         String source = wrap("").replace("import kata.ui.Ui;\n", "import kata.ui.Ui;\nimport kata.ui.Row;\n");
         Diagnostic d = check(source).single("E0306");
         assertEquals(new Span(5, 1, 5, 20), d.span());
-        assertEquals(new Fix(new Span(5, 1, 6, 1), ""), d.fix());
+        assertEquals(new Fix(new Span(5, 1, 5, 20), ""), d.fix());
+    }
+
+    @Test
+    void importFixesWorkWhenDeclarationsShareALine() {
+        String oneLine = wrap("").replace("module app.main;\nimport kata.ui.Screen;\n",
+                "module app.main; import kata.ui.Row; import kata.ui.Screen;\n");
+        Diagnostic unused = check(oneLine).single("E0306");
+        assertEquals(new Fix(new Span(1, 18, 1, 37), ""), unused.fix());
+
+        String noImports = "module app.main; class A {\n  let t: Text;\n}\n";
+        CheckSupport result = check(noImports);
+        Diagnostic missing = result.diagnostics.stream().filter(d -> d.code().equals("E0305")).findFirst().get();
+        assertEquals(new Fix(new Span(1, 17, 1, 17), "\nimport kata.ui.Text;"), missing.fix());
     }
 
     @Test

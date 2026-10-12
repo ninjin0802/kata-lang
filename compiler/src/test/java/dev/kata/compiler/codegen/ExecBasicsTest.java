@@ -137,6 +137,28 @@ class ExecBasicsTest {
                 return other.x + other.sum();
               }
             }
+            class Sleeper {
+              var log: String = "";
+              fn wait(self) -> Unit {
+                self.log = self.log.concat(other: "w");
+              }
+              fn notify(self) -> Unit {
+                self.log = self.log.concat(other: "n");
+              }
+              fn notifyAll(self) -> Unit {
+                self.log = self.log.concat(other: "a");
+              }
+              fn finalize(self) -> Unit {
+                self.log = self.log.concat(other: "f");
+              }
+              fn all(self) -> Action {
+                self.wait();
+                self.notify();
+                self.notifyAll();
+                self.finalize();
+                return self.wait;
+              }
+            }
             class Maker {
               var log: String = "";
               fn note(self, s: String) -> Int {
@@ -253,6 +275,14 @@ class ExecBasicsTest {
         assertEquals("main.kata", top.getFileName());
         assertEquals(ExecSupport.lineOf(SOURCE, "return a / b;"), top.getLineNumber());
         assertEquals("app.main.Calc", top.getClassName());
+    }
+
+    @Test
+    void methodsNamedLikeFinalObjectMethodsWork() throws Throwable {
+        Object sleeper = create(loader, "app.main.Sleeper");
+        kata.rt.Action wait = (kata.rt.Action) call(sleeper, "all");
+        wait.run();
+        assertEquals("wnafw", field(sleeper, "log"));
     }
 
     @Test

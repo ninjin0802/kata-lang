@@ -20,6 +20,15 @@ final class Names {
     static final String KATA_ACTIVITY = "kata/rt/KataActivity";
     static final String MAIN_ACTIVITY = "kata/gen/MainActivity";
 
+    /** Names that would override a final (or specially treated) method of java.lang.Object. */
+    private static final java.util.Set<String> OBJECT_METHODS = java.util.Set.of("wait", "notify", "notifyAll",
+            "finalize");
+
+    /** The JVM name of a kata method. A few names are suffixed so that they never touch Object's own. */
+    static String method(String kataName) {
+        return OBJECT_METHODS.contains(kataName) ? kataName + "$kata" : kataName;
+    }
+
     /** kata.ui.X lives in kata/rt/X; a user class a.b.C in a/b/C. */
     static String internal(String qualifiedName) {
         String prefix = Builtins.UI_MODULE + ".";

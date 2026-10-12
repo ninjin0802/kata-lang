@@ -16,7 +16,8 @@ public final class Ast {
     public record Import(ModulePath module, String name, Span nameSpan, Span span) {}
 
     /** module and app may be null when the file did not parse. */
-    public record File(String path, ModulePath module, List<Import> imports, List<ClassDecl> classes, AppDecl app) {}
+    public record File(String path, ModulePath module, Span moduleDeclSpan, List<Import> imports,
+            List<ClassDecl> classes, AppDecl app) {}
 
     public record ClassDecl(String name, Span nameSpan, List<TypeRef> interfaces, List<FieldDecl> fields,
             List<MethodDecl> methods, Span span) {}

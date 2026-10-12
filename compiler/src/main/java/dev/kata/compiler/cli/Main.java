@@ -60,6 +60,13 @@ public final class Main {
         } catch (Compiler.UsageError e) {
             err.println(e.getMessage());
             return 2;
+        } catch (RuntimeException | StackOverflowError e) {
+            // The output contract is one JSON document, even when the compiler itself fails.
+            e.printStackTrace(err);
+            Result failure = new Result(java.util.List.of(dev.kata.compiler.diag.Diagnostic.of("E0999",
+                    "internal compiler error: " + e, null, null)), null);
+            out.print(Json.write(failure));
+            return 1;
         }
     }
 }

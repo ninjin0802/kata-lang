@@ -265,7 +265,8 @@ final class MethodGenerator {
         String owner = Names.internal(method.owner());
         MethodInfo info = method.method();
         Handle target = new Handle(method.ownerIsInterface() ? Opcodes.H_INVOKEINTERFACE : Opcodes.H_INVOKEVIRTUAL,
-                owner, info.name(), Names.methodDescriptor(info), method.ownerIsInterface());
+                owner, method.ownerIsInterface() ? info.name() : Names.method(info.name()),
+                Names.methodDescriptor(info), method.ownerIsInterface());
         if (info.params().isEmpty()) {
             mv.visitInvokeDynamicInsn("run", "(L" + owner + ";)L" + Names.ACTION + ";", LAMBDA_BOOTSTRAP,
                     org.objectweb.asm.Type.getType("()V"), target, org.objectweb.asm.Type.getType("()V"));
@@ -285,7 +286,8 @@ final class MethodGenerator {
                 expr(arg.value());
             }
             mv.visitMethodInsn(method.ownerIsInterface() ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL,
-                    Names.internal(method.owner()), method.method().name(),
+                    Names.internal(method.owner()),
+                    method.ownerIsInterface() ? method.method().name() : Names.method(method.method().name()),
                     Names.methodDescriptor(method.method()), method.ownerIsInterface());
             return;
         }

@@ -35,13 +35,15 @@ public final class Parser {
 
     private Ast.File file() {
         Ast.ModulePath module = null;
+        Span moduleDeclSpan = null;
         List<Ast.Import> imports = new ArrayList<>();
         List<Ast.ClassDecl> classes = new ArrayList<>();
         Ast.AppDecl app = null;
         try {
-            expect(Kind.MODULE);
+            Token start = expect(Kind.MODULE);
             module = modulePath();
             semicolon();
+            moduleDeclSpan = Span.between(start.span(), prev().span());
         } catch (Bail bail) {
             syncTopLevel();
         }
@@ -75,7 +77,7 @@ public final class Parser {
                 ensureProgress(before);
             }
         }
-        return new Ast.File(file, module, imports, classes, app);
+        return new Ast.File(file, module, moduleDeclSpan, imports, classes, app);
     }
 
     private Ast.ModulePath modulePath() {
@@ -189,9 +191,20 @@ public final class Parser {
             while (accept(Kind.COMMA)) {
                 args.add(type());
             }
-            expect(Kind.GT);
+            closeTypeArguments();
         }
         return new Ast.TypeRef(name.text(), args, Span.between(name.span(), prev().span()));
+    }
+
+    /** Accepts `>`; a `>=` here is the closing bracket followed by `=` (as in `List<Int>= []`). */
+    private void closeTypeArguments() {
+        if (at(Kind.GE)) {
+            Span span = peek().span();
+            tokens.set(pos, new Token(Kind.ASSIGN, Kind.ASSIGN.display(),
+                    new Span(span.line(), span.column() + 1, span.endLine(), span.endColumn())));
+            return;
+        }
+        expect(Kind.GT);
     }
 
     private Ast.AppDecl appDecl() {

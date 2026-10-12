@@ -153,6 +153,15 @@ class ParserTest {
     }
 
     @Test
+    void closingAngleBracketDirectlyBeforeEqualsIsAccepted() {
+        Ast.File file = parseBody("var xs: List<Int>= [];\nlet ok: Bool = 1 >= 0;");
+        assertClean();
+        Ast.Var var = (Ast.Var) file.classes().get(0).methods().get(0).body().stmts().get(0);
+        assertEquals("List", var.type().name());
+        assertInstanceOf(Ast.ListLit.class, var.value());
+    }
+
+    @Test
     void parsesLoops() {
         Ast.File file = parseBody("while (c) { }\nfor (x: Int in xs) { }");
         assertClean();

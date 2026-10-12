@@ -54,6 +54,18 @@ class MainTest {
     }
 
     @Test
+    void internalFailureIsReportedAsE0999Json(@TempDir Path project) throws Exception {
+        Files.createDirectories(project.resolve("src/app"));
+        String deep = "(".repeat(20000) + "1" + ")".repeat(20000);
+        Files.writeString(project.resolve("src/app/main.kata"),
+                "module app.main;\nclass A {\n  fn m(self) -> Int {\n    return " + deep + ";\n  }\n}\n");
+        assertEquals(1, run("check", project.toString()));
+        assertTrue(out.toString().startsWith("{"), out.toString());
+        assertTrue(out.toString().contains("\"code\": \"E0999\""), out.toString());
+        assertTrue(out.toString().contains("\"ok\": false"), out.toString());
+    }
+
+    @Test
     void emptySrcReportsNoAppDeclaration(@TempDir Path project) throws Exception {
         Files.createDirectories(project.resolve("src"));
         assertEquals(1, run("check", project.toString()));
