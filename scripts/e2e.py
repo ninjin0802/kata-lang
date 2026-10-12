@@ -16,8 +16,16 @@ KATA = os.path.join(ROOT, "compiler", "build", "install", "kata", "bin", "kata")
 ACTIVITY = "kata.gen.MainActivity"
 
 
+# The device every adb call talks to; fixed at start so that a device appearing later cannot interfere.
+SERIAL = None
+
+
+def adb_command(*args):
+    return ["adb", *(["-s", SERIAL] if SERIAL else []), *args]
+
+
 def adb(*args, check=True):
-    result = subprocess.run(["adb", *args], capture_output=True, text=True)
+    result = subprocess.run(adb_command(*args), capture_output=True, text=True)
     if check and result.returncode != 0:
         raise RuntimeError(f"adb {' '.join(args)} failed: {result.stdout}{result.stderr}")
     return result.stdout
@@ -61,14 +69,32 @@ class Node:
 def dump():
     """The current UI hierarchy as an ElementTree root."""
     for _ in range(5):
-        output = subprocess.run(["adb", "exec-out", "uiautomator", "dump", "/dev/tty"],
+        output = subprocess.run(adb_command("exec-out", "uiautomator", "dump", "/dev/tty"),
                                 capture_output=True, text=True).stdout
         end = output.rfind("</hierarchy>")
         start = output.find("<?xml")
         if start >= 0 and end >= 0:
-            return ET.fromstring(output[start:end + len("</hierarchy>")])
+            root = ET.fromstring(output[start:end + len("</hierarchy>")])
+            if dismiss_system_dialog(root):
+                continue
+            return root
         time.sleep(0.5)
     raise RuntimeError("could not dump the UI hierarchy")
+
+
+# Buttons that close a dialog some other app put over the screen (seen on emulators with an old
+# security patch level). Only tapped when the dialog's own package is not a kata example.
+DISMISS_LABELS = ("閉じる", "Close", "Dismiss")
+
+
+def dismiss_system_dialog(root):
+    for element in root.iter("node"):
+        if element.get("text") in DISMISS_LABELS and not element.get("package", "").startswith("dev.kata."):
+            x, y = Node(element).center
+            adb("shell", "input", "tap", str(x), str(y))
+            time.sleep(1)
+            return True
+    return False
 
 
 def find_all(root, text=None, cls=None):
@@ -175,7 +201,7 @@ def pixel(x, y):
     png = os.path.join(ROOT, "build", "e2e-screen.png")
     os.makedirs(os.path.dirname(png), exist_ok=True)
     with open(png, "wb") as out:
-        subprocess.run(["adb", "exec-out", "screencap", "-p"], stdout=out, check=True)
+        subprocess.run(adb_command("exec-out", "screencap", "-p"), stdout=out, check=True)
     output = subprocess.run(["java", os.path.join(ROOT, "scripts", "Pixel.java"), png, str(x), str(y)],
                             capture_output=True, text=True, check=True).stdout
     r, g, b, _ = map(int, output.split())
@@ -319,7 +345,48 @@ def check_form():
     adb("uninstall", app_id, check=False)
 
 
+def check_calculator():
+    app_id = "dev.kata.calculator"
+    install_and_launch(build("calculator"), app_id)
+    root = wait_for(lambda r: exists(r, text="=", cls="android.widget.Button"), "the calculator keys")
+    keys = {n.text: n for n in find_all(root, cls="android.widget.Button")}
+
+    def shows(text):
+        return lambda r: exists(r, text=text, cls="android.widget.TextView")
+
+    def press(sequence):
+        for label in sequence:
+            tap(keys[label])
+
+    def expect(sequence, result):
+        press("C")
+        press(sequence)
+        wait_for(shows(result), f"{' '.join(sequence)} to show {result}")
+
+    wait_for(shows("0"), "the display to start at 0")
+    expect(["1", ".", "5", "+", "2", ".", "2", "5", "="], "3.75")
+    expect(["7", "÷", "2", "="], "3.5")
+    expect(["0", ".", "1", "+", "0", ".", "2", "="], "0.3")
+    expect(["6", "×", "7", "="], "42")
+    expect(["9", "-", "1", "0", "="], "-1")
+    expect(["2", "+", "3", "×", "4", "="], "20")
+    expect(["1", ".", ".", "5"], "1.5")
+    expect(["5", "÷", "0", "="], "Error")
+    press(["7"])
+    wait_for(shows("Error"), "keys to be ignored after an error")
+    press("C")
+    wait_for(shows("0"), "C to reset the display")
+
+    # The keys share each row equally and the rows span the screen.
+    screen_width, _ = screen_size()
+    near(keys["7"].width, keys["÷"].width, "keys in a row have equal width", tolerance=2)
+    near(keys["÷"].right, screen_width, "the key rows reach the right edge")
+    near(keys["="].width, screen_width, "the = key spans the screen")
+    adb("uninstall", app_id, check=False)
+
+
 CHECKS = {
+    "calculator": check_calculator,
     "counter": check_counter,
     "styled": check_styled,
     "form": check_form,
@@ -327,10 +394,15 @@ CHECKS = {
 
 
 def main(argv):
-    devices = [line for line in adb("devices").splitlines()[1:] if line.strip().endswith("device")]
-    if len(devices) != 1:
-        print(f"expected exactly one connected device, found {len(devices)}", file=sys.stderr)
-        return 2
+    global SERIAL
+    devices = [line.split()[0] for line in adb("devices").splitlines()[1:] if line.strip().endswith("device")]
+    SERIAL = os.environ.get("ANDROID_SERIAL")
+    if SERIAL is None:
+        if len(devices) != 1:
+            print(f"expected exactly one connected device, found {len(devices)}; set ANDROID_SERIAL to choose",
+                  file=sys.stderr)
+            return 2
+        SERIAL = devices[0]
     names = argv or list(CHECKS)
     for name in names:
         print(f"== {name}", flush=True)

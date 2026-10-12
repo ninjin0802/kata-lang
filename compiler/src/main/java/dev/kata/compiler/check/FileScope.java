@@ -92,6 +92,8 @@ final class FileScope {
         switch (name) {
             case "Int":
                 return Type.INT;
+            case "Float":
+                return Type.FLOAT;
             case "Bool":
                 return Type.BOOL;
             case "String":

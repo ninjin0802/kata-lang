@@ -5,7 +5,7 @@ import dev.kata.compiler.diag.Span;
 /** A lexical token. For STRING, text is the content with escapes resolved. */
 public record Token(Kind kind, String text, Span span) {
     public enum Kind {
-        LOWER_IDENT("identifier"), UPPER_IDENT("type name"), INT("integer"), STRING("string"),
+        LOWER_IDENT("identifier"), UPPER_IDENT("type name"), INT("integer"), FLOAT("decimal number"), STRING("string"),
         MODULE("module"), IMPORT("import"), CLASS("class"), IMPLEMENTS("implements"), LET("let"), VAR("var"),
         FN("fn"), SELF("self"), RETURN("return"), IF("if"), ELSE("else"), WHILE("while"), FOR("for"), IN("in"),
         TRUE("true"), FALSE("false"), APP("app"),

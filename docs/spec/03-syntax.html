@@ -82,6 +82,7 @@ app {
 <table>
   <tr><th>種類</th><th>形</th><th>補足</th></tr>
   <tr><td>整数</td><td><code>0</code> または <code>[1-9][0-9]*</code></td><td>範囲は 0 から 9223372036854775807。負の数は単項の <code>-</code> で書く。</td></tr>
+  <tr><td>小数</td><td><code>整数 "." 数字の並び</code>（<code>1.5</code>、<code>0.25</code>、<code>3.0</code>）</td><td>小数点の前後の両方に数字が要る。指数表記はない。整数部の先頭に余分な 0 は書けない。<code>Float</code> で表せない大きさは <code>E0104</code>。負の数は単項の <code>-</code> で書く。</td></tr>
   <tr><td>文字列</td><td><code>"..."</code></td><td>エスケープは <code>\"</code> <code>\\</code> <code>\n</code> <code>\t</code> の4つ。改行をそのまま含めることはできない。式の埋め込みはない。</td></tr>
   <tr><td>真偽値</td><td><code>true</code> <code>false</code></td><td></td></tr>
 </table>
@@ -137,7 +138,7 @@ unary       = ( "-" | "!" ) unary | postfix ;
 postfix     = primary { "." LowerIdent [ args ] } ;
 args        = "(" [ arg { "," arg } [ "," ] ] ")" ;
 arg         = LowerIdent ":" expr ;
-primary     = IntLit | StringLit | "true" | "false" | "self" | LowerIdent
+primary     = IntLit | FloatLit | StringLit | "true" | "false" | "self" | LowerIdent
             | construct | listLit | "(" expr ")" ;
 construct   = UpperIdent "{" [ fieldInit { "," fieldInit } [ "," ] ] "}" ;
 fieldInit   = LowerIdent ":" expr ;

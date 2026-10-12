@@ -158,6 +158,38 @@ class BodyCheckerTest {
         check(wrapBody("while (\"x\") {\n}")).single("E0403");
     }
 
+    // ---- floats
+
+    @Test
+    void floatArithmeticAndComparisonAreTyped() {
+        check(wrapBody("let a: Float = 1.5;\nlet b: Float = (a + 2.0) * (a - 0.5);\nlet c: Float = -a;\n"
+                + "let d: Bool = (a < b) || (a == 1.5);\nlet e: Float = a / b;\nlet f: Float = a % b;\n"
+                + "let xs: List<Float> = [1.0, a];")).assertClean();
+    }
+
+    @Test
+    void intAndFloatDoNotMix() {
+        check(wrapBody("let a: Float = 1.5 + 1;")).single("E0402");
+        check(wrapBody("let a: Bool = 1.5 < 1;")).single("E0402");
+        check(wrapBody("let a: Bool = 1 == 1.0;")).single("E0402");
+        check(wrapBody("let a: Int = 1.5;")).single("E0401");
+    }
+
+    @Test
+    void intWhereFloatExpectedSuggestsToFloat() {
+        Diagnostic d = check(wrapBody("let n: Int = 2;\nlet a: Float = n;")).single("E0401");
+        assertEquals("n.toFloat()", d.fix().replacement());
+        Diagnostic text = check(wrapBody("let a: Float = 1.5;\nlet s: String = a;")).single("E0401");
+        assertEquals("a.toString()", text.fix().replacement());
+    }
+
+    @Test
+    void floatBuiltinMethodsAreTyped() {
+        check(wrapBody("let a: Float = 2.toFloat();\nlet n: Int = a.toInt();\nlet s: String = a.toString();\n"
+                + "let r: Float = a.round(decimals: 2);\nlet p: Float = \"1.5\".toFloat();")).assertClean();
+        check(wrapBody("let a: Float = 1.5;\nlet r: Float = a.round(decimals: 1.0);")).single("E0401");
+    }
+
     // ---- return
 
     @Test

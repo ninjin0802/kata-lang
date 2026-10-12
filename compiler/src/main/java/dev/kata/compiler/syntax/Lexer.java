@@ -98,8 +98,19 @@ public final class Lexer {
             advance();
         }
         String digits = text.toString();
+        boolean leadingZero = digits.length() > 1 && digits.charAt(0) == '0';
+        if (pos + 1 < chars.length && chars[pos] == '.' && isDigit(chars[pos + 1])) {
+            text.append('.');
+            advance();
+            while (pos < chars.length && isDigit(chars[pos])) {
+                text.appendCodePoint(chars[pos]);
+                advance();
+            }
+            floatLiteral(text.toString(), leadingZero, new Span(line, startColumn, line, column));
+            return;
+        }
         Span span = new Span(line, startColumn, line, column);
-        if (digits.length() > 1 && digits.charAt(0) == '0') {
+        if (leadingZero) {
             out.add(Diagnostic.of("E0104", "integer literal has a leading zero", file, span));
             digits = "0";
         } else {
@@ -112,6 +123,17 @@ public final class Lexer {
             }
         }
         tokens.add(new Token(Kind.INT, digits, span));
+    }
+
+    private void floatLiteral(String literal, boolean leadingZero, Span span) {
+        if (leadingZero) {
+            out.add(Diagnostic.of("E0104", "decimal literal has a leading zero", file, span));
+            literal = "0.0";
+        } else if (Double.isInfinite(Double.parseDouble(literal))) {
+            out.add(Diagnostic.of("E0104", "decimal literal is out of range for Float", file, span));
+            literal = "0.0";
+        }
+        tokens.add(new Token(Kind.FLOAT, literal, span));
     }
 
     private void string() {

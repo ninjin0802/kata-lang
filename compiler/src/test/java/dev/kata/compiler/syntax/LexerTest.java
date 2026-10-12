@@ -133,6 +133,26 @@ class LexerTest {
     }
 
     @Test
+    void lexesFloatLiterals() {
+        List<Token> tokens = lex("1.5 0.25 3.0 12.toString() 1.x");
+        assertEquals(List.of(Kind.FLOAT, Kind.FLOAT, Kind.FLOAT, Kind.INT, Kind.DOT, Kind.LOWER_IDENT, Kind.LPAREN,
+                Kind.RPAREN, Kind.INT, Kind.DOT, Kind.LOWER_IDENT, Kind.EOF),
+                tokens.stream().map(Token::kind).toList());
+        assertEquals("1.5", tokens.get(0).text());
+        assertEquals(new Span(1, 5, 1, 9), tokens.get(1).span());
+        assertTrue(diagnostics.isEmpty());
+    }
+
+    @Test
+    void floatLiteralWithLeadingZeroOrOutOfRangeIsE0104() {
+        lex("007.5");
+        assertSingle("E0104", new Span(1, 1, 1, 6));
+        diagnostics.clear();
+        lex("1" + "0".repeat(400) + ".0");
+        assertEquals("E0104", diagnostics.get(0).code());
+    }
+
+    @Test
     void alwaysEndsWithEof() {
         assertEquals(List.of(Kind.EOF), kinds(""));
         assertEquals(List.of(Kind.EOF), kinds("   \n\t "));

@@ -68,6 +68,8 @@ public final class Ast {
 
     public record IntLit(long value, Span span) implements Expr {}
 
+    public record FloatLit(double value, Span span) implements Expr {}
+
     public record StringLit(String value, Span span) implements Expr {}
 
     public record BoolLit(boolean value, Span span) implements Expr {}

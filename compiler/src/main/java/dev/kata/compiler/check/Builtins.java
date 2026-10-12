@@ -20,7 +20,7 @@ public final class Builtins {
     public static final String SCREEN = UI_MODULE + ".Screen";
 
     /** Type names usable without an import. */
-    public static final Set<String> CORE_TYPES = Set.of("Int", "Bool", "String", "Unit", "Action", "Handler", "List");
+    public static final Set<String> CORE_TYPES = Set.of("Int", "Float", "Bool", "String", "Unit", "Action", "Handler", "List");
 
     private static final Type UI_TYPE = new Type.InterfaceType(UI);
     private static final Type COLOR_TYPE = new Type.ClassType(UI_MODULE + ".Color");
@@ -98,7 +98,13 @@ public final class Builtins {
         List<MethodInfo> methods = new ArrayList<>();
         if (receiver.equals(Type.INT)) {
             methods.add(new MethodInfo("toString", List.of(), Type.STRING));
+            methods.add(new MethodInfo("toFloat", List.of(), Type.FLOAT));
+        } else if (receiver.equals(Type.FLOAT)) {
+            methods.add(new MethodInfo("toString", List.of(), Type.STRING));
+            methods.add(new MethodInfo("toInt", List.of(), Type.INT));
+            methods.add(new MethodInfo("round", List.of(new ParamInfo("decimals", Type.INT)), Type.FLOAT));
         } else if (receiver.equals(Type.STRING)) {
+            methods.add(new MethodInfo("toFloat", List.of(), Type.FLOAT));
             methods.add(new MethodInfo("concat", List.of(new ParamInfo("other", Type.STRING)), Type.STRING));
             methods.add(new MethodInfo("length", List.of(), Type.INT));
         } else if (receiver instanceof Type.ListType list) {

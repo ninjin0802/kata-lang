@@ -247,8 +247,10 @@ final class BodyChecker {
         if (expected != null && !table.assignable(actual, expected)) {
             Diagnostic diagnostic = Diagnostic.of("E0401", "type mismatch", path, expr.span())
                     .withExpected(expected.display(), actual.display());
-            if (expected.equals(Type.STRING) && actual.equals(Type.INT)) {
+            if (expected.equals(Type.STRING) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT))) {
                 diagnostic = diagnostic.withFix(expr.span(), receiverText(expr) + ".toString()");
+            } else if (expected.equals(Type.FLOAT) && actual.equals(Type.INT)) {
+                diagnostic = diagnostic.withFix(expr.span(), receiverText(expr) + ".toFloat()");
             }
             out.add(diagnostic);
         }
@@ -265,6 +267,9 @@ final class BodyChecker {
     private Type inferUnrecorded(Ast.Expr expr, Type expected) {
         if (expr instanceof Ast.IntLit) {
             return Type.INT;
+        }
+        if (expr instanceof Ast.FloatLit) {
+            return Type.FLOAT;
         }
         if (expr instanceof Ast.StringLit) {
             return Type.STRING;
@@ -499,8 +504,18 @@ final class BodyChecker {
     }
 
     private Type unary(Ast.Unary unary) {
-        Type required = unary.op() == Ast.UnaryOp.NEG ? Type.INT : Type.BOOL;
-        Type operand = infer(unary.operand(), required);
+        Type operand = infer(unary.operand(), null);
+        if (unary.op() == Ast.UnaryOp.NEG) {
+            if (operand.equals(Type.INT) || operand.equals(Type.FLOAT)) {
+                return operand;
+            }
+            if (!(operand instanceof Type.Unknown)) {
+                out.add(Diagnostic.of("E0402", "operator '-' needs Int or Float", path, unary.operand().span())
+                        .withExpected("Int or Float", operand.display()));
+            }
+            return Type.UNKNOWN;
+        }
+        Type required = Type.BOOL;
         if (!table.assignable(operand, required)) {
             out.add(Diagnostic.of("E0402", "operator '" + unary.op().symbol + "' needs " + required.display(),
                     path, unary.operand().span()).withExpected(required.display(), operand.display()));
@@ -526,11 +541,10 @@ final class BodyChecker {
                             .withExpected("Int", "String").withFix(binary.span(), fix.toString()));
                     return Type.STRING;
                 }
-                requireAll(binary, types, Type.INT);
-                return Type.INT;
+                return requireNumeric(binary, types);
             }
             case LT, LE, GT, GE -> {
-                requireAll(binary, types, Type.INT);
+                requireNumeric(binary, types);
                 return Type.BOOL;
             }
             case AND, OR -> {
@@ -540,16 +554,42 @@ final class BodyChecker {
             default -> {
                 Type left = types.get(0);
                 Type right = types.get(1);
-                boolean comparable = left.equals(Type.INT) || left.equals(Type.BOOL) || left.equals(Type.STRING);
+                boolean comparable = left.equals(Type.INT) || left.equals(Type.FLOAT) || left.equals(Type.BOOL)
+                        || left.equals(Type.STRING);
                 if (!anyUnknown && (!comparable || !left.equals(right))) {
                     out.add(Diagnostic.of("E0402", "'" + op.symbol + "' compares two values of the same type "
-                            + "(Int, Bool or String)", path, binary.span())
-                            .withExpected(comparable ? left.display() : "Int, Bool or String",
+                            + "(Int, Float, Bool or String)", path, binary.span())
+                            .withExpected(comparable ? left.display() : "Int, Float, Bool or String",
                                     comparable ? right.display() : left.display()));
                 }
                 return Type.BOOL;
             }
         }
+    }
+
+    /** All operands Int, or all Float (never mixed). Returns that type, or Unknown after a diagnostic. */
+    private Type requireNumeric(Ast.Binary binary, List<Type> types) {
+        Type first = types.get(0);
+        if (first instanceof Type.Unknown) {
+            return Type.UNKNOWN;
+        }
+        if (!first.equals(Type.INT) && !first.equals(Type.FLOAT)) {
+            out.add(Diagnostic.of("E0402", "operator '" + binary.op().symbol + "' needs Int or Float", path,
+                    binary.operands().get(0).span()).withExpected("Int or Float", first.display()));
+            return Type.UNKNOWN;
+        }
+        for (int i = 1; i < types.size(); i++) {
+            Type other = types.get(i);
+            if (!(other instanceof Type.Unknown) && !other.equals(first)) {
+                boolean mixed = other.equals(Type.INT) || other.equals(Type.FLOAT);
+                out.add(Diagnostic.of("E0402", mixed
+                        ? "Int and Float cannot be mixed; convert with toFloat() or toInt()"
+                        : "operator '" + binary.op().symbol + "' needs " + first.display(), path,
+                        binary.operands().get(i).span()).withExpected(first.display(), other.display()));
+                return Type.UNKNOWN;
+            }
+        }
+        return first;
     }
 
     private void requireAll(Ast.Binary binary, List<Type> types, Type required) {

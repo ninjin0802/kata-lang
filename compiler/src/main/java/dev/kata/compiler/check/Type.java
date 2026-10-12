@@ -3,6 +3,7 @@ package dev.kata.compiler.check;
 /** A kata type (spec chapter 04). */
 public sealed interface Type {
     Type INT = new Prim(Prim.Kind.INT);
+    Type FLOAT = new Prim(Prim.Kind.FLOAT);
     Type BOOL = new Prim(Prim.Kind.BOOL);
     Type STRING = new Prim(Prim.Kind.STRING);
     Type UNIT = new Prim(Prim.Kind.UNIT);
@@ -14,7 +15,7 @@ public sealed interface Type {
 
     record Prim(Kind kind) implements Type {
         public enum Kind {
-            INT("Int"), BOOL("Bool"), STRING("String"), UNIT("Unit"), ACTION("Action");
+            INT("Int"), FLOAT("Float"), BOOL("Bool"), STRING("String"), UNIT("Unit"), ACTION("Action");
 
             final String display;
 

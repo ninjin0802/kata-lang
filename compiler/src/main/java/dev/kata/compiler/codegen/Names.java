@@ -14,6 +14,7 @@ final class Names {
     static final String OBJECT = "java/lang/Object";
     static final String STRING = "java/lang/String";
     static final String KLIST = "kata/rt/KList";
+    static final String FLOATS = "kata/rt/Floats";
     static final String ACTION = "kata/rt/Action";
     static final String HANDLER = "kata/rt/Handler";
     static final String SCREEN = "kata/rt/Screen";
@@ -65,6 +66,9 @@ final class Names {
         if (type.equals(Type.INT)) {
             return "J";
         }
+        if (type.equals(Type.FLOAT)) {
+            return "D";
+        }
         if (type.equals(Type.BOOL)) {
             return "Z";
         }
@@ -94,6 +98,9 @@ final class Names {
     static String boxedDescriptor(Type type) {
         if (type.equals(Type.INT)) {
             return "Ljava/lang/Long;";
+        }
+        if (type.equals(Type.FLOAT)) {
+            return "Ljava/lang/Double;";
         }
         if (type.equals(Type.BOOL)) {
             return "Ljava/lang/Boolean;";

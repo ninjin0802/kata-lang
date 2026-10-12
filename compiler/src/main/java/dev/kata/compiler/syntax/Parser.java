@@ -391,6 +391,10 @@ public final class Parser {
                 next();
                 return new Ast.IntLit(Long.parseLong(token.text()), token.span());
             }
+            case FLOAT -> {
+                next();
+                return new Ast.FloatLit(Double.parseDouble(token.text()), token.span());
+            }
             case STRING -> {
                 next();
                 return new Ast.StringLit(token.text(), token.span());

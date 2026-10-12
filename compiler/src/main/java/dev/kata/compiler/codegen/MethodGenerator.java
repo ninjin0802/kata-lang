@@ -54,7 +54,7 @@ final class MethodGenerator {
     /** Slots are never reused, so a slot always holds one type. */
     private Local declare(String name, Type type) {
         Local local = new Local(nextSlot, type);
-        nextSlot += type.equals(Type.INT) ? 2 : 1;
+        nextSlot += type.equals(Type.INT) || type.equals(Type.FLOAT) ? 2 : 1;
         scopes.peek().put(name, local);
         return local;
     }
@@ -79,11 +79,13 @@ final class MethodGenerator {
     }
 
     private static int loadOpcode(Type type) {
-        return type.equals(Type.INT) ? Opcodes.LLOAD : type.equals(Type.BOOL) ? Opcodes.ILOAD : Opcodes.ALOAD;
+        return type.equals(Type.INT) ? Opcodes.LLOAD : type.equals(Type.FLOAT) ? Opcodes.DLOAD
+                : type.equals(Type.BOOL) ? Opcodes.ILOAD : Opcodes.ALOAD;
     }
 
     private static int storeOpcode(Type type) {
-        return type.equals(Type.INT) ? Opcodes.LSTORE : type.equals(Type.BOOL) ? Opcodes.ISTORE : Opcodes.ASTORE;
+        return type.equals(Type.INT) ? Opcodes.LSTORE : type.equals(Type.FLOAT) ? Opcodes.DSTORE
+                : type.equals(Type.BOOL) ? Opcodes.ISTORE : Opcodes.ASTORE;
     }
 
     // ---- statements
@@ -124,7 +126,7 @@ final class MethodGenerator {
             } else {
                 expr(ret.value());
                 Type type = program.typeOf(ret.value());
-                mv.visitInsn(type.equals(Type.INT) ? Opcodes.LRETURN
+                mv.visitInsn(type.equals(Type.INT) ? Opcodes.LRETURN : type.equals(Type.FLOAT) ? Opcodes.DRETURN
                         : type.equals(Type.BOOL) ? Opcodes.IRETURN : Opcodes.ARETURN);
             }
         } else if (stmt instanceof Ast.If branch) {
@@ -204,6 +206,8 @@ final class MethodGenerator {
     void expr(Ast.Expr expr) {
         if (expr instanceof Ast.IntLit literal) {
             mv.visitLdcInsn(literal.value());
+        } else if (expr instanceof Ast.FloatLit literal) {
+            mv.visitLdcInsn(literal.value());
         } else if (expr instanceof Ast.StringLit literal) {
             mv.visitLdcInsn(literal.value());
         } else if (expr instanceof Ast.BoolLit literal) {
@@ -242,7 +246,7 @@ final class MethodGenerator {
         } else if (expr instanceof Ast.Unary unary) {
             expr(unary.operand());
             if (unary.op() == Ast.UnaryOp.NEG) {
-                mv.visitInsn(Opcodes.LNEG);
+                mv.visitInsn(program.typeOf(unary.operand()).equals(Type.FLOAT) ? Opcodes.DNEG : Opcodes.LNEG);
             } else {
                 mv.visitInsn(Opcodes.ICONST_1);
                 mv.visitInsn(Opcodes.IXOR);
@@ -294,8 +298,19 @@ final class MethodGenerator {
         MemberRef.BuiltinMethod builtin = (MemberRef.BuiltinMethod) ref;
         String name = builtin.method().name();
         Type receiver = builtin.receiver();
-        if (receiver.equals(Type.INT)) {
+        if (receiver.equals(Type.INT) && name.equals("toFloat")) {
+            mv.visitInsn(Opcodes.L2D);
+        } else if (receiver.equals(Type.INT)) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "toString", "(J)Ljava/lang/String;", false);
+        } else if (receiver.equals(Type.FLOAT) && name.equals("toString")) {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Names.FLOATS, "toString", "(D)Ljava/lang/String;", false);
+        } else if (receiver.equals(Type.FLOAT) && name.equals("toInt")) {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Names.FLOATS, "toInt", "(D)J", false);
+        } else if (receiver.equals(Type.FLOAT)) {
+            expr(call.args().get(0).value());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Names.FLOATS, "round", "(DJ)D", false);
+        } else if (receiver.equals(Type.STRING) && name.equals("toFloat")) {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Names.FLOATS, "parse", "(Ljava/lang/String;)D", false);
         } else if (receiver.equals(Type.STRING) && name.equals("concat")) {
             expr(call.args().get(0).value());
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Names.STRING, "concat",
@@ -327,10 +342,12 @@ final class MethodGenerator {
         List<Ast.Expr> operands = binary.operands();
         switch (op) {
             case ADD, SUB, MUL, DIV, REM -> {
+                // The double opcodes are the long opcodes shifted by two (LADD=97, DADD=99, ...).
+                int shift = program.typeOf(operands.get(0)).equals(Type.FLOAT) ? 2 : 0;
                 expr(operands.get(0));
                 for (int i = 1; i < operands.size(); i++) {
                     expr(operands.get(i));
-                    mv.visitInsn(switch (op) {
+                    mv.visitInsn(shift + switch (op) {
                         case ADD -> Opcodes.LADD;
                         case SUB -> Opcodes.LSUB;
                         case MUL -> Opcodes.LMUL;
@@ -357,7 +374,12 @@ final class MethodGenerator {
             case LT, LE, GT, GE -> {
                 expr(operands.get(0));
                 expr(operands.get(1));
-                mv.visitInsn(Opcodes.LCMP);
+                if (program.typeOf(operands.get(0)).equals(Type.FLOAT)) {
+                    // Chosen so that a comparison involving NaN is false.
+                    mv.visitInsn(op == BinaryOp.LT || op == BinaryOp.LE ? Opcodes.DCMPG : Opcodes.DCMPL);
+                } else {
+                    mv.visitInsn(Opcodes.LCMP);
+                }
                 booleanFromJump(switch (op) {
                     case LT -> Opcodes.IFLT;
                     case LE -> Opcodes.IFLE;
@@ -372,6 +394,9 @@ final class MethodGenerator {
                 expr(operands.get(1));
                 if (type.equals(Type.INT)) {
                     mv.visitInsn(Opcodes.LCMP);
+                    booleanFromJump(equal ? Opcodes.IFEQ : Opcodes.IFNE);
+                } else if (type.equals(Type.FLOAT)) {
+                    mv.visitInsn(Opcodes.DCMPL);
                     booleanFromJump(equal ? Opcodes.IFEQ : Opcodes.IFNE);
                 } else if (type.equals(Type.BOOL)) {
                     booleanFromJump(equal ? Opcodes.IF_ICMPEQ : Opcodes.IF_ICMPNE);
@@ -414,6 +439,8 @@ final class MethodGenerator {
     private void box(Type type) {
         if (type.equals(Type.INT)) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
+        } else if (type.equals(Type.FLOAT)) {
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
         } else if (type.equals(Type.BOOL)) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;",
                     false);
@@ -424,6 +451,9 @@ final class MethodGenerator {
         if (type.equals(Type.INT)) {
             mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Long");
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
+        } else if (type.equals(Type.FLOAT)) {
+            mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Double");
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
         } else if (type.equals(Type.BOOL)) {
             mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Boolean");
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);

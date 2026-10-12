@@ -98,7 +98,7 @@
   <tr><td id="E0101"><code>E0101</code></td><td>使えない文字がある。</td><td>なし</td></tr>
   <tr><td id="E0102"><code>E0102</code></td><td>文字列リテラルが閉じていない。</td><td>なし</td></tr>
   <tr><td id="E0103"><code>E0103</code></td><td>使えないエスケープがある。</td><td>なし</td></tr>
-  <tr><td id="E0104"><code>E0104</code></td><td>整数リテラルが範囲外、または先頭に余分な 0 がある。</td><td>なし</td></tr>
+  <tr><td id="E0104"><code>E0104</code></td><td>整数または小数のリテラルが範囲外、または先頭に余分な 0 がある。</td><td>なし</td></tr>
   <tr><td id="E0105"><code>E0105</code></td><td>M2 以降のために予約された語を使っている。</td><td>なし</td></tr>
 </table>
 </div>
@@ -134,7 +134,7 @@
 <div class="table-wrap">
 <table>
   <tr><th>コード</th><th>内容</th><th>fix</th></tr>
-  <tr><td id="E0401"><code>E0401</code></td><td>型が合わない。<code>expected</code> と <code>found</code> に型を入れる。</td><td><code>String</code> の場所に <code>Int</code> がある場合は <code>.toString()</code> の付加</td></tr>
+  <tr><td id="E0401"><code>E0401</code></td><td>型が合わない。<code>expected</code> と <code>found</code> に型を入れる。</td><td><code>String</code> の場所に <code>Int</code> か <code>Float</code> がある場合は <code>.toString()</code> の付加。<code>Float</code> の場所に <code>Int</code> がある場合は <code>.toFloat()</code> の付加</td></tr>
   <tr><td id="E0402"><code>E0402</code></td><td>演算子のオペランドの型が合わない。</td><td><code>String</code> 同士の <code>+</code> は <code>concat</code> への置き換え</td></tr>
   <tr><td id="E0403"><code>E0403</code></td><td><code>if</code> または <code>while</code> の条件が <code>Bool</code> ではない。</td><td>なし</td></tr>
   <tr><td id="E0404"><code>E0404</code></td><td><code>return</code> で終わらない経路がある。</td><td>なし</td></tr>

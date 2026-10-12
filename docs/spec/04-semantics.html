@@ -18,6 +18,7 @@
 <table>
   <tr><th>型</th><th>内容</th></tr>
   <tr><td><code>Int</code></td><td>64ビットの符号付き整数。あふれた場合は折り返す。</td></tr>
+  <tr><td><code>Float</code></td><td>64ビットの浮動小数点数（IEEE 754 倍精度）。</td></tr>
   <tr><td><code>Bool</code></td><td><code>true</code> または <code>false</code>。</td></tr>
   <tr><td><code>String</code></td><td>不変の文字列。</td></tr>
   <tr><td><code>Unit</code></td><td>値を返さないメソッドの戻り値の型。戻り値の型以外には書けない（<code>E0407</code>）。</td></tr>
@@ -29,7 +30,7 @@
 </table>
 </div>
 <ul>
-  <li><code>Int</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
+  <li><code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code>、<code>Unit</code>、<code>Action</code>、<code>Handler</code>、<code>List</code> は import なしで使える。それ以外の名前は import が要る（<a href="#modules">モジュールと import</a>）。</li>
   <li>null は存在しない。すべての変数とフィールドは常に値を持つ。</li>
   <li>型引数の数が合わない場合は <code>E0408</code>。</li>
 </ul>
@@ -145,9 +146,10 @@ Counter {}</code></pre>
 <table>
   <tr><th>演算子</th><th>オペランド</th><th>結果</th></tr>
   <tr><td><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code></td><td><code>Int</code> と <code>Int</code></td><td><code>Int</code></td></tr>
-  <tr><td>単項 <code>-</code></td><td><code>Int</code></td><td><code>Int</code></td></tr>
-  <tr><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td><td><code>Int</code> と <code>Int</code></td><td><code>Bool</code></td></tr>
-  <tr><td><code>==</code> <code>!=</code></td><td>両辺が同じ型で、<code>Int</code>、<code>Bool</code>、<code>String</code> のいずれか</td><td><code>Bool</code></td></tr>
+  <tr><td><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code></td><td><code>Float</code> と <code>Float</code></td><td><code>Float</code></td></tr>
+  <tr><td>単項 <code>-</code></td><td><code>Int</code> または <code>Float</code></td><td>オペランドと同じ型</td></tr>
+  <tr><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td><td><code>Int</code> と <code>Int</code>、または <code>Float</code> と <code>Float</code></td><td><code>Bool</code></td></tr>
+  <tr><td><code>==</code> <code>!=</code></td><td>両辺が同じ型で、<code>Int</code>、<code>Float</code>、<code>Bool</code>、<code>String</code> のいずれか</td><td><code>Bool</code></td></tr>
   <tr><td><code>&amp;&amp;</code> <code>||</code></td><td><code>Bool</code> と <code>Bool</code></td><td><code>Bool</code></td></tr>
   <tr><td><code>!</code></td><td><code>Bool</code></td><td><code>Bool</code></td></tr>
 </table>
@@ -156,7 +158,9 @@ Counter {}</code></pre>
   <li>オペランドの型が合わない場合は <code>E0402</code>。</li>
   <li><code>+</code> で文字列は連結できない。<code>concat</code> を使う。</li>
   <li><code>==</code> は値の比較。クラスのインスタンスとリストは比較できない。</li>
-  <li><code>/</code> は 0 の方向に切り捨てる。<code>%</code> の符号は割られる数に従う。0 で割るとパニックになる。</li>
+  <li><code>Int</code> の <code>/</code> は 0 の方向に切り捨てる。<code>%</code> の符号は割られる数に従う。0 で割るとパニックになる。</li>
+  <li><code>Int</code> と <code>Float</code> は混ぜられない（<code>E0402</code>）。<code>toFloat()</code> か <code>toInt()</code> で明示的にそろえる。</li>
+  <li><code>Float</code> の演算は IEEE 754 に従う。0.0 で割ってもパニックにならず、結果は無限大か非数になる。非数は、自分自身を含むどの値とも <code>==</code> にならない。</li>
   <li><code>&amp;&amp;</code> と <code>||</code> は左から評価し、結果が決まった時点で残りを評価しない。</li>
 </ul>
 
@@ -165,6 +169,11 @@ Counter {}</code></pre>
 <table>
   <tr><th>型</th><th>メソッド</th><th>内容</th></tr>
   <tr><td><code>Int</code></td><td><code>toString() -&gt; String</code></td><td>10進数の文字列にする。</td></tr>
+  <tr><td><code>Int</code></td><td><code>toFloat() -&gt; Float</code></td><td>同じ値の <code>Float</code> にする。</td></tr>
+  <tr><td><code>Float</code></td><td><code>toString() -&gt; String</code></td><td>指数を使わない10進数の文字列にする。必ず小数点を含む（<code>3.0</code>、<code>0.1</code>）。無限大は <code>Infinity</code> / <code>-Infinity</code>、非数は <code>NaN</code>。</td></tr>
+  <tr><td><code>Float</code></td><td><code>toInt() -&gt; Int</code></td><td>小数部を切り捨てる（0 の方向）。<code>Int</code> の範囲を超える値は範囲の端になり、非数は 0 になる。</td></tr>
+  <tr><td><code>Float</code></td><td><code>round(decimals: Int) -&gt; Float</code></td><td>小数第 <code>decimals</code> 位までに丸める（ちょうど中間の値は 0 から遠い方へ）。<code>decimals</code> が負ならパニック。無限大と非数はそのまま返す。</td></tr>
+  <tr><td><code>String</code></td><td><code>toFloat() -&gt; Float</code></td><td>10進数の文字列を数にする。受け付ける形は、先頭に任意の <code>-</code>、1桁以上の数字、任意で <code>.</code> と0桁以上の数字（<code>12</code>、<code>-0.5</code>、<code>3.</code>）。それ以外はパニック。</td></tr>
   <tr><td><code>String</code></td><td><code>concat(other: String) -&gt; String</code></td><td>後ろに <code>other</code> をつないだ文字列を返す。</td></tr>
   <tr><td><code>String</code></td><td><code>length() -&gt; Int</code></td><td>文字数（Unicode のコードポイントの数）。</td></tr>
   <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
@@ -222,7 +231,7 @@ while (i &lt; 3) {
 
 <h2 id="panic">パニック</h2>
 <ul>
-  <li>M1 でパニックになるのは、0 による除算、<code>List</code> の <code>get</code> の範囲外アクセス、<a href="05-ui.html#styling">見た目の指定</a>の値が範囲外である場合。</li>
+  <li>M1 でパニックになるのは、<code>Int</code> の 0 による除算、数として読めない文字列の <code>toFloat</code>、負の桁数の <code>round</code>、<code>List</code> の <code>get</code> の範囲外アクセス、<a href="05-ui.html#styling">見た目の指定</a>の値が範囲外である場合。</li>
   <li>パニックは捕まえられない。アプリは停止し、kata のファイル名と行番号を含むスタックトレースが logcat に出る。</li>
 </ul>
 
