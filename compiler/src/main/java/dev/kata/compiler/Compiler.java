@@ -1,7 +1,11 @@
 package dev.kata.compiler;
 
+import dev.kata.compiler.build.ApkBuilder;
+import dev.kata.compiler.build.Sdk;
+import dev.kata.compiler.build.ToolFailure;
 import dev.kata.compiler.check.CheckedProgram;
 import dev.kata.compiler.check.Checker;
+import dev.kata.compiler.codegen.ClassGenerator;
 import dev.kata.compiler.diag.Diagnostic;
 import dev.kata.compiler.diag.Result;
 import dev.kata.compiler.syntax.Ast;
@@ -37,6 +41,37 @@ public final class Compiler {
         List<Diagnostic> diagnostics = new ArrayList<>();
         analyze(readSources(project), diagnostics);
         return new Result(diagnostics, null);
+    }
+
+    /**
+     * Checks the project and, when it is clean, generates classes and assembles build/app.apk.
+     *
+     * @param env the environment, read for ANDROID_HOME
+     * @param kataHome the installation directory containing runtime/*.jar
+     */
+    public static Result build(Path project, Map<String, String> env, Path kataHome) throws UsageError {
+        List<Diagnostic> diagnostics = new ArrayList<>();
+        CheckedProgram program = analyze(readSources(project), diagnostics);
+        if (!diagnostics.isEmpty()) {
+            return new Result(diagnostics, null);
+        }
+        Map<String, byte[]> classes;
+        try {
+            classes = ClassGenerator.generate(program);
+        } catch (RuntimeException e) {
+            diagnostics.add(Diagnostic.of("E0999", "internal compiler error during code generation: " + e, null,
+                    null));
+            return new Result(diagnostics, null);
+        }
+        try {
+            Sdk sdk = Sdk.locate(env);
+            Path apk = ApkBuilder.build(project, classes, program.app(), kataHome, sdk);
+            Path root = project.toAbsolutePath().normalize();
+            return new Result(diagnostics, root.relativize(apk).toString().replace(File.separatorChar, '/'));
+        } catch (ToolFailure failure) {
+            diagnostics.add(Diagnostic.of(failure.code(), failure.getMessage(), null, null));
+            return new Result(diagnostics, null);
+        }
     }
 
     /** Lexes and parses every source. A file with lexical errors is not parsed, to avoid follow-on noise. */

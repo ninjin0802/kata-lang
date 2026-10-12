@@ -21,6 +21,24 @@ public final class Main {
         System.exit(run(args, out, err));
     }
 
+    /** KATA_HOME, then the kata.home property, then the directory two levels above this class's jar. */
+    static Path kataHome() {
+        String env = System.getenv("KATA_HOME");
+        if (env != null && !env.isEmpty()) {
+            return Path.of(env);
+        }
+        String property = System.getProperty("kata.home");
+        if (property != null && !property.isEmpty()) {
+            return Path.of(property);
+        }
+        try {
+            Path jar = Path.of(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            return jar.getParent().getParent();
+        } catch (java.net.URISyntaxException | RuntimeException e) {
+            return Path.of(".");
+        }
+    }
+
     public static int run(String[] args, PrintStream out, PrintStream err) {
         if (args.length != 2) {
             err.println(USAGE);
@@ -31,6 +49,7 @@ public final class Main {
             Result result;
             switch (args[0]) {
                 case "check" -> result = Compiler.check(project);
+                case "build" -> result = Compiler.build(project, System.getenv(), kataHome());
                 default -> {
                     err.println(USAGE);
                     return 2;
