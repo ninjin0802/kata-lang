@@ -71,8 +71,8 @@ app {
 <div class="table-wrap">
 <table>
   <tr><th>区分</th><th>語</th></tr>
-  <tr><td><span class="tag m1">M1</span> で使う</td><td><code>module</code> <code>import</code> <code>class</code> <code>implements</code> <code>let</code> <code>var</code> <code>fn</code> <code>self</code> <code>return</code> <code>if</code> <code>else</code> <code>true</code> <code>false</code> <code>app</code></td></tr>
-  <tr><td><span class="tag m2">M2</span> 以降のために予約</td><td><code>interface</code> <code>enum</code> <code>match</code> <code>while</code> <code>for</code> <code>in</code></td></tr>
+  <tr><td><span class="tag m1">M1</span> で使う</td><td><code>module</code> <code>import</code> <code>class</code> <code>implements</code> <code>let</code> <code>var</code> <code>fn</code> <code>self</code> <code>return</code> <code>if</code> <code>else</code> <code>while</code> <code>for</code> <code>in</code> <code>true</code> <code>false</code> <code>app</code></td></tr>
+  <tr><td><span class="tag m2">M2</span> 以降のために予約</td><td><code>interface</code> <code>enum</code> <code>match</code> <code>break</code> <code>continue</code></td></tr>
 </table>
 </div>
 <p>予約語は識別子に使えない。M2 以降の予約語を書くと <code>E0105</code> になる。</p>
@@ -114,16 +114,20 @@ type        = UpperIdent [ "&lt;" type { "," type } "&gt;" ] ;</code></pre>
 
 <h3 id="grammar-stmt">文</h3>
 <pre><code>block       = "{" { stmt } "}" ;
-stmt        = letStmt | varStmt | assignStmt | returnStmt | ifStmt | exprStmt ;
+stmt        = letStmt | varStmt | assignStmt | returnStmt | ifStmt
+            | whileStmt | forStmt | exprStmt ;
 letStmt     = "let" LowerIdent ":" type "=" expr ";" ;
 varStmt     = "var" LowerIdent ":" type "=" expr ";" ;
 assignStmt  = postfix "=" expr ";" ;
 returnStmt  = "return" [ expr ] ";" ;
 ifStmt      = "if" "(" expr ")" block [ "else" ( block | ifStmt ) ] ;
+whileStmt   = "while" "(" expr ")" block ;
+forStmt     = "for" "(" LowerIdent ":" type "in" expr ")" block ;
 exprStmt    = postfix ";" ;</code></pre>
 <ul>
-  <li><code>if</code> の条件は必ず括弧で囲む。<code>if</code> は文であり、値を返さない。</li>
-  <li>単純な文とフィールド宣言は必ず <code>;</code> で終える。<code>if</code> 文とブロックの後には付けない。</li>
+  <li><code>if</code> と <code>while</code> の条件、<code>for</code> の見出しは必ず括弧で囲む。<code>if</code> は文であり、値を返さない。</li>
+  <li><code>for</code> の変数にも型を書く（<code>for (item: Int in self.history) { ... }</code>）。</li>
+  <li>単純な文とフィールド宣言は必ず <code>;</code> で終える。<code>if</code>、<code>while</code>、<code>for</code> とブロックの後には付けない。</li>
 </ul>
 
 <h3 id="grammar-expr">式</h3>

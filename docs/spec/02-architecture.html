@@ -85,6 +85,7 @@ scripts/             エミュレータでの確認スクリプト</code></pre>
   <li><code>package</code> は <code>app</code> 宣言の <code>id</code>。</li>
   <li><code>application</code> の <code>android:label</code> は <code>app</code> 宣言の <code>name</code>。テーマは <code>@android:style/Theme.Material.Light</code>。</li>
   <li>Activity は <code>kata.gen.MainActivity</code> の1つだけ。<code>android:exported="true"</code> とし、<code>MAIN</code> / <code>LAUNCHER</code> の intent-filter を持つ。</li>
+  <li>Activity には <code>android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"</code> を付ける。画面の回転などで Activity が作り直されず、画面の状態が保たれるようにするため。</li>
 </ul>
 
 <div class="pager"><a href="01-overview.html">← 01 概要と設計原則</a><a href="03-syntax.html">03 字句と文法 →</a></div>

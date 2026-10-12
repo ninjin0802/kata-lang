@@ -22,7 +22,7 @@
   <tr><td><code>String</code></td><td>不変の文字列。</td></tr>
   <tr><td><code>Unit</code></td><td>値を返さないメソッドの戻り値の型。戻り値の型以外には書けない（<code>E0407</code>）。</td></tr>
   <tr><td><code>Action</code></td><td>引数なしで <code>Unit</code> を返す処理。<a href="#method-ref">メソッド参照</a>で作る。</td></tr>
-  <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td>不変のリスト。<a href="#list-literal">リスト記法</a>で作る。<code>T</code> に <code>Unit</code> は書けない。</td></tr>
   <tr><td>クラス</td><td>利用者定義のクラスと、<a href="05-ui.html#components">組み込みの UI 部品</a>。</td></tr>
   <tr><td>インターフェース</td><td>M1 では組み込みの <code>Ui</code> と <code>Screen</code> だけ。</td></tr>
 </table>
@@ -124,6 +124,7 @@ Counter {}</code></pre>
 <ul>
   <li><code>[a, b, c]</code> は <code>List&lt;T&gt;</code> を作る。<code>T</code> は、その式が置かれた場所の型から決まる。</li>
   <li>各要素は <code>T</code> に代入できなければならない（<code>E0401</code>）。</li>
+  <li>空のリストは <code>[]</code> と書く。</li>
   <li>置かれた場所の型が <code>List&lt;T&gt;</code> と決まらない位置には書けない（<code>E0406</code>）。メソッド呼び出しの対象（<code>[a].m()</code>）がこれに当たる。</li>
 </ul>
 <div class="note"><p>kata ではすべての宣言に型を書くので、変数の初期化、代入、引数、構築式の項目、<code>return</code> のどれに置いても、型は周囲から一意に決まる。</p></div>
@@ -154,14 +155,38 @@ Counter {}</code></pre>
   <tr><th>型</th><th>メソッド</th><th>内容</th></tr>
   <tr><td><code>Int</code></td><td><code>toString() -&gt; String</code></td><td>10進数の文字列にする。</td></tr>
   <tr><td><code>String</code></td><td><code>concat(other: String) -&gt; String</code></td><td>後ろに <code>other</code> をつないだ文字列を返す。</td></tr>
+  <tr><td><code>String</code></td><td><code>length() -&gt; Int</code></td><td>文字数（Unicode のコードポイントの数）。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>size() -&gt; Int</code></td><td>要素の数。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>get(index: Int) -&gt; T</code></td><td><code>index</code> 番目（0始まり）の要素。範囲外ならパニックになる。</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>append(item: T) -&gt; List&lt;T&gt;</code></td><td>末尾に <code>item</code> を加えた新しいリストを返す。元のリストは変わらない。</td></tr>
 </table>
 </div>
+<p>リストは不変なので、フィールドのリストに要素を足すときは <code>self.items = self.items.append(item: x);</code> と書く。</p>
 
 <h2 id="statements">文の規則</h2>
 <ul>
-  <li><code>if</code> の条件は <code>Bool</code>（<code>E0403</code>）。</li>
+  <li><code>if</code> と <code>while</code> の条件は <code>Bool</code>（<code>E0403</code>）。</li>
   <li>式だけの文に書けるのは、<code>Unit</code> を返すメソッド呼び出しだけ（<code>E0206</code>）。値を返す呼び出しの結果を捨てることはできない。</li>
   <li>代入の左辺に書けるのは、<code>var</code> のローカル変数か <code>self.フィールド</code> だけ（<code>E0504</code>、<code>E0505</code>）。</li>
+</ul>
+
+<h3 id="loops">ループ</h3>
+<pre><code>var total: Int = 0;
+for (value: Int in self.history) {
+  total = total + value;
+}
+
+var i: Int = 0;
+while (i &lt; 3) {
+  i = i + 1;
+}</code></pre>
+<ul>
+  <li><code>while (条件) { ... }</code> は、条件が <code>true</code> の間、ブロックを繰り返す。</li>
+  <li><code>for (名前: T in 式) { ... }</code> は、<code>List&lt;T&gt;</code> の要素を先頭から順に取り出して繰り返す。式の型は、書いた <code>T</code> に対する <code>List&lt;T&gt;</code> とちょうど一致しなければならない（<code>E0401</code>）。</li>
+  <li><code>for</code> の変数はブロックの中だけで有効で、書き換えられない（<code>E0504</code>）。名前の重複の規則は他のローカル変数と同じ（<code>E0303</code>）。</li>
+  <li><code>for</code> の式は、最初に1回だけ評価される。</li>
+  <li>ループを途中で抜ける専用の文はない。メソッドごと抜ける <code>return</code> は使える。</li>
+  <li>回数で繰り返すときは、<code>var</code> のカウンターと <code>while</code> を使う。</li>
 </ul>
 
 <h3 id="return">return</h3>
@@ -169,7 +194,7 @@ Counter {}</code></pre>
   <li>戻り値の型が <code>Unit</code> 以外のメソッドは、すべての経路が <code>return 式;</code> で終わらなければならない（<code>E0404</code>）。</li>
   <li>戻り値の型が <code>Unit</code> のメソッドでは、<code>return;</code> で途中から抜けられる。末尾では書かなくてよい。値を付けることはできない（<code>E0405</code>）。</li>
   <li><code>Unit</code> 以外のメソッドで値のない <code>return;</code> は書けない（<code>E0405</code>）。</li>
-  <li>経路が終わったと見なすのは、ブロックの最後の文が <code>return</code> である場合と、最後の文が <code>else</code> を持つ <code>if</code> で、すべての枝が終わっている場合。</li>
+  <li>経路が終わったと見なすのは、ブロックの最後の文が <code>return</code> である場合と、最後の文が <code>else</code> を持つ <code>if</code> で、すべての枝が終わっている場合。<code>while</code> と <code>for</code> は、中身にかかわらず経路を終わらせない。</li>
   <li><code>return</code> の後ろに文を書くことはできない（<code>E0409</code>）。</li>
 </ul>
 
@@ -185,7 +210,7 @@ Counter {}</code></pre>
 
 <h2 id="panic">パニック</h2>
 <ul>
-  <li>M1 でパニックになるのは 0 による除算だけ。</li>
+  <li>M1 でパニックになるのは、0 による除算と、<code>List</code> の <code>get</code> の範囲外アクセス。</li>
   <li>パニックは捕まえられない。アプリは停止し、kata のファイル名と行番号を含むスタックトレースが logcat に出る。</li>
 </ul>
 

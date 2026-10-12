@@ -22,7 +22,7 @@
   <tr><td><code>String</code></td><td><code>java.lang.String</code></td></tr>
   <tr><td><code>Unit</code></td><td><code>void</code></td></tr>
   <tr><td><code>Action</code></td><td><code>kata.rt.Action</code></td></tr>
-  <tr><td><code>List&lt;T&gt;</code></td><td><code>kata.rt.KList</code>（型引数は消去する）</td></tr>
+  <tr><td><code>List&lt;T&gt;</code></td><td><code>kata.rt.KList</code>（型引数は消去する）。要素の <code>Int</code> は <code>java.lang.Long</code>、<code>Bool</code> は <code>java.lang.Boolean</code> に包んで持つ。</td></tr>
   <tr><td><code>Ui</code>、<code>Screen</code>、<code>Column</code>、<code>Row</code>、<code>Text</code>、<code>Button</code></td><td><code>kata.rt</code> の同名のクラスまたはインターフェース</td></tr>
   <tr><td>モジュール <code>a.b</code> のクラス <code>C</code></td><td><code>a.b.C</code></td></tr>
 </table>
@@ -47,6 +47,10 @@
   <tr><td>フィールドの読み書き</td><td><code>getfield</code> / <code>putfield</code>。</td></tr>
   <tr><td>メソッド参照</td><td><code>invokedynamic</code>（<code>LambdaMetafactory</code>）で、対象のインスタンスを捕まえた <code>kata.rt.Action</code> を作る。</td></tr>
   <tr><td>リスト記法</td><td>要素を <code>Object[]</code> に詰めて <code>KList.of</code> を呼ぶ。</td></tr>
+  <tr><td><code>List</code> の <code>size</code> / <code>get</code> / <code>append</code></td><td><code>KList</code> の同名のメソッド。<code>get</code> の結果は要素の型に <code>checkcast</code> し、<code>Int</code> と <code>Bool</code> は中身を取り出す。</td></tr>
+  <tr><td><code>while</code></td><td>条件分岐と後ろ向きのジャンプ。</td></tr>
+  <tr><td><code>for</code></td><td>リストを1回評価してローカル変数に置き、添字を 0 から <code>size</code> の手前まで進めながら <code>get</code> で要素を取り出す。</td></tr>
+  <tr><td><code>String.length()</code></td><td><code>String.codePointCount(0, length())</code> の結果を <code>long</code> に広げる。</td></tr>
   <tr><td><code>Int</code> の演算</td><td><code>long</code> の命令（<code>ladd</code>、<code>lsub</code>、<code>lmul</code>、<code>ldiv</code>、<code>lrem</code>、<code>lneg</code>、<code>lcmp</code>）。</td></tr>
   <tr><td><code>String</code> の <code>==</code></td><td><code>String.equals</code>。</td></tr>
   <tr><td><code>Int.toString()</code></td><td><code>Long.toString(long)</code>。</td></tr>
@@ -54,7 +58,7 @@
   <tr><td><code>&amp;&amp;</code>、<code>||</code>、<code>if</code></td><td>条件分岐の命令。</td></tr>
 </table>
 </div>
-<p>0 による除算は、JVM が投げる <code>ArithmeticException</code> をそのままパニックとして扱う。生成コードに検査の命令は入れない。</p>
+<p>0 による除算は JVM が投げる <code>ArithmeticException</code> を、範囲外アクセスは <code>KList.get</code> が投げる <code>IndexOutOfBoundsException</code> を、そのままパニックとして扱う。生成コードに検査の命令は入れない。</p>
 
 <h2 id="app-mapping">app 宣言</h2>
 <p><code>app</code> 宣言から、次のクラスを生成する。</p>
@@ -76,7 +80,7 @@ public final class MainActivity extends kata.rt.KataActivity {
   <tr><td><code>kata.rt.Ui</code></td><td>core</td><td>メソッドを持たないインターフェース</td></tr>
   <tr><td><code>kata.rt.Screen</code></td><td>core</td><td><code>Ui view()</code></td></tr>
   <tr><td><code>kata.rt.Action</code></td><td>core</td><td><code>void run()</code></td></tr>
-  <tr><td><code>kata.rt.KList</code></td><td>core</td><td><code>static KList of(Object[] items)</code>。不変。</td></tr>
+  <tr><td><code>kata.rt.KList</code></td><td>core</td><td><code>static KList of(Object[] items)</code>、<code>long size()</code>、<code>Object get(long index)</code>、<code>KList append(Object item)</code>。不変。</td></tr>
   <tr><td><code>kata.rt.Column</code></td><td>core</td><td><code>Column(KList children)</code>、フィールド <code>children</code></td></tr>
   <tr><td><code>kata.rt.Row</code></td><td>core</td><td><code>Row(KList children)</code>、フィールド <code>children</code></td></tr>
   <tr><td><code>kata.rt.Text</code></td><td>core</td><td><code>Text(String text)</code>、フィールド <code>text</code></td></tr>

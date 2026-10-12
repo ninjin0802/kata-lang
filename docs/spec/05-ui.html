@@ -71,7 +71,8 @@ class Button implements Ui {
 <ul>
   <li>すべてメインスレッドで順番に実行する。</li>
   <li>M1 は毎回全体を作り直す。差分だけを更新する仕組みは持たない。</li>
-  <li>画面の回転などで Activity が作り直されると、ルートの <code>Screen</code> も作り直され、状態は初期値に戻る。</li>
+  <li>画面の回転では Activity を作り直さないので、状態は保たれる（<a href="02-architecture.html#manifest">マニフェストの設定</a>による）。OS がアプリのプロセスを終了させた場合は、次の起動で初期値に戻る。</li>
+  <li>処理が終わるまで画面は更新されない。終わらないループを書くとアプリは応答しなくなる。</li>
 </ul>
 
 <h2 id="app-decl">app 宣言</h2>
